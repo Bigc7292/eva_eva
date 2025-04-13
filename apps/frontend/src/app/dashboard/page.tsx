@@ -16,6 +16,7 @@ import { HistoricalAnalytics } from '@/components/dashboard/HistoricalAnalytics'
 import { SocialMediaIntegration } from '@/components/dashboard/SocialMediaIntegration'
 import { analyticsService } from '@/services/analytics'
 import { dummyCallAnalytics, dummyLeadAnalytics } from '@/lib/dummy-data'
+import { simpleLogger } from '@/components/debug/SimpleLogger'
 
 export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
@@ -26,17 +27,43 @@ export default function DashboardPage() {
   })
 
   useEffect(() => {
+    simpleLogger.info('Dashboard page mounted', {
+      dateRange: {
+        start: dateRange.start.toISOString(),
+        end: dateRange.end.toISOString()
+      }
+    })
     loadDashboardData()
+
+    return () => {
+      simpleLogger.info('Dashboard page unmounted')
+    }
   }, [dateRange])
 
   const loadDashboardData = async () => {
+    const startTime = performance.now()
+    simpleLogger.info('Loading dashboard data', {
+      dateRange: {
+        start: dateRange.start.toISOString(),
+        end: dateRange.end.toISOString()
+      }
+    })
+
     try {
       setLoading(true)
       try {
+        simpleLogger.info('Fetching dashboard stats from API')
         const dashboardStats = await analyticsService.getDashboardStats()
+        simpleLogger.info('Dashboard stats fetched successfully', {
+          totalLeads: dashboardStats.totalLeads,
+          totalCalls: dashboardStats.totalCalls,
+          dataPoints: Object.keys(dashboardStats)
+        })
         setStats(dashboardStats)
       } catch (apiError) {
-        console.error('Error from API, using dummy data:', apiError)
+        simpleLogger.error('Error from API, using dummy data', {
+          error: apiError instanceof Error ? apiError.message : String(apiError)
+        })
         // Use dummy data if API fails
         setStats({
           totalLeads: 50,
@@ -51,11 +78,18 @@ export default function DashboardPage() {
           callsByType: dummyCallAnalytics.callsByType,
           callsByStatus: dummyCallAnalytics.callsByStatus
         })
+        simpleLogger.info('Dummy data loaded successfully')
       }
     } catch (error) {
-      console.error('Error loading dashboard data:', error)
+      simpleLogger.error('Error loading dashboard data', {
+        error: error instanceof Error ? error.message : String(error)
+      })
     } finally {
       setLoading(false)
+      const endTime = performance.now()
+      simpleLogger.info('Dashboard data loading completed', {
+        duration: `${(endTime - startTime).toFixed(2)}ms`
+      })
     }
   }
 

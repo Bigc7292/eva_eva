@@ -2,6 +2,7 @@ import type { CallMetrics, DateRange } from '@/types/analytics'
 import { format } from 'date-fns'
 import { excelExport } from '@/utils/excel'
 import { dummyCalls, dummyCallAnalytics, dummyLeadAnalytics, CallAnalytics, LeadAnalytics } from '@/lib/dummy-data'
+import { simpleLogger } from '@/components/debug/SimpleLogger'
 
 export const analyticsService = {
   async getCallMetrics(dateRange: DateRange): Promise<CallMetrics> {
