@@ -6,7 +6,6 @@ import { VariantProps, cva } from "class-variance-authority"
 import { Menu } from "lucide-react"
 import { CalendarIcon, PhoneIcon, UsersIcon, BuildingIcon, DashboardIcon } from "./icons"
 import Link from 'next/link'
-import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 
 import { useIsMobile } from "@/hooks/use-mobile"
@@ -94,21 +93,8 @@ const Sidebar = React.forwardRef<HTMLDivElement, React.ComponentProps<"div">>(
         <div className="flex h-16 items-center justify-center border-b px-4">
           {expanded ? (
             <Link href="/dashboard">
-              <div className="relative cursor-pointer h-[36px] w-[180px]">
-                <Image
-                  src="https://transformed-academy-and-salon-ceo.s3.eu-north-1.amazonaws.com/ceo/WhatsApp+Image+2025-04-14+at+18.44.55.jpeg"
-                  alt="Top Loader Agent AI Solutions"
-                  width={180}
-                  height={36}
-                  priority
-                  style={{
-                    objectFit: 'contain',
-                    objectPosition: 'left center',
-                    height: 'auto',
-                    width: '180px'
-                  }}
-                  className="!fixed-size"
-                />
+              <div className="font-bold text-xl text-primary">
+                Top Loader Agent AI
               </div>
             </Link>
           ) : (

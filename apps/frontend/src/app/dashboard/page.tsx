@@ -149,9 +149,9 @@ export default function DashboardPage() {
     poor: callAnalytics?.calls ? callAnalytics.calls.filter((call: Call) => call.call_duration < 120).length : 0
   }
 
-  const teamMembers = callAnalytics?.callsByAgent ? callAnalytics.callsByAgent.map((agent: any) => ({
-    id: agent.agent_id || 'unknown',
-    name: agent.agent_name || 'Unknown Agent',
+  const teamMembers = callAnalytics?.callsByAgent ? callAnalytics.callsByAgent.map((agent: any, index: number) => ({
+    id: agent.agent_id || `unknown-${index}`,
+    name: agent.agent_name || `Unknown Agent ${index + 1}`,
     avatar: `https://ui-avatars.com/api/?name=${agent.agent_name || 'Unknown'}&background=random`,
     calls: agent.calls?.length || 0,
     conversions: agent.calls?.filter((call: Call) => call.status === 'completed')?.length || 0,
