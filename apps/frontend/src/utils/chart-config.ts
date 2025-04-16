@@ -1,22 +1,8 @@
 import { type ChartOptions } from 'chart.js'
 
 export const baseChartAnimations = {
-  tension: {
-    duration: 1000,
-    easing: 'easeInOutQuart',
-    from: 0,
-    to: 0.4,
-  },
-  backgroundColor: {
-    duration: 1000,
-    easing: 'easeInOutQuart',
-  },
-  scale: {
-    duration: 1000,
-    easing: 'easeInOutElastic',
-    from: 0,
-    to: 1,
-  }
+  duration: 1000,
+  easing: 'easeInOutQuart'
 }
 
 export const baseChartOptions: ChartOptions = {
@@ -51,4 +37,4 @@ export const baseChartOptions: ChartOptions = {
       }
     }
   }
-} 
+}

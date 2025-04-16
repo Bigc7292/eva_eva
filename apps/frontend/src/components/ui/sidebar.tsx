@@ -6,6 +6,7 @@ import { VariantProps, cva } from "class-variance-authority"
 import { Menu } from "lucide-react"
 import { CalendarIcon, PhoneIcon, UsersIcon, BuildingIcon, DashboardIcon } from "./icons"
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 
 import { useIsMobile } from "@/hooks/use-mobile"
@@ -19,7 +20,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { Logo } from './logo'
+import { Logo, LogoSvg } from './logo'
 
 const SIDEBAR_COOKIE_NAME = "sidebar:state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
@@ -90,9 +91,26 @@ const Sidebar = React.forwardRef<HTMLDivElement, React.ComponentProps<"div">>(
         onMouseLeave={() => setExpanded(false)}
         {...props}
       >
-        <div className="flex h-14 items-center justify-center border-b px-4">
+        <div className="flex h-16 items-center justify-center border-b px-4">
           {expanded ? (
-            <Logo />
+            <Link href="/dashboard">
+              <div className="relative cursor-pointer h-[36px] w-[180px]">
+                <Image
+                  src="https://transformed-academy-and-salon-ceo.s3.eu-north-1.amazonaws.com/ceo/WhatsApp+Image+2025-04-14+at+18.44.55.jpeg"
+                  alt="Top Loader Agent AI Solutions"
+                  width={180}
+                  height={36}
+                  priority
+                  style={{
+                    objectFit: 'contain',
+                    objectPosition: 'left center',
+                    height: 'auto',
+                    width: '180px'
+                  }}
+                  className="!fixed-size"
+                />
+              </div>
+            </Link>
           ) : (
             <Button
               variant="ghost"

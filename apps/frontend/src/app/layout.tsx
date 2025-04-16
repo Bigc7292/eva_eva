@@ -27,11 +27,11 @@ export default function RootLayout({
             <div className="flex min-h-screen">
               {/* Sidebar */}
               <Sidebar />
-              
+
               <div className="flex-1">
                 {/* Header */}
                 <Header />
-                
+
                 {/* Main Content */}
                 <main className="container mx-auto px-4 py-4">
                   {children}
@@ -44,4 +44,4 @@ export default function RootLayout({
       </body>
     </html>
   )
-} 
+}

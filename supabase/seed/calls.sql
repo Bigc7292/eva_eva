@@ -1,0 +1,27 @@
+INSERT INTO calls (
+    retell_call_id,
+    call_duration,
+    call_type,
+    call_status,
+    audio_url,
+    detailed_call_summary,
+    lead_id,
+    lead_name,
+    lead_email,
+    lead_phone,
+    sentiment_score,
+    key_topics,
+    next_steps,
+    agent_id,
+    agent_name
+) VALUES
+('call-1', 120, 'Inbound', 'Completed', 'https://example.com/audio/1.mp3', 'Client inquired about luxury apartments in Dubai Marina', 'lead-1', 'John Smith', 'john.smith@example.com', '+971501234567', 0.85, ARRAY['luxury apartments', 'Dubai Marina', 'investment'], 'Send property list for Dubai Marina', 'agent-1', 'Sarah Johnson'),
+('call-2', 90, 'Outbound', 'Completed', 'https://example.com/audio/2.mp3', 'Followed up on previous inquiry about Jumeirah', 'lead-2', 'Emma Wilson', 'emma.wilson@example.com', '+971567890123', 0.92, ARRAY['Jumeirah', 'follow-up', 'investment'], 'Schedule property viewing', 'agent-2', 'Michael Chen'),
+('call-3', 45, 'Inbound', 'Missed', NULL, 'Client missed call about Palm Jumeirah properties', 'lead-3', 'David Brown', 'david.brown@example.com', '+971523456789', 0.65, ARRAY['Palm Jumeirah', 'missed call'], 'Follow up via email', 'agent-1', 'Sarah Johnson'),
+('call-4', 150, 'Outbound', 'Completed', 'https://example.com/audio/4.mp3', 'Discussed investment opportunities in Business Bay', 'lead-4', 'Sophia Lee', 'sophia.lee@example.com', '+971509876543', 0.88, ARRAY['Business Bay', 'investment', 'ROI'], 'Send ROI analysis', 'agent-3', 'Liam Wilson'),
+('call-5', 60, 'Inbound', 'Voicemail', NULL, 'Left voicemail about off-plan properties', 'lead-5', 'James Taylor', 'james.taylor@example.com', '+971551234567', 0.75, ARRAY['off-plan', 'voicemail'], 'Return call', 'agent-2', 'Michael Chen'),
+('call-6', 110, 'Outbound', 'Completed', 'https://example.com/audio/6.mp3', 'Discussed property management services', 'lead-6', 'Olivia Green', 'olivia.green@example.com', '+971524567890', 0.90, ARRAY['property management', 'services'], 'Send service brochure', 'agent-1', 'Sarah Johnson'),
+('call-7', 75, 'Inbound', 'Completed', 'https://example.com/audio/7.mp3', 'Inquired about commercial properties in Dubai Internet City', 'lead-7', 'William Wilson', 'william.wilson@example.com', '+971556789012', 0.83, ARRAY['commercial', 'Dubai Internet City'], 'Send commercial property list', 'agent-3', 'Liam Wilson'),
+('call-8', 30, 'Outbound', 'Completed', 'https://example.com/audio/8.mp3', 'Followed up on previous inquiry about villas', 'lead-8', 'Ava Thompson', 'ava.thompson@example.com', '+971501234567', 0.95, ARRAY['villas', 'follow-up'], 'Schedule viewing', 'agent-2', 'Michael Chen'),
+('call-9', 180, 'Inbound', 'Completed', 'https://example.com/audio/9.mp3', 'Detailed discussion about luxury properties in Downtown Dubai', 'lead-9', 'Benjamin Johnson', 'benjamin.johnson@example.com', '+971567890123', 0.93, ARRAY['luxury', 'Downtown Dubai'], 'Send premium property list', 'agent-1', 'Sarah Johnson'),
+('call-10', 45, 'Outbound', 'Missed', NULL, 'Client missed call about apartment investment', 'lead-10', 'Charlotte Brown', 'charlotte.brown@example.com', '+971523456789', 0.70, ARRAY['apartment', 'investment', 'missed call'], 'Follow up via email', 'agent-3', 'Liam Wilson');

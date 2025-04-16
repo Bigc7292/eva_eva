@@ -32,92 +32,13 @@ interface Campaign {
 }
 
 export function SocialMediaIntegration() {
-  const [accounts, setAccounts] = useState<SocialAccount[]>([
-    {
-      id: '1',
-      platform: 'facebook',
-      name: 'Eva Real Estate',
-      status: 'connected',
-      metrics: {
-        followers: 12500,
-        engagement: 3.2,
-        leads: 145
-      }
-    },
-    {
-      id: '2',
-      platform: 'instagram',
-      name: 'Eva Real Estate Dubai',
-      status: 'connected',
-      metrics: {
-        followers: 8700,
-        engagement: 4.7,
-        leads: 98
-      }
-    },
-    {
-      id: '3',
-      platform: 'linkedin',
-      name: 'Eva Real Estate Professional',
-      status: 'connected',
-      metrics: {
-        followers: 5200,
-        engagement: 2.1,
-        leads: 76
-      }
-    }
-  ])
-  
-  const [campaigns, setCampaigns] = useState<Campaign[]>([
-    {
-      id: '1',
-      platform: 'facebook',
-      name: 'Dubai Marina Properties Q3',
-      status: 'active',
-      budget: '$2,500',
-      leads: 87,
-      conversion: 4.2,
-      startDate: '2023-07-15',
-      endDate: '2023-09-30'
-    },
-    {
-      id: '2',
-      platform: 'instagram',
-      name: 'Luxury Apartments Promotion',
-      status: 'active',
-      budget: '$1,800',
-      leads: 64,
-      conversion: 3.8,
-      startDate: '2023-08-01',
-      endDate: '2023-10-15'
-    },
-    {
-      id: '3',
-      platform: 'linkedin',
-      name: 'Investment Properties Webinar',
-      status: 'scheduled',
-      budget: '$1,200',
-      leads: 0,
-      conversion: 0,
-      startDate: '2023-09-15',
-      endDate: '2023-11-15'
-    },
-    {
-      id: '4',
-      platform: 'facebook',
-      name: 'Palm Jumeirah Exclusive Listings',
-      status: 'completed',
-      budget: '$3,000',
-      leads: 112,
-      conversion: 5.3,
-      startDate: '2023-05-01',
-      endDate: '2023-07-31'
-    }
-  ])
-  
+  // Empty arrays for accounts and campaigns - will be populated from database in the future
+  const [accounts, setAccounts] = useState<SocialAccount[]>([])
+  const [campaigns, setCampaigns] = useState<Campaign[]>([])
+
   const [newAccountPlatform, setNewAccountPlatform] = useState<string>('facebook')
   const [showConnectForm, setShowConnectForm] = useState(false)
-  
+
   const getPlatformIcon = (platform: string, className = 'h-5 w-5') => {
     switch (platform) {
       case 'facebook':
@@ -132,7 +53,7 @@ export function SocialMediaIntegration() {
         return <MessageCircle className={className} />
     }
   }
-  
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'connected':
@@ -150,62 +71,51 @@ export function SocialMediaIntegration() {
         return 'bg-gray-100 text-gray-800'
     }
   }
-  
+
   const handleConnectAccount = () => {
-    // Simulate connecting a new account
-    const newAccount: SocialAccount = {
-      id: `${accounts.length + 1}`,
-      platform: newAccountPlatform as any,
-      name: `Eva Real Estate ${newAccountPlatform.charAt(0).toUpperCase() + newAccountPlatform.slice(1)}`,
-      status: 'connected',
-      metrics: {
-        followers: Math.floor(Math.random() * 5000) + 1000,
-        engagement: parseFloat((Math.random() * 5).toFixed(1)),
-        leads: Math.floor(Math.random() * 50) + 10
-      }
-    }
-    
-    setAccounts([...accounts, newAccount])
+    // This would connect to the actual social media API in a real implementation
+    alert(`This would connect to the ${newAccountPlatform} API in a real implementation.`)
     setShowConnectForm(false)
   }
-  
+
   const handleContactLead = (campaignId: string) => {
     // Simulate contacting a lead
     alert(`Contacting leads from campaign ${campaignId}. This would open the messaging interface in a real implementation.`)
   }
-  
+
   return (
     <Card className="p-4">
       <h3 className="text-lg font-semibold mb-4">Social Media Integration</h3>
-      
+
       <Tabs defaultValue="accounts">
         <TabsList className="mb-4">
           <TabsTrigger value="accounts">Connected Accounts</TabsTrigger>
           <TabsTrigger value="campaigns">Campaigns</TabsTrigger>
           <TabsTrigger value="leads">Social Leads</TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="accounts">
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <h4 className="font-medium">Connected Social Accounts</h4>
-              <Button 
-                variant="outline" 
-                size="sm" 
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setShowConnectForm(!showConnectForm)}
               >
                 <Plus className="h-4 w-4 mr-1" />
                 Connect Account
               </Button>
             </div>
-            
+
             {showConnectForm && (
               <div className="bg-muted p-4 rounded-lg">
                 <h5 className="font-medium mb-3">Connect a New Account</h5>
                 <div className="space-y-3">
                   <div>
-                    <label className="text-sm font-medium mb-1 block">Platform</label>
-                    <select 
+                    <label htmlFor="platform-select" className="text-sm font-medium mb-1 block">Platform</label>
+                    <select
+                      id="platform-select"
                       className="w-full p-2 border rounded-md"
                       value={newAccountPlatform}
                       onChange={(e) => setNewAccountPlatform(e.target.value)}
@@ -216,17 +126,17 @@ export function SocialMediaIntegration() {
                       <option value="linkedin">LinkedIn</option>
                     </select>
                   </div>
-                  
+
                   <div className="flex justify-end gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => setShowConnectForm(false)}
                     >
                       Cancel
                     </Button>
-                    <Button 
-                      size="sm" 
+                    <Button
+                      size="sm"
                       onClick={handleConnectAccount}
                     >
                       Connect
@@ -235,7 +145,7 @@ export function SocialMediaIntegration() {
                 </div>
               </div>
             )}
-            
+
             <div className="grid gap-4 md:grid-cols-2">
               {accounts.map((account) => (
                 <div key={account.id} className="border rounded-lg p-4">
@@ -252,7 +162,7 @@ export function SocialMediaIntegration() {
                       {account.status.charAt(0).toUpperCase() + account.status.slice(1)}
                     </div>
                   </div>
-                  
+
                   {account.metrics && (
                     <div className="grid grid-cols-3 gap-2 text-center">
                       <div className="bg-muted p-2 rounded-lg">
@@ -269,7 +179,7 @@ export function SocialMediaIntegration() {
                       </div>
                     </div>
                   )}
-                  
+
                   <div className="mt-3 flex justify-end">
                     <Button variant="outline" size="sm">
                       <ExternalLink className="h-3 w-3 mr-1" />
@@ -281,7 +191,7 @@ export function SocialMediaIntegration() {
             </div>
           </div>
         </TabsContent>
-        
+
         <TabsContent value="campaigns">
           <div className="space-y-4">
             <div className="flex justify-between items-center">
@@ -291,7 +201,7 @@ export function SocialMediaIntegration() {
                 New Campaign
               </Button>
             </div>
-            
+
             <div className="overflow-x-auto">
               <table className="w-full border-collapse">
                 <thead>
@@ -312,7 +222,7 @@ export function SocialMediaIntegration() {
                         <div>
                           <p className="font-medium">{campaign.name}</p>
                           <p className="text-xs text-muted-foreground">
-                            {new Date(campaign.startDate).toLocaleDateString()} - 
+                            {new Date(campaign.startDate).toLocaleDateString()} -
                             {campaign.endDate ? new Date(campaign.endDate).toLocaleDateString() : 'Ongoing'}
                           </p>
                         </div>
@@ -333,8 +243,8 @@ export function SocialMediaIntegration() {
                       <td className="p-2">{campaign.conversion}%</td>
                       <td className="p-2">
                         <div className="flex gap-1">
-                          <Button 
-                            variant="outline" 
+                          <Button
+                            variant="outline"
                             size="sm"
                             onClick={() => handleContactLead(campaign.id)}
                             disabled={campaign.leads === 0}
@@ -354,7 +264,7 @@ export function SocialMediaIntegration() {
             </div>
           </div>
         </TabsContent>
-        
+
         <TabsContent value="leads">
           <div className="space-y-4">
             <div className="flex justify-between items-center">
@@ -364,45 +274,16 @@ export function SocialMediaIntegration() {
                 <Button variant="outline" size="sm">Filter</Button>
               </div>
             </div>
-            
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {[...Array(6)].map((_, index) => {
-                const platforms = ['facebook', 'instagram', 'linkedin', 'twitter']
-                const platform = platforms[Math.floor(Math.random() * platforms.length)]
-                const name = ['John Smith', 'Sarah Johnson', 'Mohammed Al Fayed', 'Emma Wilson', 'Raj Patel', 'Anna Lee'][Math.floor(Math.random() * 6)]
-                const interest = ['Luxury Apartments', 'Investment Properties', 'Commercial Spaces', 'Villas', 'Off-plan Projects'][Math.floor(Math.random() * 5)]
-                const date = new Date(Date.now() - Math.floor(Math.random() * 10) * 24 * 60 * 60 * 1000).toLocaleDateString()
-                
-                return (
-                  <div key={index} className="border rounded-lg p-4">
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="flex items-center gap-2">
-                        {getPlatformIcon(platform)}
-                        <div>
-                          <h5 className="font-medium">{name}</h5>
-                          <p className="text-xs text-muted-foreground">Via {platform.charAt(0).toUpperCase() + platform.slice(1)}</p>
-                        </div>
-                      </div>
-                      <div className="text-xs text-muted-foreground">{date}</div>
-                    </div>
-                    
-                    <p className="text-sm mb-3">Interested in {interest} in Dubai.</p>
-                    
-                    <div className="flex justify-between">
-                      <Button variant="outline" size="sm">
-                        <MessageCircle className="h-3 w-3 mr-1" />
-                        Message
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        <Plus className="h-3 w-3 mr-1" />
-                        Add to CRM
-                      </Button>
-                    </div>
-                  </div>
-                )
-              })}
+
+            <div className="flex flex-col items-center justify-center py-8">
+              <p className="text-muted-foreground text-center mb-4">
+                Social media leads will be displayed here when connected to your social media accounts.
+              </p>
+              <p className="text-sm text-muted-foreground text-center">
+                Connect your social media accounts to start collecting leads.
+              </p>
             </div>
-            
+
             <div className="flex justify-center mt-4">
               <Button variant="outline">Load More</Button>
             </div>

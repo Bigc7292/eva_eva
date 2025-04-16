@@ -21,7 +21,7 @@ import {
 import type { ColumnDef } from '@tanstack/react-table'
 import { formatCrmId } from '@/utils/crm-utils'
 import { leadsService } from '@/services/leads'
-import { Lead } from '@/lib/dummy-data'
+import { Lead } from '@/services/leads'
 
 const columns: ColumnDef<Lead>[] = [
   {
@@ -94,18 +94,11 @@ export default function LeadsPage() {
   const loadLeads = async () => {
     try {
       setLoading(true)
-      try {
-        const leads = await leadsService.getLeads()
-        setData(leads)
-      } catch (apiError) {
-        console.error('Error from API, using dummy data:', apiError)
-        // Use dummy data if API fails
-        import('@/lib/dummy-data').then(({ dummyLeads }) => {
-          setData(dummyLeads)
-        })
-      }
+      const leads = await leadsService.getLeads()
+      setData(leads)
     } catch (error) {
       console.error('Error loading leads:', error)
+      setData([]) // Set empty array instead of using dummy data
     } finally {
       setLoading(false)
     }
@@ -119,24 +112,11 @@ export default function LeadsPage() {
     }
     try {
       setLoading(true)
-      try {
-        const results = await leadsService.searchLeads(query)
-        setData(results)
-      } catch (apiError) {
-        console.error('Error from API, using dummy data:', apiError)
-        // Use dummy data if API fails
-        import('@/lib/dummy-data').then(({ dummyLeads }) => {
-          const filteredLeads = dummyLeads.filter(lead =>
-            lead.name.toLowerCase().includes(query.toLowerCase()) ||
-            lead.email.toLowerCase().includes(query.toLowerCase()) ||
-            lead.phone.includes(query) ||
-            lead.crmId.toLowerCase().includes(query.toLowerCase())
-          )
-          setData(filteredLeads)
-        })
-      }
+      const results = await leadsService.searchLeads(query)
+      setData(results)
     } catch (error) {
       console.error('Error searching leads:', error)
+      setData([]) // Set empty array instead of using dummy data
     } finally {
       setLoading(false)
     }

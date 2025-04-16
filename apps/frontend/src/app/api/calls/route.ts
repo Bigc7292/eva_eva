@@ -1,14 +1,25 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { vapiService } from '@/lib/services/vapi'
+import { supabase } from '@/lib/services/supabase'
 
+/**
+ * GET /api/calls
+ * Retrieves call history from Supabase
+ */
 export async function GET(request: NextRequest) {
   try {
-    // Get calls from your backend
-    const response = await fetch(`${process.env.BACKEND_URL}/api/calls`)
-    const data = await response.json()
-    
+    // Get calls from Supabase
+    const { data, error } = await supabase
+      .from('calls')
+      .select('*')
+      .order('start_time', { ascending: false })
+
+    if (error) throw error
+
     return NextResponse.json(data)
   } catch (error) {
+    console.error('Failed to fetch calls:', error)
     return NextResponse.json(
       { error: 'Failed to fetch calls' },
       { status: 500 }
@@ -16,24 +27,46 @@ export async function GET(request: NextRequest) {
   }
 }
 
+/**
+ * POST /api/calls
+ * Initiates a new call using VAPI
+ */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    
-    const response = await fetch(`${process.env.BACKEND_URL}/api/calls`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-    })
-    
-    const data = await response.json()
-    return NextResponse.json(data)
+    const { phoneNumber, metadata } = body
+
+    if (!phoneNumber) {
+      return NextResponse.json(
+        { error: 'Phone number is required' },
+        { status: 400 }
+      )
+    }
+
+    // Initiate call with VAPI
+    const callData = await vapiService.initiateCall(phoneNumber, metadata)
+
+    // Store call in Supabase
+    const { error } = await supabase
+      .from('calls')
+      .insert({
+        call_id: callData.id,
+        phone_number: phoneNumber,
+        status: 'initiated',
+        start_time: new Date().toISOString(),
+        metadata: metadata || {}
+      })
+
+    if (error) {
+      console.error('Error storing call data:', error)
+    }
+
+    return NextResponse.json(callData)
   } catch (error) {
+    console.error('Failed to create call:', error)
     return NextResponse.json(
       { error: 'Failed to create call' },
       { status: 500 }
     )
   }
-} 
+}

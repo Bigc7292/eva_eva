@@ -21,12 +21,16 @@ import {
   PhoneCall,
   MessageSquare,
   BarChart,
-  Users
+  Users,
+  Play,
+  Volume2
 } from 'lucide-react'
 import { leadsService } from '@/services/leads'
 import { callsService } from '@/services/calls'
-import { Lead, Call, Interaction } from '@/lib/dummy-data'
+import { Lead, Call, Interaction } from '@/services/leads'
 import { formatDistanceToNow, format } from 'date-fns'
+import { CallRecording } from '@/components/leads/CallRecording'
+import { supabase } from '@/lib/services/supabase'
 
 export default function LeadProfilePage() {
   const params = useParams()
@@ -50,10 +54,44 @@ export default function LeadProfilePage() {
 
         // Load calls for this lead
         try {
-          const callsData = await callsService.getCallsByLead(id)
-          setCalls(callsData)
+          // First try to get calls from Supabase
+          const { data: supabaseCalls, error } = await supabase
+            .from('calls')
+            .select('*')
+            .eq('metadata->lead_id', id)
+            .order('start_time', { ascending: false })
+
+          if (error) {
+            console.error('Error loading calls from Supabase:', error)
+            // Fall back to service
+            const callsData = await callsService.getCallsByLead(id)
+            setCalls(callsData)
+          } else if (supabaseCalls && supabaseCalls.length > 0) {
+            // Map Supabase calls to the expected format
+            const formattedCalls = supabaseCalls.map(call => ({
+              id: call.id.toString(),
+              retellCallId: call.call_id,
+              timestamp: call.start_time,
+              callDuration: call.duration || 0,
+              callType: call.metadata?.direction || 'Outbound',
+              callStatus: call.status === 'ended' ? 'Completed' : call.status,
+              audioUrl: call.recording_url,
+              detailedCallSummary: call.metadata?.summary || '',
+              leadId: id,
+              leadName: leadData.name,
+              transcript: null
+            }))
+            setCalls(formattedCalls)
+          } else {
+            // Fall back to service if no calls found
+            const callsData = await callsService.getCallsByLead(id)
+            setCalls(callsData)
+          }
         } catch (error) {
           console.error('Error loading calls:', error)
+          // Fall back to service
+          const callsData = await callsService.getCallsByLead(id)
+          setCalls(callsData)
         }
       }
     } catch (error) {
@@ -447,12 +485,11 @@ export default function LeadProfilePage() {
                           )}
 
                           {call.audioUrl && (
-                            <div className="mt-3">
-                              <audio controls className="w-full h-8">
-                                <source src={call.audioUrl} type="audio/mpeg" />
-                                Your browser does not support the audio element.
-                              </audio>
-                            </div>
+                            <CallRecording
+                              audioUrl={call.audioUrl}
+                              callId={call.retellCallId || call.id}
+                              timestamp={call.timestamp}
+                            />
                           )}
                         </div>
                       </div>

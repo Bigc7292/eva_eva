@@ -1,138 +1,215 @@
-import type { CallMetrics, DateRange } from '@/types/analytics'
-import { format } from 'date-fns'
-import { excelExport } from '@/utils/excel'
-import { dummyCalls, dummyCallAnalytics, dummyLeadAnalytics, CallAnalytics, LeadAnalytics } from '@/lib/dummy-data'
+import { supabase } from '@/lib/services/supabase';
 
-export const analyticsService = {
-  async getCallMetrics(dateRange: DateRange): Promise<CallMetrics> {
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 600))
+export class AnalyticsError extends Error {
+  details: unknown;
 
-    // Filter calls by date range
-    const data = dummyCalls.filter(call => {
-      const callDate = new Date(call.timestamp)
-      return callDate >= dateRange.start && callDate <= dateRange.end
-    })
-
-    return {
-      total: data.length,
-      outbound: data.filter(c => c.callType === 'Outbound').length,
-      inbound: data.filter(c => c.callType === 'Inbound').length,
-      avgDuration: this.calculateAvgDuration(data),
-      conversionRate: 0.35, // Dummy conversion rate
-      byPropertyType: this.groupByPropertyType(data),
-      dailyTrends: this.getDailyTrends(data),
-      // Additional metrics
-      byLocation: this.groupByLocation(data),
-      byBudget: this.groupByBudget(data),
-      callQuality: this.analyzeCallQuality(data)
-    }
-  },
-
-  // Export functionality
-  async exportMetrics(dateRange: DateRange, format: 'csv' | 'excel') {
-    const metrics = await this.getCallMetrics(dateRange)
-
-    if (format === 'csv') {
-      return this.generateCSV(metrics)
-    } else {
-      return excelExport.downloadExcel(metrics)
-    }
-  },
-
-  // Get dashboard stats
-  async getDashboardStats() {
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 700))
-
-    return {
-      totalLeads: dummyLeadAnalytics.totalLeads,
-      newLeadsToday: dummyLeadAnalytics.newLeadsToday,
-      totalCalls: dummyCallAnalytics.totalCalls,
-      missedCalls: dummyCallAnalytics.missedCalls,
-      completedCalls: dummyCallAnalytics.completedCalls,
-      averageCallDuration: dummyCallAnalytics.averageCallDuration,
-      leadsConversionRate: dummyLeadAnalytics.leadsConversionRate,
-      callsByDay: dummyCallAnalytics.callsByDay,
-      leadsByStatus: dummyLeadAnalytics.leadsByStatus,
-      callsByType: dummyCallAnalytics.callsByType
-    }
-  },
-
-  // Get call analytics
-  async getCallAnalytics(): Promise<CallAnalytics> {
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 600))
-    return dummyCallAnalytics
-  },
-
-  // Get lead analytics
-  async getLeadAnalytics(): Promise<LeadAnalytics> {
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 500))
-    return dummyLeadAnalytics
-  },
-
-  // Additional analysis methods
-  analyzeCallQuality(calls: any[]) {
-    return calls.reduce((acc, call) => {
-      const duration = call.callDuration || 0
-      if (duration > 300) acc.excellent++
-      else if (duration > 120) acc.good++
-      else acc.poor++
-      return acc
-    }, { excellent: 0, good: 0, poor: 0 })
-  },
-
-  groupByLocation(calls: any[]) {
-    return dummyLeads.reduce((acc, lead) => {
-      acc[lead.location] = (acc[lead.location] || 0) + 1
-      return acc
-    }, {})
-  },
-
-  groupByBudget(calls: any[]) {
-    return dummyLeads.reduce((acc, lead) => {
-      acc[lead.budgetRange] = (acc[lead.budgetRange] || 0) + 1
-      return acc
-    }, {})
-  },
-
-  private generateCSV(metrics: CallMetrics): string {
-    // Implementation for CSV generation
-    const rows = [
-      ['Date', 'Total Calls', 'Outbound', 'Inbound', 'Conversion Rate'],
-      ...Object.entries(metrics.dailyTrends).map(([date, count]) => [
-        date,
-        count,
-        metrics.outbound,
-        metrics.inbound,
-        metrics.conversionRate
-      ])
-    ]
-    return rows.map(row => row.join(',')).join('\n')
-  },
-
-  calculateAvgDuration(calls) {
-    const completedCalls = calls.filter(c => c.callStatus === 'Completed' && c.callDuration)
-    if (!completedCalls.length) return 0
-    return completedCalls.reduce((acc, c) => acc + c.callDuration, 0) / completedCalls.length
-  },
-
-  groupByPropertyType(calls) {
-    return dummyLeads.reduce((acc, lead) => {
-      const type = lead.propertyInterest || 'unknown'
-      acc[type] = (acc[type] || 0) + 1
-      return acc
-    }, {})
-  },
-
-  getDailyTrends(calls) {
-    // Group calls by date and count
-    return calls.reduce((acc, call) => {
-      const date = new Date(call.timestamp).toLocaleDateString()
-      acc[date] = (acc[date] || 0) + 1
-      return acc
-    }, {})
+  constructor(message: string, details?: unknown) {
+    super(message);
+    this.name = 'AnalyticsError';
+    this.details = details;
   }
+}
+
+export async function getCallAnalytics(): Promise<any> {
+  try {
+    // Try to get all columns first to handle different table structures
+    const { data: calls, error: callsError } = await supabase
+      .from('calls')
+      .select('*')
+      .order('start_time', { ascending: false });
+
+    if (callsError) {
+      console.error('Error fetching calls with all columns:', callsError);
+
+      // Try with a more specific query that matches the expected structure
+      const { data: fallbackCalls, error: fallbackError } = await supabase
+        .from('calls')
+        .select('id, call_id, status, start_time, customer_phone, call_type')
+        .order('start_time', { ascending: false });
+
+      if (fallbackError) {
+        throw new AnalyticsError('Failed to fetch calls', fallbackError);
+      }
+
+      // Use the fallback data
+      return {
+        totalCalls: fallbackCalls?.length || 0,
+        inboundCalls: fallbackCalls?.filter(call => call.call_type === 'inbound').length || 0,
+        outboundCalls: fallbackCalls?.filter(call => call.call_type === 'outbound').length || 0,
+        missedCalls: fallbackCalls?.filter(call => call.status === 'missed').length || 0,
+        completedCalls: fallbackCalls?.filter(call => call.status === 'completed').length || 0,
+        averageCallDuration: 0,
+        calls: fallbackCalls || [],
+        callsByDay: [],
+        callsByType: [],
+        callsByStatus: [],
+        callsByAgent: [],
+        recentCalls: fallbackCalls?.slice(0, 10) || []
+      };
+    }
+
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.setDate(now.getDate() - 30));
+
+    // Handle the case where calls might be empty
+    if (!calls || calls.length === 0) {
+      return {
+        totalCalls: 0,
+        inboundCalls: 0,
+        outboundCalls: 0,
+        missedCalls: 0,
+        completedCalls: 0,
+        averageCallDuration: 0,
+        calls: [],
+        callsByDay: [],
+        callsByType: [],
+        callsByStatus: [],
+        callsByAgent: [],
+        recentCalls: []
+      };
+    }
+
+    return {
+      totalCalls: calls.length,
+      inboundCalls: calls.filter(call => call.call_type === 'inbound').length,
+      outboundCalls: calls.filter(call => call.call_type === 'outbound').length,
+      missedCalls: calls.filter(call => call.status === 'missed').length,
+      completedCalls: calls.filter(call => call.status === 'completed').length,
+      averageCallDuration: calls.reduce((acc, call) => acc + (call.call_duration || 0), 0) / calls.length,
+      calls: calls, // Add the raw calls data
+      callsByDay: groupCallsByDay(calls),
+      callsByType: groupCallsByType(calls),
+      callsByStatus: groupCallsByStatus(calls),
+      callsByAgent: await groupCallsByAgent(calls),
+      recentCalls: calls.slice(0, 10)
+    };
+  } catch (error) {
+    console.error('Error in getCallAnalytics:', error);
+    throw error;
+  }
+}
+
+export async function getLeadAnalytics(): Promise<any> {
+  try {
+    const { data: leads, error: leadsError } = await supabase
+      .from('lead_profiles')
+      .select('*');
+
+    if (leadsError) {
+      throw new AnalyticsError('Failed to fetch leads', leadsError);
+    }
+
+    const now = new Date();
+    const today = now.toISOString().split('T')[0];
+
+    // Handle the case where leads might be empty
+    if (!leads || leads.length === 0) {
+      return {
+        totalLeads: 0,
+        newLeadsToday: 0,
+        leadsConversionRate: 0,
+        leadsByStatus: [],
+        leadsBySource: [],
+        leadsByLocation: []
+      };
+    }
+
+    return {
+      totalLeads: leads.length,
+      newLeadsToday: leads.filter(lead =>
+        lead.first_contact_date && lead.first_contact_date.split('T')[0] === today
+      ).length,
+      leadsConversionRate: calculateConversionRate(leads),
+      leadsByStatus: groupLeadsByStatus(leads),
+      leadsBySource: groupLeadsBySource(leads),
+      leadsByLocation: groupLeadsByLocation(leads)
+    };
+  } catch (error) {
+    console.error('Error in getLeadAnalytics:', error);
+    throw error;
+  }
+}
+
+function groupCallsByDay(calls: any[]): any[] {
+  const grouped = calls.reduce((acc, call) => {
+    const date = new Date(call.start_time).toISOString().split('T')[0];
+    acc[date] = (acc[date] || 0) + 1;
+    return acc;
+  }, {});
+
+  return Object.entries(grouped).map(([date, count]) => ({
+    date,
+    calls: count
+  }));
+}
+
+function groupCallsByType(calls: any[]): any[] {
+  return Object.entries(
+    calls.reduce((acc, call) => {
+      acc[call.call_type] = (acc[call.call_type] || 0) + 1;
+      return acc;
+    }, {})
+  ).map(([type, count]) => ({ type, count }));
+}
+
+function groupCallsByStatus(calls: any[]): any[] {
+  return Object.entries(
+    calls.reduce((acc, call) => {
+      acc[call.status] = (acc[call.status] || 0) + 1;
+      return acc;
+    }, {})
+  ).map(([status, count]) => ({ status, count }));
+}
+
+async function groupCallsByAgent(calls: any[]): Promise<any[]> {
+  try {
+    // Get unique agent names from calls instead of users table
+    const agentMap = new Map(calls
+      .filter(call => call.agent_id && call.agent_name)
+      .map(call => [call.agent_id, call.agent_name]) as [string, string][]);
+
+    return Object.entries(
+      calls.reduce((acc, call) => {
+        const agentName = call.agent_name || 'Unassigned';
+        acc[agentName] = (acc[agentName] || 0) + 1;
+        return acc;
+      }, {})
+    ).map(([agent, count]) => ({ agent, count }));
+  } catch (error) {
+    console.error('Error in groupCallsByAgent:', error);
+    throw error;
+  }
+}
+
+function calculateConversionRate(leads: any[]): number {
+  const converted = leads.filter(lead => lead.successful_meetings > 0).length;
+  return leads.length > 0 ? (converted / leads.length) * 100 : 0;
+}
+
+function groupLeadsByStatus(leads: any[]): any[] {
+  return Object.entries(
+    leads.reduce((acc, lead) => {
+      const status = lead.successful_meetings > 0 ? 'Converted' : 'Active';
+      acc[status] = (acc[status] || 0) + 1;
+      return acc;
+    }, {})
+  ).map(([status, count]) => ({ status, count }));
+}
+
+function groupLeadsBySource(leads: any[]): any[] {
+  return Object.entries(
+    leads.reduce((acc, lead) => {
+      acc[lead.source || 'Unknown'] = (acc[lead.source || 'Unknown'] || 0) + 1;
+      return acc;
+    }, {})
+  ).map(([source, count]) => ({ source, count }));
+}
+
+function groupLeadsByLocation(leads: any[]): any[] {
+  return Object.entries(
+    leads.reduce((acc, lead) => {
+      acc[lead.location || 'Unknown'] = (acc[lead.location || 'Unknown'] || 0) + 1;
+      return acc;
+    }, {})
+  ).map(([location, count]) => ({ location, count }));
 }

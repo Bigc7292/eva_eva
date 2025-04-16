@@ -1,28 +1,41 @@
 import { useState, useEffect, useCallback } from 'react'
 import { toast } from '@/components/ui/use-toast'
+import { callsService } from '@/services/calls'
 
-interface Call {
+export interface Call {
   id: string
-  from: string
-  to: string
-  status: string
-  duration: number
+  lead_id: string
+  lead_phone: string
+  lead_name?: string
+  call_type: 'Inbound' | 'Outbound'
+  call_status: 'Completed' | 'Missed' | 'Voicemail'
+  audio_url?: string
+  detailed_call_summary?: string
+  sentiment_score?: number
+  key_topics?: string[]
+  next_steps?: string
+  agent_id?: string
+  agent_name?: string
   timestamp: string
+  created_at: string
+  updated_at: string
+  call_duration?: number
 }
 
-export function useCalls() {
+export function useCalls(): {
+  calls: Call[]
+  isLoading: boolean
+  makeCall: (number: string) => Promise<any>
+  refreshCalls: () => Promise<void>
+} {
   const [calls, setCalls] = useState<Call[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
-  useEffect(() => {
-    fetchCalls()
-  }, [])
-
-  const fetchCalls = async () => {
+  const fetchCalls = useCallback(async () => {
     try {
-      const response = await fetch('/api/calls')
-      const data = await response.json()
-      setCalls(data.calls)
+      setIsLoading(true)
+      const data = await callsService.getCalls()
+      setCalls(data)
     } catch (error) {
       toast({
         title: "Error",
@@ -30,26 +43,15 @@ export function useCalls() {
         variant: "destructive",
       })
     } finally {
-      setIsLoading = false
+      setIsLoading(false)
     }
-  }
+  }, [])
 
   const makeCall = useCallback(async (number: string) => {
     try {
       setIsLoading(true)
-      const response = await fetch('/api/calls', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ number }),
-      })
-      
-      if (!response.ok) {
-        throw new Error('Failed to make call')
-      }
-      
-      return await response.json()
+      const response = await callsService.makeCall('', number)
+      return response
     } catch (error) {
       console.error('Error making call:', error)
       throw error
@@ -58,10 +60,14 @@ export function useCalls() {
     }
   }, [])
 
+  useEffect(() => {
+    fetchCalls()
+  }, [fetchCalls])
+
   return {
     calls,
     isLoading,
     makeCall,
     refreshCalls: fetchCalls,
   }
-} 
+}

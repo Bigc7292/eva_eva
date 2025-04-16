@@ -1,103 +1,161 @@
-import { dummyCalls, dummyCallAnalytics, Call, CallAnalytics } from '@/lib/dummy-data'
-import type { InboundCall, OutboundCall } from '@/types'
+import { supabase } from '../lib/services/supabase';
+import type { Call, LeadProfile, CallAnalytics } from '../types/call';
+import { DatabaseError as SupabaseDbError } from '../lib/services/supabase';
 
-export const callsService = {
-  async makeCall(leadId: string, phone: string) {
+// Error types
+export class DatabaseError extends Error {
+  constructor(message: string, public details?: unknown) {
+    super(message);
+    this.name = 'DatabaseError';
+  }
+}
+
+export class AuthenticationError extends Error {
+  constructor(message: string, public details?: unknown) {
+    super(message);
+    this.name = 'AuthenticationError';
+  }
+}
+
+export class CallsService {
+  async getCall(id: string): Promise<Call | null> {
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 800))
+      const { data, error } = await supabase
+        .from('calls')
+        .select('*')
+        .eq('id', id)
+        .single();
 
-      // Generate a random call ID
-      const callId = `call-${Date.now()}`
-      console.log(`Making call to ${phone} for lead ${leadId}`)
+      if (error) {
+        throw new DatabaseError('Failed to fetch call', error);
+      }
 
-      return callId
+      if (!data) {
+        return null;
+      }
+
+      // Map to Call interface
+      return {
+        id: data.id,
+        call_id: data.call_id,
+        status: data.status,
+        start_time: data.start_time,
+        customer_phone: data.phone_number,
+        call_duration: data.duration,
+        agent_id: data.agent_id,
+        agent_name: data.agent_name,
+        created_at: data.created_at,
+        updated_at: data.updated_at,
+        // Additional fields for call detail page
+        leadId: data.metadata?.lead_id,
+        leadName: data.metadata?.lead_name || 'Unknown',
+        leadPhone: data.phone_number,
+        callType: data.metadata?.direction || 'Outbound',
+        callStatus: data.status === 'ended' ? 'Completed' : data.status,
+        callDuration: data.duration,
+        timestamp: data.start_time,
+        audioUrl: data.recording_url,
+        transcript: data.metadata?.transcript,
+        sentimentScore: data.metadata?.sentiment_score,
+        keyTopics: data.metadata?.key_topics || [],
+        nextSteps: data.metadata?.next_steps,
+        retellCallId: data.call_id
+      };
     } catch (error) {
-      console.error('Error making call:', error)
-      throw error
+      console.error('Error in getCall:', error);
+      throw error;
     }
-  },
+  }
 
-  async getCallHistory(leadId: string) {
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 400))
-    return dummyCalls.filter(call => call.leadId === leadId) as (InboundCall | OutboundCall)[]
-  },
+  async createLeadProfile(phone: string): Promise<LeadProfile> {
+    try {
+      const { data: existingLead, error: existingError } = await supabase
+        .from('lead_profiles')
+        .select('*')
+        .eq('phone', phone)
+        .single();
 
-  async getCalls() {
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 500))
-    return dummyCalls
-  },
+      if (existingError) {
+        throw new DatabaseError('Failed to check existing lead', existingError);
+      }
 
-  async getCall(id: string) {
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 300))
-    return dummyCalls.find(call => call.id === id)
-  },
+      if (existingLead) {
+        return existingLead;
+      }
 
-  async getCallsByLead(leadId: string) {
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 400))
-    return dummyCalls.filter(call => call.leadId === leadId)
-  },
+      const { data: newLead, error: createError } = await supabase
+        .from('lead_profiles')
+        .insert([{ phone }])
+        .select()
+        .single();
 
-  async getCallTranscript(callId: string) {
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 300))
-    const call = dummyCalls.find(call => call.id === callId)
-    return call?.transcript || null
-  },
+      if (createError) {
+        throw new DatabaseError('Failed to create lead profile', createError);
+      }
 
-  async getCallAudio(callId: string) {
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 300))
-    const call = dummyCalls.find(call => call.id === callId)
-    return call?.audioUrl || null
-  },
+      return newLead;
+    } catch (error) {
+      console.error('Error in createLeadProfile:', error);
+      throw error;
+    }
+  }
 
-  async getCallAnalytics() {
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 600))
-    return dummyCallAnalytics
-  },
+  async getCallAnalytics(): Promise<CallAnalytics> {
+    try {
+      console.log('Fetching call analytics from Supabase...');
 
-  async getCallAnalyticsByLead(leadId: string) {
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 500))
+      // Fetch call data using anon key authentication
+      const { data: callsData, error: callsError } = await supabase
+        .from('calls')
+        .select('*')
+        .order('start_time', { ascending: false });
 
-    const leadCalls = dummyCalls.filter(call => call.leadId === leadId)
+      if (callsError) {
+        console.error('Supabase error fetching calls:', callsError);
+        throw new DatabaseError('Failed to fetch calls', callsError);
+      }
 
-    return {
-      totalCalls: leadCalls.length,
-      inboundCalls: leadCalls.filter(call => call.callType === 'Inbound').length,
-      outboundCalls: leadCalls.filter(call => call.callType === 'Outbound').length,
-      missedCalls: leadCalls.filter(call => call.callStatus === 'Missed').length,
-      completedCalls: leadCalls.filter(call => call.callStatus === 'Completed').length,
-      averageCallDuration: leadCalls.length > 0
-        ? Math.floor(leadCalls.reduce((sum, call) => sum + call.callDuration, 0) / leadCalls.length)
-        : 0,
-      callsByDay: leadCalls.reduce((acc, call) => {
-        const date = new Date(call.timestamp).toISOString().split('T')[0]
-        const existingDay = acc.find(day => day.date === date)
+      console.log('Calls data from Supabase:', callsData);
 
-        if (existingDay) {
-          existingDay.count++
-        } else {
-          acc.push({ date, count: 1 })
-        }
+      // Calculate analytics
+      const totalCalls = callsData.length;
+      const successfulCalls = callsData.filter(call => call.status === 'completed' || call.status === 'ended').length;
+      const missedCalls = callsData.filter(call => call.status === 'missed' || call.status === 'no-answer').length;
+      const averageCallDuration = callsData.reduce((sum, call) => sum + (call.duration || 0), 0) / (totalCalls || 1);
 
-        return acc
-      }, [] as { date: string, count: number }[]),
-      callsByType: [
-        { type: 'Inbound', count: leadCalls.filter(call => call.callType === 'Inbound').length },
-        { type: 'Outbound', count: leadCalls.filter(call => call.callType === 'Outbound').length }
-      ],
-      callsByStatus: [
-        { status: 'Completed', count: leadCalls.filter(call => call.callStatus === 'Completed').length },
-        { status: 'Missed', count: leadCalls.filter(call => call.callStatus === 'Missed').length },
-        { status: 'Voicemail', count: leadCalls.filter(call => call.callStatus === 'Voicemail').length }
-      ]
+      // Map the data to ensure it matches our Call interface
+      const calls = callsData.map((call): Call => ({
+        id: call.id,
+        call_id: call.call_id || call.id,
+        status: call.status,
+        start_time: call.start_time,
+        customer_phone: call.phone_number,
+        call_duration: call.duration,
+        agent_id: call.agent_id,
+        agent_name: call.agent_name || (call.metadata?.agent_name),
+        created_at: call.created_at,
+        updated_at: call.updated_at,
+        // Add any additional fields from metadata
+        ...(call.metadata && typeof call.metadata === 'object' ? {
+          leadId: call.metadata.lead_id,
+          leadName: call.metadata.lead_name,
+          callType: call.metadata.direction || 'outbound'
+        } : {})
+      }));
+
+      return {
+        totalCalls,
+        successfulCalls,
+        missedCalls,
+        averageCallDuration,
+        calls
+      };
+    } catch (error) {
+      console.error('Error in getCallAnalytics:', error);
+      throw error;
     }
   }
 }
+
+// Export an instance of the service
+export const callsService = new CallsService();

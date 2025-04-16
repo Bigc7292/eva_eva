@@ -1,30 +1,87 @@
-// Function to generate a unique CRM ID
-export function generateCrmId(type: 'IN' | 'OUT' | 'CB' | 'NI' | 'NA'): string {
-  const year = new Date().getFullYear()
-  const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0')
-  return `CRM-${type}-${year}-${random}`
+/**
+ * Utility functions for CRM-related operations
+ */
+
+/**
+ * Formats a CRM ID with proper padding and prefix
+ * @param id The raw CRM ID
+ * @returns Formatted CRM ID string
+ */
+export function formatCrmId(id: string | number): string {
+  if (!id) return 'N/A';
+  
+  const idStr = String(id);
+  // Pad with zeros to ensure at least 6 digits
+  const paddedId = idStr.padStart(6, '0');
+  
+  // Add CRM prefix
+  return `TL-${paddedId}`;
 }
 
-// Function to validate CRM ID format
-export function isValidCrmId(crmId: string): boolean {
-  const pattern = /^CRM-(IN|OUT|CB|NI|NA)-\d{4}-\d{4}$/
-  return pattern.test(crmId)
-}
-
-// Function to get the type from CRM ID
-export function getCrmType(crmId: string): string {
-  const types = {
-    'IN': 'Inbound',
-    'OUT': 'Outbound',
-    'CB': 'Callback',
-    'NI': 'Not Interested',
-    'NA': 'No Answer'
+/**
+ * Formats a phone number to standard format
+ * @param phone The raw phone number
+ * @returns Formatted phone number
+ */
+export function formatPhoneNumber(phone: string): string {
+  if (!phone) return 'N/A';
+  
+  // Remove all non-numeric characters
+  const cleaned = phone.replace(/\D/g, '');
+  
+  // Check if it's a valid US phone number
+  if (cleaned.length === 10) {
+    return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
+  } else if (cleaned.length === 11 && cleaned[0] === '1') {
+    return `+1 (${cleaned.slice(1, 4)}) ${cleaned.slice(4, 7)}-${cleaned.slice(7)}`;
   }
-  const match = crmId.match(/^CRM-(IN|OUT|CB|NI|NA)-\d{4}-\d{4}$/)
-  return match ? types[match[1]] : 'Unknown'
+  
+  // Return original if not matching expected format
+  return phone;
 }
 
-// Function to format CRM ID for display
-export function formatCrmId(crmId: string): string {
-  return crmId.replace(/^(CRM-[A-Z]{2,3})-(\d{4})-(\d{4})$/, '$1-$2-$3')
-} 
+/**
+ * Calculates lead score based on various factors
+ * @param lead The lead object
+ * @returns Score from 0-100
+ */
+export function calculateLeadScore(lead: any): number {
+  if (!lead) return 0;
+  
+  let score = 0;
+  
+  // Basic information completeness
+  if (lead.name) score += 10;
+  if (lead.email) score += 10;
+  if (lead.phone) score += 10;
+  if (lead.address) score += 5;
+  
+  // Engagement factors
+  if (lead.lastContactDate) {
+    // Higher score for recent contact
+    const daysSinceContact = Math.floor((Date.now() - new Date(lead.lastContactDate).getTime()) / (1000 * 60 * 60 * 24));
+    if (daysSinceContact < 7) score += 20;
+    else if (daysSinceContact < 30) score += 10;
+    else score += 5;
+  }
+  
+  // Interaction history
+  if (lead.callCount) score += Math.min(lead.callCount * 5, 15);
+  if (lead.emailCount) score += Math.min(lead.emailCount * 3, 15);
+  
+  // Cap at 100
+  return Math.min(score, 100);
+}
+
+/**
+ * Returns a color based on lead score
+ * @param score The lead score (0-100)
+ * @returns CSS color class
+ */
+export function getLeadScoreColor(score: number): string {
+  if (score >= 80) return 'text-green-500';
+  if (score >= 60) return 'text-blue-500';
+  if (score >= 40) return 'text-yellow-500';
+  if (score >= 20) return 'text-orange-500';
+  return 'text-red-500';
+}

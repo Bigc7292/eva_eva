@@ -25,13 +25,10 @@ for (const path of envPaths) {
 
 // Validate required environment variables
 const requiredEnvVars = [
-  'NEXT_PUBLIC_RETELL_API_KEY',
-  'TWILIO_ACCOUNT_SID',
-  'TWILIO_AUTH_TOKEN',
-  'WEBHOOK_URL',
-  'TWILIO_SIP_DOMAIN',
-  'TWILIO_SIP_USERNAME',
-  'TWILIO_SIP_PASSWORD'
+  'NEXT_PUBLIC_VAPI_API_KEY',
+  'NEXT_PUBLIC_VAPI_ASSISTANT_ID',
+  'NEXT_PUBLIC_SUPABASE_URL',
+  'NEXT_PUBLIC_SUPABASE_ANON_KEY'
 ];
 
 const missingVars = [];
@@ -49,28 +46,30 @@ const config = {
   twilio: {
     accountSid: process.env.TWILIO_ACCOUNT_SID,
     authToken: process.env.TWILIO_AUTH_TOKEN,
-    sipDomain: process.env.TWILIO_SIP_DOMAIN,
-    sipUsername: process.env.TWILIO_SIP_USERNAME,
-    sipPassword: process.env.TWILIO_SIP_PASSWORD,
-    fromNumber: process.env.TWILIO_FROM_NUMBER || '+13433149954'
+    fromNumber: process.env.NEXT_PUBLIC_TWILIO_PHONE_NUMBER || '+19143713101'
   },
-  retell: {
-    apiKey: process.env.NEXT_PUBLIC_RETELL_API_KEY,
-    agentId: 'agent_1fb1845b5bd5dcf52092c82ad8',
-    webhookUrl: process.env.WEBHOOK_URL
+  vapi: {
+    apiKey: process.env.NEXT_PUBLIC_VAPI_API_KEY,
+    privateApiKey: process.env.NEXT_PRIVATE_VAPI_API_KEY || process.env.NEXT_PUBLIC_VAPI_API_KEY,
+    assistantId: process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID,
+    apiUrl: process.env.NEXT_PUBLIC_VAPI_API_URL || 'https://api.vapi.ai'
+  },
+  supabase: {
+    url: process.env.NEXT_PUBLIC_SUPABASE_URL,
+    anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   },
   server: {
-    port: process.env.PORT || 3000,
+    port: process.env.PORT || 3001,
     timezone: process.env.TZ || 'Asia/Dubai'
   }
 };
 
 console.log('Configuration loaded successfully');
 console.log('Environment variables present:', {
-  TWILIO_ACCOUNT_SID: !!process.env.TWILIO_ACCOUNT_SID,
-  TWILIO_AUTH_TOKEN: !!process.env.TWILIO_AUTH_TOKEN,
-  TWILIO_SIP_DOMAIN: !!process.env.TWILIO_SIP_DOMAIN,
-  WEBHOOK_URL: process.env.WEBHOOK_URL
+  NEXT_PUBLIC_VAPI_API_KEY: !!process.env.NEXT_PUBLIC_VAPI_API_KEY,
+  NEXT_PUBLIC_VAPI_ASSISTANT_ID: !!process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID,
+  NEXT_PUBLIC_SUPABASE_URL: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 });
 
-export default config; 
+export default config;

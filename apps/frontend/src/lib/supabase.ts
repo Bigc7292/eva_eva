@@ -1,22 +1,11 @@
-import { createClient } from '@supabase/supabase-js'
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-
-console.log('Supabase URL:', supabaseUrl)
-console.log('Supabase key length:', supabaseKey?.length)
-
-export const supabase = createClient(supabaseUrl, supabaseKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-  },
-})
+// Re-export supabase from services to maintain backward compatibility
+import { supabase } from './services/supabase';
+export { supabase };
 
 // Test the connection and table
 async function testSupabaseConnection() {
   try {
-    // Test general connection
+    // Test general connection using anon key
     const { data: tableInfo, error: tableError } = await supabase
       .from('calls')
       .select('*')
@@ -24,31 +13,17 @@ async function testSupabaseConnection() {
 
     if (tableError) {
       console.error('Error accessing calls table:', tableError)
-    } else {
-      console.log('Successfully connected to calls table')
-      
-      // Insert a test record
-      const { data: insertData, error: insertError } = await supabase
-        .from('calls')
-        .insert([
-          {
-            call_id: 'test-call-' + Date.now(),
-            status: 'test',
-            start_time: new Date().toISOString(),
-            customer_phone: '+1234567890',
-          }
-        ])
-        .select()
-
-      if (insertError) {
-        console.error('Error inserting test record:', insertError)
-      } else {
-        console.log('Successfully inserted test record:', insertData)
-      }
+      return
     }
+
+    console.log('Successfully connected to calls table')
+
+    // Import the table structure check dynamically to avoid circular dependencies
+    const { checkTableStructure } = await import('./check-table-structure')
+    await checkTableStructure(supabase)
   } catch (error) {
     console.error('Error testing Supabase connection:', error)
   }
 }
 
-testSupabaseConnection() 
+testSupabaseConnection()

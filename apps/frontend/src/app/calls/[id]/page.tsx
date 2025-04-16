@@ -5,21 +5,25 @@ import { useParams, useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Heading } from '@/components/ui/heading'
-import { 
-  Phone, 
-  User, 
-  Calendar, 
-  Clock, 
-  FileText, 
+import {
+  Phone,
+  User,
+  Calendar,
+  Clock,
+  FileText,
   ArrowLeft,
   PhoneIncoming,
   PhoneOutgoing,
-  MessageSquare
+  MessageSquare,
+  Play,
+  Volume2
 } from 'lucide-react'
 import { callsService } from '@/services/calls'
 import { leadsService } from '@/services/leads'
-import { Call } from '@/lib/dummy-data'
+import type { Call } from '@/services/leads'
 import { formatDistanceToNow, format } from 'date-fns'
+import { CallRecording } from '@/components/leads/CallRecording'
+import { supabase } from '@/lib/services/supabase'
 
 export default function CallDetailPage() {
   const params = useParams()
@@ -27,19 +31,63 @@ export default function CallDetailPage() {
   const [call, setCall] = useState<Call | null>(null)
   const [loading, setLoading] = useState(true)
   const [showTranscript, setShowTranscript] = useState(false)
-  
+
   useEffect(() => {
     if (params.id) {
       loadCallData(params.id as string)
     }
   }, [params.id])
-  
+
   const loadCallData = async (id: string) => {
     try {
       setLoading(true)
-      const callData = await callsService.getCall(id)
-      if (callData) {
-        setCall(callData)
+
+      // First try to get call from Supabase
+      try {
+        const { data: supabaseCall, error } = await supabase
+          .from('calls')
+          .select('*')
+          .eq('id', id)
+          .single()
+
+        if (error) {
+          console.error('Error loading call from Supabase:', error)
+          // Fall back to service
+          const callData = await callsService.getCall(id)
+          if (callData) {
+            setCall(callData)
+          }
+        } else if (supabaseCall) {
+          // Map Supabase call to the expected format
+          const formattedCall = {
+            id: supabaseCall.id.toString(),
+            retellCallId: supabaseCall.call_id,
+            timestamp: supabaseCall.start_time,
+            callDuration: supabaseCall.duration || 0,
+            callType: supabaseCall.metadata?.direction || 'Outbound',
+            callStatus: supabaseCall.status === 'ended' ? 'Completed' : supabaseCall.status,
+            audioUrl: supabaseCall.recording_url,
+            detailedCallSummary: supabaseCall.metadata?.summary || '',
+            leadId: supabaseCall.metadata?.lead_id || '',
+            leadName: supabaseCall.metadata?.lead_name || 'Unknown',
+            leadPhone: supabaseCall.phone_number,
+            transcript: null
+          }
+          setCall(formattedCall)
+        } else {
+          // Fall back to service if no call found
+          const callData = await callsService.getCall(id)
+          if (callData) {
+            setCall(callData)
+          }
+        }
+      } catch (supabaseError) {
+        console.error('Error with Supabase call:', supabaseError)
+        // Fall back to service
+        const callData = await callsService.getCall(id)
+        if (callData) {
+          setCall(callData)
+        }
       }
     } catch (error) {
       console.error('Error loading call:', error)
@@ -47,24 +95,24 @@ export default function CallDetailPage() {
       setLoading(false)
     }
   }
-  
+
   const handleViewLead = () => {
     if (call) {
       router.push(`/leads/${call.leadId}`)
     }
   }
-  
+
   if (loading) {
     return (
       <div className="flex-1 p-8 flex items-center justify-center">
         <div className="flex flex-col items-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           <p className="mt-2">Loading call details...</p>
         </div>
       </div>
     )
   }
-  
+
   if (!call) {
     return (
       <div className="flex-1 p-8">
@@ -79,7 +127,7 @@ export default function CallDetailPage() {
       </div>
     )
   }
-  
+
   // Format date for display
   const formatDate = (dateString: string) => {
     try {
@@ -88,7 +136,7 @@ export default function CallDetailPage() {
       return 'Invalid date'
     }
   }
-  
+
   // Format relative time
   const formatRelativeTime = (dateString: string) => {
     try {
@@ -97,7 +145,7 @@ export default function CallDetailPage() {
       return 'Unknown'
     }
   }
-  
+
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
       <div className="flex items-center justify-between">
@@ -112,13 +160,13 @@ export default function CallDetailPage() {
           </Button>
         </div>
       </div>
-      
+
       <Card className="p-6">
         <div className="flex justify-between items-start mb-6">
           <div className="flex items-center gap-3">
             <div className={`p-3 rounded-full ${call.callType === 'Inbound' ? 'bg-green-100' : 'bg-blue-100'}`}>
-              {call.callType === 'Inbound' ? 
-                <PhoneIncoming className="h-6 w-6 text-green-600" /> : 
+              {call.callType === 'Inbound' ?
+                <PhoneIncoming className="h-6 w-6 text-green-600" /> :
                 <PhoneOutgoing className="h-6 w-6 text-blue-600" />
               }
             </div>
@@ -134,7 +182,7 @@ export default function CallDetailPage() {
             <p className="text-xs text-muted-foreground">{formatRelativeTime(call.timestamp)}</p>
           </div>
         </div>
-        
+
         <div className="grid gap-6 md:grid-cols-2">
           <div>
             <h3 className="text-lg font-medium mb-3">Call Details</h3>
@@ -151,7 +199,7 @@ export default function CallDetailPage() {
                 <Clock className="h-4 w-4 text-muted-foreground" />
                 <span>
                   Duration: {
-                    call.callStatus === 'Completed' 
+                    call.callStatus === 'Completed'
                       ? `${Math.floor(call.callDuration / 60)}m ${call.callDuration % 60}s`
                       : 'N/A'
                   }
@@ -168,27 +216,27 @@ export default function CallDetailPage() {
                 </div>
               )}
             </div>
-            
+
             {call.detailedCallSummary && (
               <div className="mt-6">
                 <h3 className="text-lg font-medium mb-3">Call Summary</h3>
                 <p className="text-sm">{call.detailedCallSummary}</p>
               </div>
             )}
-            
+
             {call.keyTopics && call.keyTopics.length > 0 && (
               <div className="mt-6">
                 <h3 className="text-lg font-medium mb-3">Key Topics</h3>
                 <div className="flex flex-wrap gap-2">
-                  {call.keyTopics.map((topic, index) => (
-                    <span key={index} className="px-2 py-1 bg-muted rounded-md text-sm">
+                  {call.keyTopics.map((topic) => (
+                    <span key={`topic-${topic}`} className="px-2 py-1 bg-muted rounded-md text-sm">
                       {topic}
                     </span>
                   ))}
                 </div>
               </div>
             )}
-            
+
             {call.nextSteps && (
               <div className="mt-6 p-3 bg-blue-50 rounded-md">
                 <h3 className="font-medium mb-1">Next Steps</h3>
@@ -196,33 +244,34 @@ export default function CallDetailPage() {
               </div>
             )}
           </div>
-          
+
           <div>
             {call.audioUrl && (
               <div className="mb-6">
                 <h3 className="text-lg font-medium mb-3">Call Recording</h3>
                 <div className="bg-muted p-4 rounded-md">
-                  <audio controls className="w-full">
-                    <source src={call.audioUrl} type="audio/mpeg" />
-                    Your browser does not support the audio element.
-                  </audio>
+                  <CallRecording
+                    audioUrl={call.audioUrl}
+                    callId={call.retellCallId || call.id}
+                    timestamp={call.timestamp}
+                  />
                 </div>
               </div>
             )}
-            
+
             {call.transcript && (
               <div>
                 <div className="flex justify-between items-center mb-3">
                   <h3 className="text-lg font-medium">Call Transcript</h3>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => setShowTranscript(!showTranscript)}
                   >
                     {showTranscript ? 'Hide' : 'Show'} Transcript
                   </Button>
                 </div>
-                
+
                 {showTranscript && (
                   <div className="bg-muted p-4 rounded-md max-h-96 overflow-y-auto">
                     <pre className="text-sm whitespace-pre-line font-sans">{call.transcript}</pre>
@@ -230,7 +279,7 @@ export default function CallDetailPage() {
                 )}
               </div>
             )}
-            
+
             {call.sentimentScore !== undefined && (
               <div className="mt-6">
                 <h3 className="text-lg font-medium mb-3">Call Sentiment</h3>
@@ -240,8 +289,8 @@ export default function CallDetailPage() {
                     <span className="text-sm">Positive</span>
                   </div>
                   <div className="w-full h-2 bg-gray-200 rounded-full">
-                    <div 
-                      className="h-full bg-blue-500 rounded-full" 
+                    <div
+                      className="h-full bg-blue-500 rounded-full"
                       style={{ width: `${call.sentimentScore * 100}%` }}
                     />
                   </div>

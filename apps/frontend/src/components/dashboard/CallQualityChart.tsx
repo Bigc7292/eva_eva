@@ -25,14 +25,12 @@ export function CallQualityChart({ quality }: CallQualityProps) {
     ...baseChartOptions,
     cutout: '70%',
     animation: {
-      ...baseChartOptions.animation,
-      animateRotate: true,
-      animateScale: true
+      duration: 1000,
+      easing: 'easeOutQuart'
     },
     hover: {
       mode: 'nearest',
-      intersect: true,
-      animationDuration: 400
+      intersect: true
     }
   }
 
@@ -69,4 +67,4 @@ export function CallQualityChart({ quality }: CallQualityProps) {
       </div>
     </Card>
   )
-} 
+}
