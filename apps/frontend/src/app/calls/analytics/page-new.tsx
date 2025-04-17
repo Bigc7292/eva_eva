@@ -19,70 +19,26 @@ import {
 } from 'lucide-react'
 import { CheckCircleIcon, LoaderIcon } from '@/components/ui/icons/custom-icons'
 
-// Define types for analytics data
-interface CallsByStatus {
-  status: string;
-  count: number;
-}
-
-interface CallsByDay {
-  date: string;
-  count: number;
-}
-
-interface CallsByType {
-  type: string;
-  count: number;
-}
-
-interface CallDurationStats {
-  average: number;
-  min: number;
-  max: number;
-  total: number;
-}
-
-interface CallAnalytics {
-  totalCalls: number;
-  callsByStatus: CallsByStatus[];
-  callsByDay: CallsByDay[];
-  callsByType: CallsByType[];
-  durationStats: CallDurationStats;
-  successRate: number;
-}
-
 export default function CallAnalyticsPage() {
-  const [analytics, setAnalytics] = useState<CallAnalytics | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [timeRange, setTimeRange] = useState('7d')
   const { toast } = useToast()
-
-  // Colors for charts
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#FF6B6B', '#6BCB77', '#4D96FF']
-
-  // Status colors
-  const STATUS_COLORS: Record<string, string> = {
-    'Completed': '#10B981',
-    'Failed': '#EF4444',
-    'In Progress': '#3B82F6',
-    'Initiated': '#F59E0B',
-    'Ringing': '#8B5CF6',
-    'Answered': '#6366F1',
-    'Meeting Booked': '#EC4899'
+  
+  // Format duration in seconds to minutes:seconds
+  const formatDuration = (seconds) => {
+    const minutes = Math.floor(seconds / 60)
+    const remainingSeconds = Math.round(seconds % 60)
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
   }
-
+  
   // Fetch analytics data
   const fetchAnalytics = async () => {
     setLoading(true)
     try {
-      const response = await fetch(`/api/calls/analytics?timeRange=${timeRange}`)
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch analytics data')
-      }
-
-      const data = await response.json()
-      setAnalytics(data.analytics)
+      // Simulated analytics data
+      setTimeout(() => {
+        setLoading(false)
+      }, 1000)
     } catch (error) {
       console.error('Error fetching analytics:', error)
       toast({
@@ -90,88 +46,20 @@ export default function CallAnalyticsPage() {
         description: 'Failed to fetch analytics data',
         variant: 'destructive'
       })
-    } finally {
       setLoading(false)
     }
   }
-
-  // Format duration in seconds to minutes:seconds
-  const formatDuration = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60)
-    const remainingSeconds = Math.round(seconds % 60)
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
-  }
-
-  // Export analytics data to CSV
-  const exportToCsv = () => {
-    if (!analytics) return
-
-    // Create CSV content
-    const headers = ['Date', 'Total Calls', 'Completed', 'Failed', 'In Progress', 'Success Rate']
-
-    // Create a map of dates to counts
-    const dateMap = new Map()
-    analytics.callsByDay.forEach(day => {
-      dateMap.set(day.date, { total: day.count, completed: 0, failed: 0, inProgress: 0 })
-    })
-
-    // Fill in status counts by date (this is simplified - in a real app you'd have this data from the API)
-    // For this example, we'll just make up some numbers based on the total
-    dateMap.forEach((value, key) => {
-      const total = value.total
-      value.completed = Math.round(total * (analytics.successRate / 100))
-      value.failed = Math.round(total * ((100 - analytics.successRate) / 100))
-      value.inProgress = total - value.completed - value.failed
-    })
-
-    // Convert to CSV rows
-    const rows = Array.from(dateMap.entries()).map(([date, counts]) => {
-      const successRate = counts.total > 0
-        ? ((counts.completed / counts.total) * 100).toFixed(1)
-        : '0.0'
-
-      return [
-        date,
-        counts.total,
-        counts.completed,
-        counts.failed,
-        counts.inProgress,
-        `${successRate}%`
-      ].join(',')
-    })
-
-    const csvContent = [
-      headers.join(','),
-      ...rows
-    ].join('\n')
-
-    // Create download link
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.setAttribute('href', url)
-    link.setAttribute('download', `call_analytics_${timeRange}.csv`)
-    link.style.visibility = 'hidden'
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-
-    toast({
-      title: 'Export Complete',
-      description: 'Analytics data has been exported to CSV',
-    })
-  }
-
+  
   // Effect to fetch analytics when time range changes
   useEffect(() => {
     fetchAnalytics()
   }, [timeRange])
-
+  
   return (
     <div className="container mx-auto py-8">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">Call Analytics</h1>
-
+        
         <div className="flex items-center space-x-4">
           <Select value={timeRange} onValueChange={setTimeRange}>
             <SelectTrigger className="w-[180px]">
@@ -185,36 +73,22 @@ export default function CallAnalyticsPage() {
               <SelectItem value="all">All time</SelectItem>
             </SelectContent>
           </Select>
-
-          <Button
-            variant="outline"
+          
+          <Button 
+            variant="outline" 
             onClick={fetchAnalytics}
             disabled={loading}
           >
             <RefreshCw className="mr-2 h-4 w-4" />
             Refresh
           </Button>
-
-          <Button
-            variant="outline"
-            onClick={exportToCsv}
-            disabled={!analytics || loading}
-          >
-            <Download className="mr-2 h-4 w-4" />
-            Export
-          </Button>
         </div>
       </div>
-
+      
       {loading ? (
         <div className="flex items-center justify-center py-20">
           <LoaderIcon className="h-8 w-8 animate-spin text-primary" />
           <span className="ml-3 text-lg">Loading analytics data...</span>
-        </div>
-      ) : !analytics ? (
-        <div className="text-center py-20 text-muted-foreground">
-          <AlertCircle className="h-12 w-12 mx-auto mb-4 opacity-20" />
-          <p className="text-lg">No analytics data available</p>
         </div>
       ) : (
         <div className="space-y-8">
@@ -229,11 +103,11 @@ export default function CallAnalyticsPage() {
               <CardContent>
                 <div className="flex items-center">
                   <Phone className="h-5 w-5 text-primary mr-2" />
-                  <div className="text-3xl font-bold">{analytics.totalCalls}</div>
+                  <div className="text-3xl font-bold">0</div>
                 </div>
               </CardContent>
             </Card>
-
+            
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -243,11 +117,11 @@ export default function CallAnalyticsPage() {
               <CardContent>
                 <div className="flex items-center">
                   <CheckCircleIcon className="h-5 w-5 text-green-500 mr-2" />
-                  <div className="text-3xl font-bold">{analytics.successRate}%</div>
+                  <div className="text-3xl font-bold">0%</div>
                 </div>
               </CardContent>
             </Card>
-
+            
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -257,11 +131,11 @@ export default function CallAnalyticsPage() {
               <CardContent>
                 <div className="flex items-center">
                   <Clock className="h-5 w-5 text-primary mr-2" />
-                  <div className="text-3xl font-bold">{formatDuration(analytics.durationStats.average)}</div>
+                  <div className="text-3xl font-bold">0:00</div>
                 </div>
               </CardContent>
             </Card>
-
+            
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -272,13 +146,13 @@ export default function CallAnalyticsPage() {
                 <div className="flex items-center">
                   <Clock className="h-5 w-5 text-primary mr-2" />
                   <div className="text-3xl font-bold">
-                    {Math.floor(analytics.durationStats.total / 60)} min
+                    0 min
                   </div>
                 </div>
               </CardContent>
             </Card>
           </div>
-
+          
           {/* Charts */}
           <Tabs defaultValue="daily">
             <TabsList className="grid w-full grid-cols-3">
@@ -295,7 +169,7 @@ export default function CallAnalyticsPage() {
                 Call Types
               </TabsTrigger>
             </TabsList>
-
+            
             <TabsContent value="daily">
               <Card>
                 <CardHeader>
@@ -315,7 +189,7 @@ export default function CallAnalyticsPage() {
                 </CardContent>
               </Card>
             </TabsContent>
-
+            
             <TabsContent value="status">
               <Card>
                 <CardHeader>
@@ -335,7 +209,7 @@ export default function CallAnalyticsPage() {
                 </CardContent>
               </Card>
             </TabsContent>
-
+            
             <TabsContent value="type">
               <Card>
                 <CardHeader>
@@ -356,7 +230,7 @@ export default function CallAnalyticsPage() {
               </Card>
             </TabsContent>
           </Tabs>
-
+          
           {/* Duration Stats */}
           <Card>
             <CardHeader>
@@ -372,25 +246,25 @@ export default function CallAnalyticsPage() {
                     Minimum Duration
                   </div>
                   <div className="text-3xl font-bold">
-                    {formatDuration(analytics.durationStats.min)}
+                    0:00
                   </div>
                 </div>
-
+                
                 <div className="flex flex-col items-center">
                   <div className="text-sm font-medium text-muted-foreground mb-2">
                     Average Duration
                   </div>
                   <div className="text-3xl font-bold">
-                    {formatDuration(analytics.durationStats.average)}
+                    0:00
                   </div>
                 </div>
-
+                
                 <div className="flex flex-col items-center">
                   <div className="text-sm font-medium text-muted-foreground mb-2">
                     Maximum Duration
                   </div>
                   <div className="text-3xl font-bold">
-                    {formatDuration(analytics.durationStats.max)}
+                    0:00
                   </div>
                 </div>
               </div>

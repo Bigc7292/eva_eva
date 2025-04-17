@@ -97,7 +97,7 @@ export default function SingleCallPage() {
     setCallStatus(null)
 
     try {
-      const response = await fetch('/api/calls/single', {
+      const response = await fetch('/api/calls', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

@@ -57,6 +57,9 @@ export async function POST(request: NextRequest) {
         metadata: metadata || {}
       })
 
+    // Log the result
+    console.log('Call data stored in Supabase:', { callData, error })
+
     if (error) {
       console.error('Error storing call data:', error)
     }

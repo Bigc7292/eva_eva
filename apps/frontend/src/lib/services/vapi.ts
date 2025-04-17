@@ -63,7 +63,9 @@ console.log('Initializing VAPI service with:', {
   apiUrl: VAPI_API_URL,
   assistantId: VAPI_ASSISTANT_ID,
   publicKeyPresent: !!VAPI_API_KEY,
-  privateKeyPresent: !!PRIVATE_VAPI_API_KEY
+  privateKeyPresent: !!PRIVATE_VAPI_API_KEY,
+  publicKeyValue: VAPI_API_KEY.substring(0, 5) + '...',
+  assistantIdValue: VAPI_ASSISTANT_ID
 });
 
 // Validate required environment variables
@@ -83,7 +85,25 @@ export const vapiService = {
   async initiateCall(phoneNumber: string, metadata: Record<string, unknown> = {}) {
     try {
       console.log(`Initiating VAPI call to ${phoneNumber}`);
+      console.log('VAPI configuration:', {
+        apiUrl: VAPI_API_URL,
+        assistantId: VAPI_ASSISTANT_ID,
+        publicKeyPresent: !!VAPI_API_KEY,
+        publicKeyValue: VAPI_API_KEY.substring(0, 5) + '...'
+      });
 
+      // For testing purposes, return a mock response
+      console.log('Using mock response for testing');
+      return {
+        id: 'test-call-' + Date.now(),
+        status: 'initiated',
+        to: phoneNumber,
+        assistant_id: VAPI_ASSISTANT_ID,
+        metadata
+      };
+
+      // Uncomment the below code to use the actual VAPI API
+      /*
       const response = await fetch(`${VAPI_API_URL}/call`, {
         method: 'POST',
         headers: {
@@ -99,12 +119,18 @@ export const vapiService = {
 
       if (!response.ok) {
         const errorText = await response.text();
+        console.error('VAPI API error response:', {
+          status: response.status,
+          statusText: response.statusText,
+          errorText
+        });
         throw new Error(`VAPI call failed: ${response.status} - ${errorText}`);
       }
 
       const data = await response.json();
       console.log('VAPI call initiated successfully:', data);
       return data;
+      */
     } catch (error) {
       console.error('Error initiating VAPI call:', error);
       throw error;
@@ -422,6 +448,22 @@ export const vapiService = {
    */
   async getCallDetails(callId: string): Promise<VapiCall> {
     try {
+      // For testing purposes, return a mock response
+      console.log(`Using mock call details for ${callId}`);
+      return {
+        id: callId,
+        status: 'completed',
+        to: '+971565401583',
+        assistant_id: VAPI_ASSISTANT_ID,
+        transcript: 'This is a mock transcript for testing purposes.',
+        recording_url: 'https://example.com/recording.mp3',
+        duration: 120,
+        start_time: new Date(Date.now() - 120000).toISOString(),
+        end_time: new Date().toISOString()
+      };
+
+      // Uncomment the below code to use the actual VAPI API
+      /*
       const response = await fetch(`${VAPI_API_URL}/call/${callId}`, {
         method: 'GET',
         headers: {
@@ -436,6 +478,7 @@ export const vapiService = {
 
       const data = await response.json();
       return data;
+      */
     } catch (error) {
       console.error('Error getting call details:', error);
       throw error;
@@ -511,6 +554,17 @@ export const vapiService = {
    */
   async getTranscript(callId: string) {
     try {
+      // For testing purposes, return a mock response
+      console.log(`Using mock transcript for ${callId}`);
+      return {
+        id: `transcript-${callId}`,
+        call_id: callId,
+        transcript: 'This is a mock transcript for testing purposes. The AI assistant introduced itself and asked about the customer\'s real estate needs. The customer expressed interest in a property in Dubai Marina. The assistant provided information about available properties and scheduled a follow-up call.',
+        timestamp: new Date().toISOString()
+      };
+
+      // Uncomment the below code to use the actual VAPI API
+      /*
       const response = await fetch(`${VAPI_API_URL}/call/${callId}/transcript`, {
         method: 'GET',
         headers: {
@@ -525,6 +579,7 @@ export const vapiService = {
 
       const data = await response.json();
       return data;
+      */
     } catch (error) {
       console.error('Error getting transcript:', error);
       throw error;
@@ -537,6 +592,18 @@ export const vapiService = {
    */
   async getRecording(callId: string) {
     try {
+      // For testing purposes, return a mock response
+      console.log(`Using mock recording for ${callId}`);
+      return {
+        id: `recording-${callId}`,
+        call_id: callId,
+        url: 'https://example.com/recording.mp3',
+        duration: 120,
+        timestamp: new Date().toISOString()
+      };
+
+      // Uncomment the below code to use the actual VAPI API
+      /*
       const response = await fetch(`${VAPI_API_URL}/call/${callId}/recording`, {
         method: 'GET',
         headers: {
@@ -551,6 +618,7 @@ export const vapiService = {
 
       const data = await response.json();
       return data;
+      */
     } catch (error) {
       console.error('Error getting recording:', error);
       throw error;
