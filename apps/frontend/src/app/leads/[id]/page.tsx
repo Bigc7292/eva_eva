@@ -190,11 +190,11 @@ export default function LeadProfilePage() {
         <Card className="p-6 md:col-span-2">
           <div className="flex justify-between items-start mb-4">
             <div>
-              <h2 className="text-2xl font-bold">{lead.name}</h2>
-              <p className="text-muted-foreground">{lead.crmId}</p>
+              <h2 className="text-2xl font-bold">{lead.name || 'Unknown'}</h2>
+              <p className="text-muted-foreground">{lead.lead_id}</p>
             </div>
             <div className="flex items-center gap-1">
-              {renderRating(lead.rating)}
+              {renderRating(lead.rating || 0)}
             </div>
           </div>
 
@@ -202,38 +202,38 @@ export default function LeadProfilePage() {
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <Phone className="h-4 w-4 text-muted-foreground" />
-                <span>{lead.phone}</span>
+                <span>{lead.phone_number || 'N/A'}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Mail className="h-4 w-4 text-muted-foreground" />
-                <span>{lead.email}</span>
+                <span>{lead.email || 'N/A'}</span>
               </div>
               <div className="flex items-center gap-2">
                 <MapPin className="h-4 w-4 text-muted-foreground" />
-                <span>{lead.location}</span>
+                <span>{lead.location || 'N/A'}</span>
               </div>
               <div className="flex items-center gap-2">
                 <User className="h-4 w-4 text-muted-foreground" />
-                <span>{lead.gender}</span>
+                <span>{lead.nationality || 'N/A'}</span>
               </div>
             </div>
 
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <Building className="h-4 w-4 text-muted-foreground" />
-                <span>Interest: {lead.propertyInterest}</span>
+                <span>Interest: {lead.interest || 'N/A'}</span>
               </div>
               <div className="flex items-center gap-2">
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
-                <span>Budget: {lead.budgetRange}</span>
+                <span>Budget: {lead.budget || 'N/A'}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
-                <span>Created: {formatDate(lead.createdAt)}</span>
+                <span>Created: {formatDate(lead.created_at || new Date().toISOString())}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4 text-muted-foreground" />
-                <span>Last Contact: {formatRelativeTime(lead.lastContactDate)}</span>
+                <span>Last Contact: {formatRelativeTime(lead.last_contact_date || lead.created_at || new Date().toISOString())}</span>
               </div>
             </div>
           </div>
@@ -241,33 +241,47 @@ export default function LeadProfilePage() {
           <div className="mt-4">
             <h3 className="font-medium mb-2">Preferred Areas</h3>
             <div className="flex flex-wrap gap-2">
-              {lead.preferredAreas.map((area, index) => (
-                <span key={index} className="px-2 py-1 bg-muted rounded-md text-sm">
-                  {area}
-                </span>
-              ))}
+              {lead.preferred_areas ? (
+                Array.isArray(lead.preferred_areas) ? (
+                  lead.preferred_areas.map((area, index) => (
+                    <span key={index} className="px-2 py-1 bg-muted rounded-md text-sm">
+                      {area}
+                    </span>
+                  ))
+                ) : (
+                  <span className="px-2 py-1 bg-muted rounded-md text-sm">
+                    {lead.preferred_areas}
+                  </span>
+                )
+              ) : (
+                <span className="text-muted-foreground text-sm">No preferred areas specified</span>
+              )}
             </div>
           </div>
 
           <div className="mt-4">
             <h3 className="font-medium mb-2">Notes</h3>
-            <p className="text-sm text-muted-foreground">{lead.notes}</p>
+            <p className="text-sm text-muted-foreground">{lead.notes || 'No notes available'}</p>
           </div>
 
-          {lead.aiNotes && (
+          {lead.summary && (
             <div className="mt-4 p-3 bg-blue-50 rounded-md">
               <h3 className="font-medium mb-1 flex items-center">
                 <BarChart className="h-4 w-4 mr-1" />
                 AI Analysis
               </h3>
-              <p className="text-sm">{lead.aiNotes}</p>
-              <div className="mt-2 w-full h-2 bg-gray-200 rounded-full">
-                <div
-                  className="h-full bg-blue-500 rounded-full"
-                  style={{ width: `${lead.aiSentiment * 100}%` }}
-                />
-              </div>
-              <p className="text-xs text-right mt-1">Sentiment Score: {(lead.aiSentiment * 100).toFixed(0)}%</p>
+              <p className="text-sm">{lead.summary}</p>
+              {lead.sentiment && (
+                <>
+                  <div className="mt-2 w-full h-2 bg-gray-200 rounded-full">
+                    <div
+                      className="h-full bg-blue-500 rounded-full"
+                      style={{ width: `${(lead.sentiment || 0.5) * 100}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-right mt-1">Sentiment Score: {((lead.sentiment || 0.5) * 100).toFixed(0)}%</p>
+                </>
+              )}
             </div>
           )}
         </Card>
@@ -280,11 +294,12 @@ export default function LeadProfilePage() {
               <div className="flex justify-between items-center mb-1">
                 <span className="text-sm">Status</span>
                 <span className={`px-2 py-1 rounded-full text-xs font-medium
-                  ${lead.status === 'Interested' ? 'bg-green-100 text-green-800' :
-                    lead.status === 'Not Interested' ? 'bg-red-100 text-red-800' :
-                    lead.status === 'Callback' ? 'bg-blue-100 text-blue-800' :
+                  ${lead.status === 'interested' ? 'bg-green-100 text-green-800' :
+                    lead.status === 'not_interested' ? 'bg-red-100 text-red-800' :
+                    lead.status === 'callback' ? 'bg-blue-100 text-blue-800' :
+                    lead.status === 'booked' ? 'bg-purple-100 text-purple-800' :
                     'bg-gray-100 text-gray-800'}`}>
-                  {lead.status}
+                  {lead.status ? lead.status.replace('_', ' ').charAt(0).toUpperCase() + lead.status.replace('_', ' ').slice(1) : 'Unknown'}
                 </span>
               </div>
             </div>
@@ -293,10 +308,11 @@ export default function LeadProfilePage() {
               <div className="flex justify-between items-center mb-1">
                 <span className="text-sm">Priority</span>
                 <span className={`px-2 py-1 rounded-full text-xs font-medium
-                  ${lead.priority === 'High' ? 'bg-red-100 text-red-800' :
-                    lead.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-green-100 text-green-800'}`}>
-                  {lead.priority}
+                  ${lead.priority === 'high' ? 'bg-red-100 text-red-800' :
+                    lead.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                    lead.priority === 'low' ? 'bg-green-100 text-green-800' :
+                    'bg-gray-100 text-gray-800'}`}>
+                  {lead.priority ? lead.priority.charAt(0).toUpperCase() + lead.priority.slice(1) : 'Normal'}
                 </span>
               </div>
             </div>
@@ -304,35 +320,35 @@ export default function LeadProfilePage() {
             <div>
               <div className="flex justify-between items-center mb-1">
                 <span className="text-sm">Source</span>
-                <span className="text-sm font-medium">{lead.source}</span>
+                <span className="text-sm font-medium">{lead.source || 'Unknown'}</span>
               </div>
             </div>
 
             <div>
               <div className="flex justify-between items-center mb-1">
                 <span className="text-sm">Total Calls</span>
-                <span className="text-sm font-medium">{lead.totalCalls}</span>
+                <span className="text-sm font-medium">{lead.total_calls || 0}</span>
               </div>
             </div>
 
-            {lead.assignedAgent && (
+            {lead.assigned_agent && (
               <div>
                 <div className="flex justify-between items-center mb-1">
                   <span className="text-sm">Assigned Agent</span>
-                  <span className="text-sm font-medium">{lead.assignedAgent}</span>
+                  <span className="text-sm font-medium">{lead.assigned_agent}</span>
                 </div>
               </div>
             )}
 
-            {lead.nextFollowUp && (
+            {lead.next_follow_up && (
               <div className="mt-4 p-3 bg-yellow-50 rounded-md">
                 <h4 className="text-sm font-medium flex items-center">
                   <Calendar className="h-4 w-4 mr-1" />
                   Next Follow-up
                 </h4>
-                <p className="text-sm mt-1">{formatDate(lead.nextFollowUp)}</p>
+                <p className="text-sm mt-1">{formatDate(lead.next_follow_up)}</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {formatRelativeTime(lead.nextFollowUp)}
+                  {formatRelativeTime(lead.next_follow_up)}
                 </p>
               </div>
             )}
@@ -352,11 +368,11 @@ export default function LeadProfilePage() {
             <h3 className="font-medium mb-4">Interaction History</h3>
 
             <div className="space-y-4">
-              {lead.interactions.length > 0 ? (
+              {lead.interactions && lead.interactions.length > 0 ? (
                 lead.interactions
                   .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
                   .map((interaction, index) => (
-                    <div key={index} className="border-b pb-4 last:border-0">
+                    <div key={`interaction-${interaction.id || index}`} className="border-b pb-4 last:border-0">
                       <div className="flex items-start gap-3">
                         <div className={`p-2 rounded-full
                           ${interaction.type === 'Call' ? 'bg-blue-100' :
@@ -424,11 +440,11 @@ export default function LeadProfilePage() {
             <h3 className="font-medium mb-4">Call History</h3>
 
             <div className="space-y-4">
-              {calls.length > 0 ? (
+              {calls && calls.length > 0 ? (
                 calls
                   .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
                   .map((call, index) => (
-                    <div key={index} className="border-b pb-4 last:border-0">
+                    <div key={`call-${call.id || index}`} className="border-b pb-4 last:border-0">
                       <div className="flex items-start gap-3">
                         <div className={`p-2 rounded-full
                           ${call.callType === 'Inbound' ? 'bg-green-100' : 'bg-blue-100'}`}>
@@ -468,7 +484,7 @@ export default function LeadProfilePage() {
                           {call.keyTopics && call.keyTopics.length > 0 && (
                             <div className="mt-2 flex flex-wrap gap-1">
                               {call.keyTopics.map((topic, i) => (
-                                <span key={i} className="text-xs px-2 py-0.5 bg-gray-100 rounded-full">
+                                <span key={`topic-${topic}-${i}`} className="text-xs px-2 py-0.5 bg-gray-100 rounded-full">
                                   {topic}
                                 </span>
                               ))}

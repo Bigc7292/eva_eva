@@ -28,12 +28,12 @@ export default function RootLayout({
               {/* Sidebar */}
               <Sidebar />
 
-              <div className="flex-1">
+              <div className="flex-1 ml-14">
                 {/* Header */}
                 <Header />
 
                 {/* Main Content */}
-                <main className="container mx-auto px-4 py-4">
+                <main className="w-full max-w-[1920px] mx-auto px-4 py-4">
                   {children}
                 </main>
               </div>

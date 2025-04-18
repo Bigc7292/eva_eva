@@ -1,5 +1,5 @@
 declare module 'lucide-react' {
-  import { ComponentType } from 'react'
+  import type { ComponentType } from 'react'
 
   interface IconProps extends React.SVGProps<SVGSVGElement> {
     size?: number | string

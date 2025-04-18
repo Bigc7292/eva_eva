@@ -1,28 +1,34 @@
 export type Call = {
   id: string;
   call_id: string;
-  status: string;
-  start_time: string;
+  lead_id: string;
+  phone_number: string;
+  call_type: string;
+  call_status: string;
+  call_outcome?: string;
+  timestamp: string;
   end_time?: string;
-  customer_phone: string; // Changed from phone_number for compatibility
-  call_duration?: number; // Changed from duration for compatibility
+  call_duration?: number;
   recording_url?: string;
-  agent_id?: string;
-  agent_name?: string;
+  transcript?: string;
+  summary?: string;
+  meeting_scheduled?: boolean;
+  meeting_time?: string;
+  callback_scheduled?: boolean;
+  callback_time?: string;
   created_at: string;
   updated_at: string;
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // biome-ignore lint/suspicious/noExplicitAny: metadata can have various structures
   metadata?: any;
-  // Additional fields for compatibility with call detail page
+
+  // Compatibility fields for UI components
   leadId?: string;
   leadName?: string;
   leadPhone?: string;
   callType?: string;
   callStatus?: string;
   callDuration?: number;
-  timestamp?: string;
   audioUrl?: string;
-  transcript?: string;
   sentimentScore?: number;
   keyTopics?: string[];
   nextSteps?: string;
@@ -31,13 +37,19 @@ export type Call = {
 };
 export type LeadProfile = {
   id: string;
+  lead_id: string;
   phone: string;
-  name?: string;
-  email?: string;
   first_contact_date: string;
-  last_contact_date: string;
-  total_calls: number;
   successful_meetings: number;
+  total_calls: number;
+  answered_calls: number;
+  missed_calls: number;
+  last_call_date?: string;
+  last_call_status?: string;
+  callback_date?: string;
+  interest_level?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface VapiCallData {
@@ -53,8 +65,16 @@ export interface VapiCallData {
 
 export interface CallAnalytics {
   totalCalls: number;
-  successfulCalls: number;
+  answeredCalls: number;
   missedCalls: number;
+  voicemailCalls: number;
+  failedCalls: number;
+  answerRate: number;
   averageCallDuration: number;
+  meetingsScheduled: number;
+  callbacksScheduled: number;
   calls: Call[];
+  callsByDate?: { date: string; count: number }[];
+  callsByStatus?: { status: string; count: number }[];
+  callsByOutcome?: { outcome: string; count: number }[];
 };

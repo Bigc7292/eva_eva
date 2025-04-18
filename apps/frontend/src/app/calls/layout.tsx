@@ -1,7 +1,7 @@
-import { Metadata } from 'next'
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Phone, Upload, List, BarChart, History, Calendar, Clock } from 'lucide-react'
+import { Phone, Upload, ListChecks, BarChart2, Clock, Calendar } from 'lucide-react'
 
 export const metadata: Metadata = {
   title: 'Call Management',
@@ -22,7 +22,7 @@ export default function CallsLayout({
             <nav className="flex items-center space-x-2">
               <Button asChild variant="ghost" size="sm">
                 <Link href="/calls">
-                  <List className="h-4 w-4 mr-2" />
+                  <ListChecks className="h-4 w-4 mr-2" />
                   All Calls
                 </Link>
               </Button>
@@ -40,7 +40,7 @@ export default function CallsLayout({
               </Button>
               <Button asChild variant="ghost" size="sm">
                 <Link href="/calls/history">
-                  <History className="h-4 w-4 mr-2" />
+                  <Clock className="h-4 w-4 mr-2" />
                   History
                 </Link>
               </Button>
@@ -52,7 +52,7 @@ export default function CallsLayout({
               </Button>
               <Button asChild variant="ghost" size="sm">
                 <Link href="/calls/analytics">
-                  <BarChart className="h-4 w-4 mr-2" />
+                  <BarChart2 className="h-4 w-4 mr-2" />
                   Analytics
                 </Link>
               </Button>

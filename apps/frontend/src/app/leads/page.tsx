@@ -21,13 +21,13 @@ import {
 import type { ColumnDef } from '@tanstack/react-table'
 import { formatCrmId } from '@/utils/crm-utils'
 import { leadsService } from '@/services/leads'
-import { Lead } from '@/services/leads'
+import type { Lead } from '@/services/leads'
 
 const columns: ColumnDef<Lead>[] = [
   {
-    accessorKey: 'crmId',
-    header: 'CRM ID',
-    cell: ({ row }) => formatCrmId(row.getValue('crmId'))
+    accessorKey: 'id',
+    header: 'Lead ID',
+    cell: ({ row }) => formatCrmId(row.getValue('id'))
   },
   {
     accessorKey: 'name',
@@ -60,22 +60,22 @@ const columns: ColumnDef<Lead>[] = [
     )
   },
   {
-    accessorKey: 'propertyInterest',
+    accessorKey: 'property_interest',
     header: 'Interest',
     cell: ({ row }) => (
       <div className="flex items-center gap-2">
         <Building className="h-4 w-4 text-muted-foreground" />
-        <span>{row.getValue('propertyInterest')}</span>
+        <span>{row.getValue('property_interest') || 'Not specified'}</span>
       </div>
     )
   },
   {
-    accessorKey: 'rating',
-    header: 'Rating',
+    accessorKey: 'interest_level',
+    header: 'Interest Level',
     cell: ({ row }) => (
       <div className="flex items-center gap-2">
         <Star className="h-4 w-4 text-yellow-400" />
-        <span>{row.getValue('rating')}/5</span>
+        <span>{row.getValue('interest_level') || 'Unknown'}</span>
       </div>
     )
   }
@@ -123,7 +123,7 @@ export default function LeadsPage() {
   }
 
   const handleCellClick = (lead: Lead) => {
-    router.push(`/leads/${lead.id}`)
+    router.push(`/profile/${lead.id}`)
   }
 
   return (
@@ -161,7 +161,7 @@ export default function LeadsPage() {
                     </Button>
                     <Button variant="ghost" size="sm" onClick={(e) => {
                       e.stopPropagation()
-                      router.push(`/leads/${lead.id}`)
+                      router.push(`/profile/${lead.id}`)
                     }}>
                       <Eye className="h-4 w-4 mr-2" />
                       View

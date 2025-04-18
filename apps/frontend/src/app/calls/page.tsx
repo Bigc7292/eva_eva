@@ -60,6 +60,7 @@ export default function CallsPage() {
 
   useEffect(() => {
     fetchCalls()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
@@ -70,10 +71,11 @@ export default function CallsPage() {
 
     const query = searchQuery.toLowerCase()
     const filtered = calls.filter(call =>
-      call.phone_number.toLowerCase().includes(query) ||
-      call.call_id.toLowerCase().includes(query) ||
-      call.call_status.toLowerCase().includes(query) ||
-      call.call_type.toLowerCase().includes(query)
+      call.phone_number?.toLowerCase().includes(query) ||
+      call.call_id?.toLowerCase().includes(query) ||
+      call.call_status?.toLowerCase().includes(query) ||
+      call.call_type?.toLowerCase().includes(query) ||
+      false
     )
 
     setFilteredCalls(filtered)
@@ -93,6 +95,7 @@ export default function CallsPage() {
   }
 
   const getStatusColor = (status: string) => {
+    if (!status) return 'bg-gray-500'
     switch (status.toLowerCase()) {
       case 'completed':
         return 'bg-green-500'
@@ -163,7 +166,7 @@ export default function CallsPage() {
                 <Skeleton className="h-8 w-16" />
               ) : (
                 calls.filter(call =>
-                  call.call_status.toLowerCase() === 'completed'
+                  call.call_status && call.call_status.toLowerCase() === 'completed'
                 ).length
               )}
             </div>
@@ -179,7 +182,7 @@ export default function CallsPage() {
                 <Skeleton className="h-8 w-16" />
               ) : (
                 calls.filter(call =>
-                  call.call_status.toLowerCase() === 'meeting booked'
+                  call.call_status && call.call_status.toLowerCase() === 'meeting booked'
                 ).length
               )}
             </div>
@@ -191,7 +194,7 @@ export default function CallsPage() {
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="bg-muted">
+              <tr className="bg-muted" key="header-row">
                 <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
                   Status
                 </th>
@@ -218,7 +221,7 @@ export default function CallsPage() {
             <tbody className="divide-y">
               {loading ? (
                 Array.from({ length: 5 }).map((_, index) => (
-                  <tr key={index}>
+                  <tr key={`skeleton-row-${index}`}>
                     <td className="px-4 py-3">
                       <Skeleton className="h-6 w-20" />
                     </td>
@@ -246,7 +249,7 @@ export default function CallsPage() {
                   </tr>
                 ))
               ) : error ? (
-                <tr>
+                <tr key="error-row">
                   <td colSpan={7} className="px-4 py-6 text-center text-muted-foreground">
                     {error}
                     <Button variant="link" onClick={fetchCalls} className="ml-2">
@@ -255,14 +258,21 @@ export default function CallsPage() {
                   </td>
                 </tr>
               ) : filteredCalls.length === 0 ? (
-                <tr>
+                <tr key="empty-row">
                   <td colSpan={7} className="px-4 py-6 text-center text-muted-foreground">
                     {searchQuery ? 'No calls match your search' : 'No calls found'}
                   </td>
                 </tr>
               ) : (
                 filteredCalls.map((call) => (
-                  <tr key={call.id} className="hover:bg-muted/50" onClick={() => handleRowClick(call)}>
+                  <tr
+                    key={call.call_id}
+                    className="hover:bg-muted/50 cursor-pointer"
+                    onClick={() => handleRowClick(call)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleRowClick(call)}
+                    tabIndex={0}
+                    aria-label={`View details for call to ${call.phone_number}`}
+                  >
                     <td className="px-4 py-3">
                       <div className="flex items-center">
                         <div className={`w-2 h-2 rounded-full mr-2 ${getStatusColor(call.call_status)}`} />

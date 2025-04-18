@@ -47,7 +47,7 @@ export default function CallDetailPage() {
         const { data: supabaseCall, error } = await supabase
           .from('calls')
           .select('*')
-          .eq('id', id)
+          .eq('call_id', id)
           .single()
 
         if (error) {
@@ -60,18 +60,18 @@ export default function CallDetailPage() {
         } else if (supabaseCall) {
           // Map Supabase call to the expected format
           const formattedCall = {
-            id: supabaseCall.id.toString(),
+            id: supabaseCall.call_id.toString(),
             retellCallId: supabaseCall.call_id,
             timestamp: supabaseCall.start_time,
-            callDuration: supabaseCall.duration || 0,
-            callType: supabaseCall.metadata?.direction || 'Outbound',
-            callStatus: supabaseCall.status === 'ended' ? 'Completed' : supabaseCall.status,
+            callDuration: supabaseCall.call_duration || 0,
+            callType: supabaseCall.call_type || 'Outbound',
+            callStatus: supabaseCall.call_status || 'Unknown',
             audioUrl: supabaseCall.recording_url,
-            detailedCallSummary: supabaseCall.metadata?.summary || '',
-            leadId: supabaseCall.metadata?.lead_id || '',
-            leadName: supabaseCall.metadata?.lead_name || 'Unknown',
+            detailedCallSummary: supabaseCall.summary || '',
+            leadId: null,
+            leadName: 'Unknown',
             leadPhone: supabaseCall.phone_number,
-            transcript: null
+            transcript: supabaseCall.transcript || null
           }
           setCall(formattedCall)
         } else {
@@ -97,8 +97,10 @@ export default function CallDetailPage() {
   }
 
   const handleViewLead = () => {
-    if (call) {
-      router.push(`/leads/${call.leadId}`)
+    // Use optional chaining to simplify the check
+    if (call?.phone_number) {
+      // Find lead by phone number
+      router.push(`/leads?search=${encodeURIComponent(call.phone_number)}`)
     }
   }
 
@@ -164,17 +166,17 @@ export default function CallDetailPage() {
       <Card className="p-6">
         <div className="flex justify-between items-start mb-6">
           <div className="flex items-center gap-3">
-            <div className={`p-3 rounded-full ${call.callType === 'Inbound' ? 'bg-green-100' : 'bg-blue-100'}`}>
-              {call.callType === 'Inbound' ?
+            <div className={`p-3 rounded-full ${call.callType?.toLowerCase() === 'inbound' ? 'bg-green-100' : 'bg-blue-100'}`}>
+              {call.callType?.toLowerCase() === 'inbound' ?
                 <PhoneIncoming className="h-6 w-6 text-green-600" /> :
                 <PhoneOutgoing className="h-6 w-6 text-blue-600" />
               }
             </div>
             <div>
               <h2 className="text-2xl font-bold">
-                {call.callType} Call {call.callStatus !== 'Completed' && `(${call.callStatus})`}
+                {call.callType || 'Unknown'} Call {call.callStatus && call.callStatus !== 'Completed' && `(${call.callStatus})`}
               </h2>
-              <p className="text-muted-foreground">{call.retellCallId}</p>
+              <p className="text-muted-foreground">{call.retellCallId || call.id}</p>
             </div>
           </div>
           <div className="text-right">
@@ -189,17 +191,17 @@ export default function CallDetailPage() {
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <User className="h-4 w-4 text-muted-foreground" />
-                <span>Lead: {call.leadName}</span>
+                <span>Lead: {call.leadName || 'Unknown'}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Phone className="h-4 w-4 text-muted-foreground" />
-                <span>Phone: {call.leadPhone}</span>
+                <span>Phone: {call.leadPhone || 'Unknown'}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4 text-muted-foreground" />
                 <span>
                   Duration: {
-                    call.callStatus === 'Completed'
+                    call.callStatus === 'Completed' && call.callDuration
                       ? `${Math.floor(call.callDuration / 60)}m ${call.callDuration % 60}s`
                       : 'N/A'
                   }

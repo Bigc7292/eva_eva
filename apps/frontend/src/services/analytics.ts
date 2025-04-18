@@ -1,5 +1,73 @@
 import { supabase } from '@/lib/services/supabase';
 
+// Define types for our analytics data
+interface Call {
+  call_id: string;
+  phone_number: string;
+  call_type: string;
+  call_status: string;
+  start_time: string;
+  end_time?: string;
+  call_duration?: number;
+  recording_url?: string;
+  transcript?: string;
+  summary?: string;
+  metadata?: Record<string, unknown>;
+  meeting_scheduled?: boolean;
+  meeting_time?: string;
+  agent_id?: string;
+  agent_name?: string;
+  status?: string;
+}
+
+interface Lead {
+  id: string;
+  name: string;
+  phone: string;
+  email?: string;
+  status: string;
+  source?: string;
+  location?: string;
+  successful_meetings?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+interface CallAnalytics {
+  totalCalls: number;
+  answeredCalls: number;
+  missedCalls: number;
+  voicemailCalls: number;
+  failedCalls: number;
+  answerRate: number;
+  averageCallDuration: number;
+  meetingsScheduled: number;
+  callbacksScheduled: number;
+  calls: Call[];
+  callsByType: Array<{type: string; count: number}>;
+  callsByStatus: Array<{status: string; count: number}>;
+  callsByDay: Array<{date: string; calls: number}>;
+  recentCalls: Call[];
+}
+
+interface MeetingAnalytics {
+  totalMeetings: number;
+  offplanMeetings: number;
+  secondaryMeetings: number;
+  costPerMeeting: number;
+  totalCost: number;
+  meetingsByPropertyType: Array<{name: string; value: number}>;
+}
+
+interface LeadAnalytics {
+  totalLeads: number;
+  newLeadsToday: number;
+  leadsConversionRate: number;
+  leadsByStatus: Array<{status: string; count: number}>;
+  leadsBySource: Array<{source: string; count: number}>;
+  leadsByLocation: Array<{location: string; count: number}>;
+}
+
 export class AnalyticsError extends Error {
   details: unknown;
 
@@ -10,78 +78,33 @@ export class AnalyticsError extends Error {
   }
 }
 
-export async function getCallAnalytics(): Promise<any> {
+export async function getCallAnalytics(): Promise<CallAnalytics> {
   try {
-    // Try to get all columns first to handle different table structures
-    const { data: calls, error: callsError } = await supabase
-      .from('calls')
-      .select('*')
-      .order('start_time', { ascending: false });
+    // Fetch analytics data from the API
+    const response = await fetch('/api/analytics');
 
-    if (callsError) {
-      console.error('Error fetching calls with all columns:', callsError);
-
-      // Try with a more specific query that matches the expected structure
-      const { data: fallbackCalls, error: fallbackError } = await supabase
-        .from('calls')
-        .select('id, call_id, status, start_time, customer_phone, call_type')
-        .order('start_time', { ascending: false });
-
-      if (fallbackError) {
-        throw new AnalyticsError('Failed to fetch calls', fallbackError);
-      }
-
-      // Use the fallback data
-      return {
-        totalCalls: fallbackCalls?.length || 0,
-        inboundCalls: fallbackCalls?.filter(call => call.call_type === 'inbound').length || 0,
-        outboundCalls: fallbackCalls?.filter(call => call.call_type === 'outbound').length || 0,
-        missedCalls: fallbackCalls?.filter(call => call.status === 'missed').length || 0,
-        completedCalls: fallbackCalls?.filter(call => call.status === 'completed').length || 0,
-        averageCallDuration: 0,
-        calls: fallbackCalls || [],
-        callsByDay: [],
-        callsByType: [],
-        callsByStatus: [],
-        callsByAgent: [],
-        recentCalls: fallbackCalls?.slice(0, 10) || []
-      };
+    if (!response.ok) {
+      throw new AnalyticsError('Failed to fetch analytics data');
     }
 
-    const now = new Date();
-    const thirtyDaysAgo = new Date(now.setDate(now.getDate() - 30));
+    const analyticsData = await response.json();
 
-    // Handle the case where calls might be empty
-    if (!calls || calls.length === 0) {
-      return {
-        totalCalls: 0,
-        inboundCalls: 0,
-        outboundCalls: 0,
-        missedCalls: 0,
-        completedCalls: 0,
-        averageCallDuration: 0,
-        calls: [],
-        callsByDay: [],
-        callsByType: [],
-        callsByStatus: [],
-        callsByAgent: [],
-        recentCalls: []
-      };
+    // Fetch calls data for detailed information
+    const callsResponse = await fetch('/api/calls');
+
+    if (!callsResponse.ok) {
+      throw new AnalyticsError('Failed to fetch calls data');
     }
 
+    const calls = await callsResponse.json();
+
+    // Return combined data
     return {
-      totalCalls: calls.length,
-      inboundCalls: calls.filter(call => call.call_type === 'inbound').length,
-      outboundCalls: calls.filter(call => call.call_type === 'outbound').length,
-      missedCalls: calls.filter(call => call.status === 'missed').length,
-      completedCalls: calls.filter(call => call.status === 'completed').length,
-      averageCallDuration: calls.reduce((acc, call) => acc + (call.call_duration || 0), 0) / calls.length,
-      calls: calls, // Add the raw calls data
-      callsByDay: groupCallsByDay(calls),
+      ...analyticsData,
+      calls: calls || [],
       callsByType: groupCallsByType(calls),
       callsByStatus: groupCallsByStatus(calls),
-      callsByAgent: await groupCallsByAgent(calls),
-      recentCalls: calls.slice(0, 10)
+      recentCalls: calls?.slice(0, 10) || []
     };
   } catch (error) {
     console.error('Error in getCallAnalytics:', error);
@@ -89,40 +112,96 @@ export async function getCallAnalytics(): Promise<any> {
   }
 }
 
-export async function getLeadAnalytics(): Promise<any> {
+export async function getMeetingAnalytics(): Promise<MeetingAnalytics> {
   try {
-    const { data: leads, error: leadsError } = await supabase
-      .from('lead_profiles')
-      .select('*');
+    // Fetch calls data to analyze meetings
+    const { data: calls, error } = await supabase
+      .from('calls')
+      .select('*')
+      .eq('meeting_scheduled', true);
 
-    if (leadsError) {
-      throw new AnalyticsError('Failed to fetch leads', leadsError);
-    }
-
-    const now = new Date();
-    const today = now.toISOString().split('T')[0];
-
-    // Handle the case where leads might be empty
-    if (!leads || leads.length === 0) {
+    if (error) {
+      console.error('Error fetching meeting data:', error);
+      // Return default values instead of throwing an error
       return {
-        totalLeads: 0,
-        newLeadsToday: 0,
-        leadsConversionRate: 0,
-        leadsByStatus: [],
-        leadsBySource: [],
-        leadsByLocation: []
+        totalMeetings: 0,
+        offplanMeetings: 0,
+        secondaryMeetings: 0,
+        costPerMeeting: 0,
+        totalCost: 0,
+        meetingsByPropertyType: [
+          { name: 'Offplan', value: 0 },
+          { name: 'Secondary', value: 0 }
+        ]
       };
     }
 
+    // Calculate meeting metrics
+    const totalMeetings = calls?.length || 0;
+
+    // Count property types (using metadata or other fields)
+    // Safely check if metadata exists and is an object before accessing properties
+    const offplanMeetings = calls?.filter(call => {
+      const metadata = call.metadata || {};
+      const summary = call.summary || '';
+      const transcript = call.transcript || '';
+
+      return (
+        (typeof metadata === 'object' && metadata?.property_type === 'offplan') ||
+        summary.toLowerCase().includes('offplan') ||
+        transcript.toLowerCase().includes('off plan') ||
+        transcript.toLowerCase().includes('offplan')
+      );
+    }).length || 0;
+
+    const secondaryMeetings = totalMeetings - offplanMeetings;
+
+    // Calculate costs based on actual call data
+    const avgCallDuration = calls?.reduce((sum, call) => sum + (call.call_duration || 0), 0) / (totalMeetings || 1);
+
+    // Use actual cost data if available, otherwise calculate based on duration
+    // Cost is calculated at $0.15 per minute of call time
+    const costPerMinute = 0.15;
+    const costPerMeeting = avgCallDuration ? (avgCallDuration / 60) * costPerMinute : 0;
+    const totalCost = costPerMeeting * totalMeetings;
+
     return {
-      totalLeads: leads.length,
-      newLeadsToday: leads.filter(lead =>
-        lead.first_contact_date && lead.first_contact_date.split('T')[0] === today
-      ).length,
-      leadsConversionRate: calculateConversionRate(leads),
-      leadsByStatus: groupLeadsByStatus(leads),
-      leadsBySource: groupLeadsBySource(leads),
-      leadsByLocation: groupLeadsByLocation(leads)
+      totalMeetings,
+      offplanMeetings,
+      secondaryMeetings,
+      costPerMeeting,
+      totalCost,
+      meetingsByPropertyType: [
+        { name: 'Offplan', value: offplanMeetings },
+        { name: 'Secondary', value: secondaryMeetings }
+      ],
+      // Add more metrics as needed
+    };
+  } catch (error) {
+    console.error('Error in getMeetingAnalytics:', error);
+    throw error;
+  }
+}
+
+export async function getLeadAnalytics(): Promise<LeadAnalytics> {
+  try {
+    // Fetch analytics data from the API
+    const response = await fetch('/api/analytics');
+
+    if (!response.ok) {
+      throw new AnalyticsError('Failed to fetch analytics data');
+    }
+
+    const analyticsData = await response.json();
+
+    // Return lead-related data
+    return {
+      totalLeads: analyticsData.totalLeads || 0,
+      newLeadsToday: analyticsData.newLeadsToday || 0,
+      leadsConversionRate: analyticsData.leadsConversionRate || 0,
+      leadsByStatus: analyticsData.leadsByStatus || [],
+      leadsBySource: analyticsData.leadsBySource || [],
+      leadsByLocation: analyticsData.leadsByLocation || []
     };
   } catch (error) {
     console.error('Error in getLeadAnalytics:', error);
@@ -130,8 +209,8 @@ export async function getLeadAnalytics(): Promise<any> {
   }
 }
 
-function groupCallsByDay(calls: any[]): any[] {
-  const grouped = calls.reduce((acc, call) => {
+function groupCallsByDay(calls: Call[]): Array<{date: string; calls: number}> {
+  const grouped = calls.reduce<Record<string, number>>((acc, call) => {
     const date = new Date(call.start_time).toISOString().split('T')[0];
     acc[date] = (acc[date] || 0) + 1;
     return acc;
@@ -143,25 +222,25 @@ function groupCallsByDay(calls: any[]): any[] {
   }));
 }
 
-function groupCallsByType(calls: any[]): any[] {
+function groupCallsByType(calls: Call[]): Array<{type: string; count: number}> {
   return Object.entries(
-    calls.reduce((acc, call) => {
+    calls.reduce<Record<string, number>>((acc, call) => {
       acc[call.call_type] = (acc[call.call_type] || 0) + 1;
       return acc;
     }, {})
   ).map(([type, count]) => ({ type, count }));
 }
 
-function groupCallsByStatus(calls: any[]): any[] {
+function groupCallsByStatus(calls: Call[]): Array<{status: string; count: number}> {
   return Object.entries(
-    calls.reduce((acc, call) => {
+    calls.reduce<Record<string, number>>((acc, call) => {
       acc[call.status] = (acc[call.status] || 0) + 1;
       return acc;
     }, {})
   ).map(([status, count]) => ({ status, count }));
 }
 
-async function groupCallsByAgent(calls: any[]): Promise<any[]> {
+async function groupCallsByAgent(calls: Call[]): Promise<Array<{agent: string; count: number}>> {
   try {
     // Get unique agent names from calls instead of users table
     const agentMap = new Map(calls
@@ -169,7 +248,7 @@ async function groupCallsByAgent(calls: any[]): Promise<any[]> {
       .map(call => [call.agent_id, call.agent_name]) as [string, string][]);
 
     return Object.entries(
-      calls.reduce((acc, call) => {
+      calls.reduce<Record<string, number>>((acc, call) => {
         const agentName = call.agent_name || 'Unassigned';
         acc[agentName] = (acc[agentName] || 0) + 1;
         return acc;
@@ -181,14 +260,14 @@ async function groupCallsByAgent(calls: any[]): Promise<any[]> {
   }
 }
 
-function calculateConversionRate(leads: any[]): number {
+function calculateConversionRate(leads: Lead[]): number {
   const converted = leads.filter(lead => lead.successful_meetings > 0).length;
   return leads.length > 0 ? (converted / leads.length) * 100 : 0;
 }
 
-function groupLeadsByStatus(leads: any[]): any[] {
+function groupLeadsByStatus(leads: Lead[]): Array<{status: string; count: number}> {
   return Object.entries(
-    leads.reduce((acc, lead) => {
+    leads.reduce<Record<string, number>>((acc, lead) => {
       const status = lead.successful_meetings > 0 ? 'Converted' : 'Active';
       acc[status] = (acc[status] || 0) + 1;
       return acc;
@@ -196,18 +275,18 @@ function groupLeadsByStatus(leads: any[]): any[] {
   ).map(([status, count]) => ({ status, count }));
 }
 
-function groupLeadsBySource(leads: any[]): any[] {
+function groupLeadsBySource(leads: Lead[]): Array<{source: string; count: number}> {
   return Object.entries(
-    leads.reduce((acc, lead) => {
+    leads.reduce<Record<string, number>>((acc, lead) => {
       acc[lead.source || 'Unknown'] = (acc[lead.source || 'Unknown'] || 0) + 1;
       return acc;
     }, {})
   ).map(([source, count]) => ({ source, count }));
 }
 
-function groupLeadsByLocation(leads: any[]): any[] {
+function groupLeadsByLocation(leads: Lead[]): Array<{location: string; count: number}> {
   return Object.entries(
-    leads.reduce((acc, lead) => {
+    leads.reduce<Record<string, number>>((acc, lead) => {
       acc[lead.location || 'Unknown'] = (acc[lead.location || 'Unknown'] || 0) + 1;
       return acc;
     }, {})

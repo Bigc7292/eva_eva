@@ -17,7 +17,25 @@ export async function GET(request: NextRequest) {
 
     if (error) throw error
 
-    return NextResponse.json(data)
+    // Transform data to match frontend expectations
+    const transformedData = data?.map(call => ({
+      id: call.id,
+      call_id: call.call_id,
+      phone_number: call.phone_number || call.customer_phone || '',
+      call_type: call.call_type || '',
+      call_status: call.status || '',
+      start_time: call.start_time,
+      end_time: call.end_time,
+      call_duration: call.call_duration || 0,
+      recording_url: call.recording_url || null,
+      transcript: call.transcript || null,
+      summary: call.summary || null,
+      created_at: call.created_at || call.start_time,
+      updated_at: call.updated_at || new Date().toISOString(),
+      metadata: call.metadata || {}
+    })) || []
+
+    return NextResponse.json(transformedData)
   } catch (error) {
     console.error('Failed to fetch calls:', error)
     return NextResponse.json(
@@ -43,8 +61,25 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Add caller ID to metadata
+    const enhancedMetadata = {
+      ...metadata,
+      caller_id: process.env.NEXT_PUBLIC_VAPI_CALLER_ID || '+971565401583',
+      twilio_number: process.env.NEXT_PUBLIC_VAPI_CALLER_ID || '+971565401583',
+      phone_number_id: process.env.NEXT_PUBLIC_VAPI_PHONE_NUMBER_ID || 'e65a9e6b-33b7-4711-ad21-90220048e38f'
+    }
+
+    // Log the call request
+    console.log('Initiating call with:', {
+      to: phoneNumber,
+      from: process.env.NEXT_PUBLIC_VAPI_CALLER_ID || '+971565401583',
+      phone_number_id: process.env.NEXT_PUBLIC_VAPI_PHONE_NUMBER_ID || 'e65a9e6b-33b7-4711-ad21-90220048e38f',
+      assistant_id: process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID,
+      metadata: enhancedMetadata
+    })
+
     // Initiate call with VAPI
-    const callData = await vapiService.initiateCall(phoneNumber, metadata)
+    const callData = await vapiService.initiateCall(phoneNumber, enhancedMetadata)
 
     // Store call in Supabase
     const { error } = await supabase
@@ -53,6 +88,8 @@ export async function POST(request: NextRequest) {
         call_id: callData.id,
         phone_number: phoneNumber,
         status: 'initiated',
+        call_status: 'initiated', // Add call_status for frontend compatibility
+        call_type: 'Outbound', // Default to outbound for manually initiated calls
         start_time: new Date().toISOString(),
         metadata: metadata || {}
       })

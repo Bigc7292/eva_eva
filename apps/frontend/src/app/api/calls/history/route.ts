@@ -29,15 +29,17 @@ export async function GET(request: NextRequest) {
 
     // Apply filters
     if (search) {
-      query = query.ilike('phone_number', `%${search}%`)
+      query = query.or(`phone_number.ilike.%${search}%,customer_phone.ilike.%${search}%,call_id.ilike.%${search}%`)
     }
 
     if (status !== 'all') {
-      query = query.ilike('call_status', `%${status}%`)
+      // Check both status and call_status fields
+      query = query.or(`status.ilike.%${status}%,call_status.ilike.%${status}%`)
     }
 
     if (type !== 'all') {
-      query = query.ilike('call_type', `%${type}%`)
+      // Check both call_type and type fields
+      query = query.or(`call_type.ilike.%${type}%,type.ilike.%${type}%`)
     }
 
     // Apply sorting
@@ -61,8 +63,26 @@ export async function GET(request: NextRequest) {
     const totalCalls = count || 0
     const totalPages = Math.ceil(totalCalls / pageSize)
 
+    // Transform data to match frontend expectations
+    const transformedCalls = calls?.map(call => ({
+      id: call.id,
+      call_id: call.call_id,
+      phone_number: call.phone_number || call.customer_phone || '',
+      call_type: call.call_type || call.type || '',
+      call_status: call.call_status || call.status || '',
+      start_time: call.start_time,
+      end_time: call.end_time,
+      call_duration: call.call_duration || call.duration || 0,
+      recording_url: call.recording_url || null,
+      transcript: call.transcript || null,
+      summary: call.summary || null,
+      created_at: call.created_at || call.start_time,
+      updated_at: call.updated_at || new Date().toISOString(),
+      metadata: call.metadata || {}
+    })) || []
+
     return NextResponse.json({
-      calls: calls || [],
+      calls: transformedCalls,
       page,
       pageSize,
       totalPages,

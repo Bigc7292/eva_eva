@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
-import { VariantProps, cva } from "class-variance-authority"
+import { type VariantProps, cva } from "class-variance-authority"
 import { Menu } from "lucide-react"
 import { CalendarIcon, PhoneIcon, UsersIcon, BuildingIcon, DashboardIcon } from "./icons"
 import Link from 'next/link'
@@ -19,14 +19,8 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { Logo, LogoSvg } from './logo'
-
-const SIDEBAR_COOKIE_NAME = "sidebar:state"
-const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
-const SIDEBAR_WIDTH = "16rem"
-const SIDEBAR_WIDTH_MOBILE = "18rem"
-const SIDEBAR_WIDTH_ICON = "3rem"
-const SIDEBAR_KEYBOARD_SHORTCUT = "b"
+// Constants for sidebar dimensions
+// These are kept for documentation purposes but not currently used directly
 
 interface SidebarContextValue {
   expanded: boolean
@@ -83,25 +77,33 @@ const Sidebar = React.forwardRef<HTMLDivElement, React.ComponentProps<"div">>(
         ref={ref}
         className={cn(
           "group fixed left-0 top-0 z-30 flex h-screen flex-col bg-sidebar transition-all duration-300",
-          expanded ? "w-64" : "w-16",
+          expanded ? "w-64" : "w-14",
           className
         )}
-        onMouseEnter={() => setExpanded(true)}
-        onMouseLeave={() => setExpanded(false)}
         {...props}
       >
-        <div className="flex h-16 items-center justify-center border-b px-4">
+        <div className="flex h-16 items-center justify-between border-b px-4">
           {expanded ? (
-            <Link href="/dashboard">
-              <div className="font-bold text-xl text-primary">
-                Top Loader Agent AI
-              </div>
-            </Link>
+            <>
+              <Link href="/dashboard">
+                <div className="font-bold text-xl text-primary">
+                  Top Loader Agent AI
+                </div>
+              </Link>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 ml-2"
+                onClick={() => setExpanded(false)}
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+            </>
           ) : (
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className="h-8 w-8 mx-auto"
               onClick={() => setExpanded(true)}
             >
               <Menu className="h-5 w-5" />
@@ -508,7 +510,7 @@ const SidebarMenuBadge = React.forwardRef<
     ref={ref}
     data-sidebar="menu-badge"
     className={cn(
-      "absolute right-1 flex h-5 min-w-5 items-center justify-center rounded-md px-1 text-xs font-medium tabular-nums text-sidebar-foreground select-none pointer-events-none",
+      "absolute right-1 flex h-5 min-w-5 items-center justify-center rounded-md px-1 text-xs font-medium font-mono text-sidebar-foreground select-none pointer-events-none",
       "peer-hover/menu-button:text-sidebar-accent-foreground peer-data-[active=true]/menu-button:text-sidebar-accent-foreground",
       "peer-data-[size=sm]/menu-button:top-1",
       "peer-data-[size=default]/menu-button:top-1.5",

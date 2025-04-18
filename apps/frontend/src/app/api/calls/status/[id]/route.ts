@@ -32,22 +32,9 @@ export async function GET(
       console.error('Error fetching call from database:', dbError)
     }
 
-    // For testing purposes, use mock data
-    console.log('Using mock call status data for testing');
-    const vapiCallData = {
-      id: callId,
-      status: 'completed',
-      to: '+971565401583',
-      assistant_id: process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID,
-      transcript: 'This is a mock transcript for testing purposes.',
-      recording_url: 'https://example.com/recording.mp3',
-      duration: 120,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    }
-
-    // Uncomment the below line to use the actual VAPI API
-    // const vapiCallData = await vapiService.getCallDetails(callId)
+    // Get the latest status from VAPI
+    console.log(`Getting call status for ${callId} from VAPI`);
+    const vapiCallData = await vapiService.getCallDetails(callId)
 
     // If we have data in our database, merge it with VAPI data
     const mergedCallData = {

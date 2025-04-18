@@ -33,14 +33,17 @@ interface DataTableProps<TData extends Row, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
   loading?: boolean
+  onRowClick?: (row: TData) => void
 }
 
-export function DataTable<TData extends Row, TValue>({ columns, data, loading = false }: DataTableProps<TData, TValue>) {
+export function DataTable<TData extends Row, TValue>({ columns, data, loading = false, onRowClick }: DataTableProps<TData, TValue>) {
   const router = useRouter()
 
-  const handleCellClick = (row: TData) => {
-    if (row.id) {
-      router.push(`/profile/${row.id}`)
+  const handleCellClick = (row: TData, onRowClick?: (row: TData) => void) => {
+    if (onRowClick) {
+      onRowClick(row)
+    } else if (row.id) {
+      router.push(`/leads/${row.id}`)
     }
   }
 
@@ -69,7 +72,7 @@ export function DataTable<TData extends Row, TValue>({ columns, data, loading = 
             <TableRow>
               <TableCell colSpan={columns.length} className="h-24 text-center">
                 <div className="flex items-center justify-center">
-                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
                   <span className="ml-2">Loading...</span>
                 </div>
               </TableCell>
@@ -81,7 +84,7 @@ export function DataTable<TData extends Row, TValue>({ columns, data, loading = 
                   <TableCell
                     key={cell.id}
                     className="cursor-pointer hover:bg-gray-100 whitespace-nowrap"
-                    onClick={() => handleCellClick(row.original)}
+                    onClick={() => handleCellClick(row.original, onRowClick)}
                   >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>

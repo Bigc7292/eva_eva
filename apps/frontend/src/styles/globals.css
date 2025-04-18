@@ -2,6 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
+/* biome-ignore lint/correctness/noInvalidPositionAtImportRule: <explanation> */
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
 
 body {
@@ -12,22 +13,24 @@ body {
   .text-balance {
     text-wrap: balance;
   }
-  
+
   .premium-gradient {
     background: linear-gradient(135deg, #f6f8fd 0%, #ffffff 100%);
   }
-  
+
   .premium-card {
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(10px);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
     border: 1px solid rgba(255, 255, 255, 0.3);
   }
-  
+
   .premium-text-gradient {
     background: linear-gradient(135deg, #1a365d 0%, #2d4ed8 100%);
+    background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+    color: transparent;
   }
 }
 
