@@ -10,7 +10,7 @@
 
 // VAPI Configuration
 const VAPI_API_URL = 'https://api.vapi.ai';
-const PUBLIC_API_KEY = 'e1ac1fa8-286e-4dfd-9c5c-2d36e1cc95e8';
+const PRIVATE_API_KEY = 'd1529b85-51d5-47c0-9332-a73d40f7d62b'; // Private key for making calls
 const VAPI_ASSISTANT_ID = 'cfaa163c-4a47-471b-a39e-95c12d0cb738';
 const PHONE_NUMBER_ID = 'e65a9e6b-33b7-4711-ad21-90220048e38f';
 
@@ -29,7 +29,7 @@ async function makeCall() {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${PUBLIC_API_KEY}`
+        'Authorization': `Bearer ${PRIVATE_API_KEY}`
       },
       body: JSON.stringify({
         type: 'outboundPhoneCall',
@@ -75,7 +75,7 @@ async function checkCallStatus(callId) {
     const response = await fetch(`${VAPI_API_URL}/call/${callId}`, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${PUBLIC_API_KEY}`
+        'Authorization': `Bearer ${PRIVATE_API_KEY}`
       }
     });
 
@@ -93,6 +93,11 @@ async function checkCallStatus(callId) {
 }
 
 // Run the script
-makeCall().catch(error => {
+console.log('Starting VAPI call script...');
+makeCall().then(callId => {
+  console.log('Script completed. Call ID:', callId);
+}).catch(error => {
   console.error('Unhandled error:', error);
 });
+
+console.log('Script initiated. Waiting for call to be made...');
