@@ -6,7 +6,7 @@
 
 const express = require('express');
 const { spawn } = require('child_process');
-const fetch = require('node-fetch');
+const fetch = (...args) => import('node-fetch').then(mod => mod.default(...args));
 const fs = require('fs');
 const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
@@ -572,13 +572,6 @@ async function startServer() {
     }
     
     console.log(`${colors.green}ngrok URL: ${colors.reset}${ngrokUrl}`);
-    
-    // Register webhook with VAPI
-    const webhookUrl = `${ngrokUrl}/api/webhooks/vapi`;
-    await registerWebhook(webhookUrl);
-    
-    // Make a test call
-    await makeTestCall();
     
     console.log(`\n${colors.yellow}MCP Webhook server is now running and waiting for events.${colors.reset}`);
     console.log(`${colors.yellow}Press Ctrl+C to stop the server.${colors.reset}`);

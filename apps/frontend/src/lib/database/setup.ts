@@ -2,145 +2,14 @@ import { supabase } from '@/lib/supabase'
 
 export async function setupDatabase() {
   try {
-    // Check if tables exist
-    const { data: tablesData, error: tablesError } = await supabase
-      .from('pg_tables')
-      .select('tablename')
-      .eq('schemaname', 'public')
-
-    if (tablesError) {
-      console.error('Error checking tables:', tablesError)
-      throw tablesError
-    }
-
-    const tables = tablesData?.map(t => t.tablename) || []
-    console.log('Existing tables:', tables)
-
-    // Create leads table if it doesn't exist
-    if (!tables.includes('leads')) {
-      const { error: leadsError } = await supabase.query(`
-        CREATE TABLE leads (
-          id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-          name VARCHAR NOT NULL,
-          phone VARCHAR UNIQUE NOT NULL,
-          email VARCHAR,
-          status VARCHAR DEFAULT 'new',
-          property_interest VARCHAR,
-          budget DECIMAL(10, 2),
-          location VARCHAR,
-          nationality VARCHAR,
-          notes TEXT,
-          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-          updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-        )
-      `)
-
-      if (leadsError) {
-        console.error('Error creating leads table:', leadsError)
-        throw leadsError
-      }
-      console.log('Created leads table')
-    }
-
-    // Create calls table if it doesn't exist
-    if (!tables.includes('calls')) {
-      const { error: callsError } = await supabase.query(`
-        CREATE TABLE calls (
-          id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-          call_id VARCHAR UNIQUE NOT NULL,
-          lead_id UUID REFERENCES leads(id),
-          phone_number VARCHAR NOT NULL,
-          call_type VARCHAR NOT NULL CHECK (call_type IN ('Inbound', 'Outbound')),
-          call_status VARCHAR NOT NULL CHECK (call_status IN ('Completed', 'Answered', 'Missed', 'No Answer', 'Voicemail', 'Failed')),
-          call_outcome VARCHAR,
-          timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-          end_time TIMESTAMP WITH TIME ZONE,
-          call_duration INTEGER,
-          recording_url VARCHAR,
-          transcript TEXT,
-          summary TEXT,
-          metadata JSONB,
-          meeting_scheduled BOOLEAN DEFAULT FALSE,
-          meeting_time TIMESTAMP WITH TIME ZONE,
-          callback_scheduled BOOLEAN DEFAULT FALSE,
-          callback_time TIMESTAMP WITH TIME ZONE,
-          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-          updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-        )
-      `)
-
-      if (callsError) {
-        console.error('Error creating calls table:', callsError)
-        throw callsError
-      }
-      console.log('Created calls table')
-    }
-
-    // Create lead_profiles table if it doesn't exist
-    if (!tables.includes('lead_profiles')) {
-      const { error: profilesError } = await supabase.query(`
-        CREATE TABLE lead_profiles (
-          id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-          lead_id UUID REFERENCES leads(id),
-          phone VARCHAR NOT NULL,
-          first_contact_date TIMESTAMP WITH TIME ZONE,
-          successful_meetings INTEGER DEFAULT 0,
-          total_calls INTEGER DEFAULT 0,
-          answered_calls INTEGER DEFAULT 0,
-          missed_calls INTEGER DEFAULT 0,
-          last_call_date TIMESTAMP WITH TIME ZONE,
-          last_call_status VARCHAR,
-          callback_date TIMESTAMP WITH TIME ZONE,
-          interest_level VARCHAR CHECK (interest_level IN ('High', 'Medium', 'Low', 'Unknown')),
-          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-          updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-          CONSTRAINT fk_lead FOREIGN KEY (lead_id) REFERENCES leads(id)
-        )
-      `)
-
-      if (profilesError) {
-        console.error('Error creating lead_profiles table:', profilesError)
-        throw profilesError
-      }
-      console.log('Created lead_profiles table')
-    }
-
-    // Create meetings table if it doesn't exist
-    if (!tables.includes('meetings')) {
-      const { error: meetingsError } = await supabase.query(`
-        CREATE TABLE meetings (
-          id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-          lead_id UUID REFERENCES leads(id),
-          call_id UUID REFERENCES calls(id),
-          timestamp TIMESTAMP WITH TIME ZONE NOT NULL,
-          location VARCHAR,
-          property_type VARCHAR,
-          budget DECIMAL(10, 2),
-          notes TEXT,
-          status VARCHAR CHECK (status IN ('scheduled', 'completed', 'cancelled', 'no_show')),
-          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-          updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-        )
-      `)
-
-      if (meetingsError) {
-        console.error('Error creating meetings table:', meetingsError)
-        throw meetingsError
-      }
-      console.log('Created meetings table')
-    }
-
-    // Insert sample data for testing
-    await insertSampleData()
-
-    // Set up RLS policies
-    await setupRLSPolicies()
-
-    console.log('Database setup completed successfully')
-    return true
+    // No schema creation here! Tables and policies must be managed in Supabase SQL editor.
+    // Only insert sample data if needed (optional, can be kept if you want test data)
+    await insertSampleData();
+    console.log('Database setup completed successfully (schema managed in Supabase dashboard)');
+    return true;
   } catch (error) {
-    console.error('Error setting up database:', error)
-    throw error
+    console.error('Error setting up database:', error);
+    throw error;
   }
 }
 
@@ -325,76 +194,11 @@ async function insertSampleData() {
   }
 }
 
+// RLS policies and table creation should be set up in the Supabase SQL dashboard, not in code.
+// This function is now a no-op.
 async function setupRLSPolicies() {
-  try {
-    // Enable RLS on tables
-    await supabase.query(`
-      ALTER TABLE leads ENABLE ROW LEVEL SECURITY;
-      ALTER TABLE calls ENABLE ROW LEVEL SECURITY;
-      ALTER TABLE lead_profiles ENABLE ROW LEVEL SECURITY;
-      ALTER TABLE meetings ENABLE ROW LEVEL SECURITY;
-    `)
-
-    // Create policies for authenticated users
-    await supabase.query(`
-      -- Leads policies
-      CREATE POLICY IF NOT EXISTS "Authenticated users can read leads"
-        ON leads FOR SELECT
-        USING (auth.role() = 'authenticated');
-
-      CREATE POLICY IF NOT EXISTS "Authenticated users can insert leads"
-        ON leads FOR INSERT
-        WITH CHECK (auth.role() = 'authenticated');
-
-      CREATE POLICY IF NOT EXISTS "Authenticated users can update leads"
-        ON leads FOR UPDATE
-        USING (auth.role() = 'authenticated');
-
-      -- Calls policies
-      CREATE POLICY IF NOT EXISTS "Authenticated users can read calls"
-        ON calls FOR SELECT
-        USING (auth.role() = 'authenticated');
-
-      CREATE POLICY IF NOT EXISTS "Authenticated users can insert calls"
-        ON calls FOR INSERT
-        WITH CHECK (auth.role() = 'authenticated');
-
-      CREATE POLICY IF NOT EXISTS "Authenticated users can update calls"
-        ON calls FOR UPDATE
-        USING (auth.role() = 'authenticated');
-
-      -- Lead profiles policies
-      CREATE POLICY IF NOT EXISTS "Authenticated users can read lead profiles"
-        ON lead_profiles FOR SELECT
-        USING (auth.role() = 'authenticated');
-
-      CREATE POLICY IF NOT EXISTS "Authenticated users can insert lead profiles"
-        ON lead_profiles FOR INSERT
-        WITH CHECK (auth.role() = 'authenticated');
-
-      CREATE POLICY IF NOT EXISTS "Authenticated users can update lead profiles"
-        ON lead_profiles FOR UPDATE
-        USING (auth.role() = 'authenticated');
-
-      -- Meetings policies
-      CREATE POLICY IF NOT EXISTS "Authenticated users can read meetings"
-        ON meetings FOR SELECT
-        USING (auth.role() = 'authenticated');
-
-      CREATE POLICY IF NOT EXISTS "Authenticated users can insert meetings"
-        ON meetings FOR INSERT
-        WITH CHECK (auth.role() = 'authenticated');
-
-      CREATE POLICY IF NOT EXISTS "Authenticated users can update meetings"
-        ON meetings FOR UPDATE
-        USING (auth.role() = 'authenticated');
-    `)
-
-    console.log('RLS policies set up successfully')
-  } catch (error) {
-    console.error('Error setting up RLS policies:', error)
-    throw error
-  }
+  console.log('RLS policies should be managed in Supabase SQL dashboard.');
+  return;
 }
 
 // Run the setup when this file is imported
