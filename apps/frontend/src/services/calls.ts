@@ -38,7 +38,7 @@ export class CallsService {
       const call: Call = {
         id: data.call_id,
         call_id: data.call_id,
-        lead_id: null, // We don't have this in the current schema
+        lead_id: data.lead_id || null,
         phone_number: data.phone_number,
         call_type: data.call_type,
         call_status: data.call_status,
@@ -58,7 +58,7 @@ export class CallsService {
         metadata: data.metadata,
 
         // Compatibility fields for UI components
-        leadId: null, // We don't have this in the current schema
+        leadId: data.lead_id || null,
         leadName: 'Unknown', // We don't have this in the current schema
         leadPhone: data.phone_number,
         callType: data.call_type,
@@ -83,14 +83,14 @@ export class CallsService {
       // First check if lead exists
       const { data: existingLead, error: existingLeadError } = await supabase
         .from('leads')
-        .select('id')
+        .select('lead_uuid')
         .eq('phone', phone)
         .single();
 
       let leadId: string;
 
       if (existingLeadError || !existingLead) {
-        // Create new lead
+        // Create new lead with generated UUID
         const { data: newLead, error: createLeadError } = await supabase
           .from('leads')
           .insert([{
@@ -99,7 +99,8 @@ export class CallsService {
             email: email || null,
             status: 'new',
             created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
+            lead_uuid: crypto.randomUUID() // Generate a new UUID for the new lead
           }])
           .select()
           .single();
@@ -108,9 +109,9 @@ export class CallsService {
           throw new DatabaseError('Failed to create lead', createLeadError);
         }
 
-        leadId = newLead.id;
+        leadId = newLead.lead_uuid;
       } else {
-        leadId = existingLead.id;
+        leadId = existingLead.lead_uuid;
       }
 
       // Now check if lead profile exists
@@ -219,7 +220,7 @@ export class CallsService {
       const calls = callsData.map((call): Call => ({
         id: call.call_id,
         call_id: call.call_id,
-        lead_id: null, // We don't have this in the current schema
+        lead_id: data.lead_id || null,
         phone_number: call.phone_number,
         call_type: call.call_type,
         call_status: call.call_status,
@@ -239,7 +240,7 @@ export class CallsService {
         metadata: call.metadata,
 
         // Compatibility fields
-        leadId: null, // We don't have this in the current schema
+        leadId: data.lead_id || null,
         leadName: 'Unknown', // We don't have this in the current schema
         leadPhone: call.phone_number,
         callType: call.call_type,

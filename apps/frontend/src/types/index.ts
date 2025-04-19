@@ -15,7 +15,11 @@ export interface BaseLead {
   notes?: string
 }
 
+/**
+ * Lead entity, using UUID as unique identifier
+ */
 export interface Lead {
+  /** UUID string */
   id: string
   crmId: string
   name: string
@@ -62,8 +66,13 @@ export interface NoAnswer extends BaseLead {
   nextAttempt?: string
 }
 
+/**
+ * Call entity, referencing lead by UUID
+ */
 export interface Call {
+  /** UUID string */
   id: string;
+  /** UUID string of the lead */
   lead_id: string;
   lead_phone: string;
   lead_name?: string;

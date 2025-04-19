@@ -71,7 +71,7 @@ export const leadsService = {
 
       // Process leads from enhanced_leads table
       const processedLeads = data?.map(lead => ({
-        id: lead.lead_id || lead.id,
+        id: lead.lead_uuid || lead.id,
         name: lead.name || 'Unknown',
         email: lead.email || '',
         phone: lead.phone_number || lead.phone || '',
@@ -114,7 +114,7 @@ export const leadsService = {
 
       // Process leads from enhanced_leads table
       const processedLeads = data?.map(lead => ({
-        id: lead.lead_id || lead.id,
+        id: lead.lead_uuid || lead.id,
         name: lead.name || 'Unknown',
         email: lead.email || '',
         phone: lead.phone_number || lead.phone || '',
@@ -141,6 +141,9 @@ export const leadsService = {
   },
 
   async getLead(id: string) {
+  if (!id || id === "undefined") {
+    throw new Error("Invalid or missing lead ID");
+  }
     try {
       console.log(`Fetching lead with ID: ${id}`);
 
@@ -202,7 +205,7 @@ export const leadsService = {
       const { data, error } = await supabase
         .from('interactions')
         .select('*')
-        .eq('lead_id', leadId)
+        .eq('lead_uuid', leadId)
         .order('timestamp', { ascending: false })
 
       if (error) throw error
@@ -221,7 +224,7 @@ export const leadsService = {
           status,
           updated_at: new Date().toISOString()
         })
-        .eq('lead_id', leadId)
+        .eq('lead_uuid', leadId)
         .select()
 
       if (error) throw error
@@ -255,7 +258,7 @@ export const leadsService = {
       const { data, error } = await supabase
         .from('enhanced_leads')
         .update(enhancedDetails)
-        .eq('lead_id', leadId)
+        .eq('lead_uuid', leadId)
         .select()
 
       if (error) throw error
@@ -296,7 +299,7 @@ export const leadsService = {
       const { data: lead, error: leadError } = await supabase
         .from('enhanced_leads')
         .select('*')
-        .eq('lead_id', leadId)
+        .eq('lead_uuid', leadId)
         .single()
 
       if (leadError) {
@@ -352,7 +355,7 @@ export const leadsService = {
           last_call_status: 'Initiated',
           updated_at: new Date().toISOString()
         })
-        .eq('lead_id', leadId);
+        .eq('lead_uuid', leadId);
 
       return callId;
     } catch (error) {
@@ -371,7 +374,7 @@ export const leadsService = {
           callback_date: date.toISOString(),
           updated_at: new Date().toISOString()
         })
-        .eq('lead_id', leadId)
+        .eq('lead_uuid', leadId)
 
       if (error) throw error
       console.log(`Scheduled follow-up for lead ${leadId} on ${date.toISOString()}`)
@@ -391,7 +394,7 @@ export const leadsService = {
           metadata: { agent_id: agentId, agent_name: agentName },
           updated_at: new Date().toISOString()
         })
-        .eq('id', leadId)
+        .eq('lead_uuid', leadId)
 
       if (error) throw error
       console.log(`Assigned lead ${leadId} to agent ${agentName} (${agentId})`)
