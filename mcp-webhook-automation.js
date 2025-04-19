@@ -112,14 +112,28 @@ async function processWebhookWithMCP(webhookData) {
       
       console.log(`${colors.magenta}Message Type:${colors.reset} ${messageType}`);
       
-      if (call) {
-        console.log(`${colors.blue}Call ID:${colors.reset} ${call.id || 'unknown'}`);
-        console.log(`${colors.blue}Call Status:${colors.reset} ${call.status || 'unknown'}`);
-        
-        // Store call data in Supabase
-        if (call.id) {
-          await storeCallData(call, messageType, webhookData.message);
-        }
+      // Robustly extract callId from all likely locations
+      let callId = undefined;
+      let callObj = undefined;
+      if (webhookData.message && webhookData.message.call && webhookData.message.call.id) {
+        callObj = webhookData.message.call;
+        callId = callObj.id;
+      } else if (webhookData.call_id) {
+        callId = webhookData.call_id;
+        callObj = webhookData.call || {};
+      } else if (webhookData.message && webhookData.message.call_id) {
+        callId = webhookData.message.call_id;
+        callObj = webhookData.message.call || {};
+      } else if (webhookData.call && webhookData.call.id) {
+        callObj = webhookData.call;
+        callId = callObj.id;
+      }
+      if (callId) {
+        console.log(`${colors.blue}Call ID:${colors.reset} ${callId}`);
+        console.log(`${colors.blue}Call Status:${colors.reset} ${callObj && callObj.status ? callObj.status : 'unknown'}`);
+        await storeCallData(callObj, messageType, webhookData.message);
+      } else {
+        console.warn(`${colors.yellow}No valid call ID found in webhook payload. Full payload:`, JSON.stringify(webhookData));
       }
       
       // Handle different message types
@@ -151,6 +165,8 @@ async function processWebhookWithMCP(webhookData) {
       // Store call data in Supabase
       if (callId) {
         await storeCallDataLegacy(callId, eventType, webhookData.data);
+      } else {
+        console.warn(`${colors.yellow}No valid call_id in legacy webhook payload. Payload:`, JSON.stringify(webhookData));
       }
     }
   } catch (error) {
@@ -190,6 +206,9 @@ async function storeCallData(call, messageType, message) {
         .eq('call_id', call.id);
       
       console.log(`${colors.green}Updated call data in Supabase${colors.reset}`);
+    
+      // --- Update lead_profiles table for metrics ---
+      await updateLeadProfileAfterCall(call);
     } else {
       // Insert new call
       const newCall = {
@@ -234,8 +253,70 @@ async function storeCallData(call, messageType, message) {
         }
       }
     }
+    // --- Always update lead_profiles after inserting a new call ---
+    await updateLeadProfileAfterCall(call);
   } catch (error) {
     console.error(`${colors.red}Error storing call data:${colors.reset}`, error);
+  }
+}
+
+// Update or create lead_profiles record after a call
+async function updateLeadProfileAfterCall(call) {
+  try {
+    if (!call.customer || !call.customer.number) return;
+    const phone = call.customer.number;
+    // Find the lead record
+    const { data: lead } = await supabase
+      .from('leads')
+      .select('id')
+      .eq('phone', phone)
+      .single();
+    if (!lead) return;
+    // Find lead_profile
+    const { data: profile } = await supabase
+      .from('lead_profiles')
+      .select('*')
+      .eq('phone', phone)
+      .single();
+    const now = new Date().toISOString();
+    if (profile) {
+      // Update stats
+      let total_calls = (profile.total_calls || 0) + 1;
+      let answered_calls = profile.answered_calls || 0;
+      let missed_calls = profile.missed_calls || 0;
+      let last_call_status = call.status || null;
+      if (call.status === 'completed') answered_calls++;
+      if (call.status === 'missed') missed_calls++;
+      await supabase
+        .from('lead_profiles')
+        .update({
+          total_calls,
+          answered_calls,
+          missed_calls,
+          last_call_date: now,
+          last_call_status,
+          updated_at: now
+        })
+        .eq('id', profile.id);
+    } else {
+      // Create new profile
+      await supabase
+        .from('lead_profiles')
+        .insert([{
+          lead_id: lead.id,
+          phone,
+          first_contact_date: now,
+          total_calls: 1,
+          answered_calls: call.status === 'completed' ? 1 : 0,
+          missed_calls: call.status === 'missed' ? 1 : 0,
+          last_call_date: now,
+          last_call_status: call.status || null,
+          created_at: now,
+          updated_at: now
+        }]);
+    }
+  } catch (err) {
+    console.error('Error updating lead_profiles after call:', err);
   }
 }
 
