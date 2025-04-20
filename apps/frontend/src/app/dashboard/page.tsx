@@ -467,7 +467,11 @@ export default function DashboardPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <CallManagementMetrics />
+                <iframe
+  src="https://calendar.google.com/calendar/embed?src=your_calendar_id&ctz=UTC"
+  style={{ border: 0, width: '100%', height: '600px', frameBorder: 0, scrolling: 'no' }}
+  title="Google Calendar"
+></iframe>
               </CardContent>
             </Card>
           </div>

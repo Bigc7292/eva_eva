@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
     }
     
     // Format dates for callsByDay
-    const formattedCallsByDay = callsByDay?.map(day => ({
+    const formattedCallsByDay = callsByDay?.map((day: { date: string; count: number }) => ({
       date: format(new Date(day.date), 'MMM d'),
       count: day.count
     })) || []
@@ -104,7 +104,7 @@ export async function GET(request: NextRequest) {
     }
     
     // Calculate success rate
-    const completedCalls = callsByStatus?.find(status => status.status === 'Completed')?.count || 0
+    const completedCalls = callsByStatus?.find((status: { status: string; count: number }) => status.status === 'Completed')?.count || 0
     const successRate = totalCalls ? Math.round((completedCalls / totalCalls) * 100) : 0
     
     // Prepare analytics data

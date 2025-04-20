@@ -45,13 +45,14 @@ export async function GET(request: NextRequest) {
     })
 
     // Group leads by status
-    const segmentedLeads = {
+    type LeadStatus = 'not_interested' | 'call_back_later' | 'no_answer' | 'booked' | 'new';
+    const segmentedLeads: Record<LeadStatus, any[]> = {
       not_interested: [],
       call_back_later: [],
       no_answer: [],
       booked: [],
       new: []
-    }
+    };
 
     // Add last call date to each lead and group by status
     leads?.forEach(lead => {
@@ -60,11 +61,11 @@ export async function GET(request: NextRequest) {
         last_call_date: lastCallDateMap.get(lead.lead_id) || null
       }
 
-      const status = lead.status || 'new'
+      const status = (lead.status || 'new') as LeadStatus;
       if (segmentedLeads[status]) {
-        segmentedLeads[status].push(leadWithLastCall)
+        segmentedLeads[status].push(leadWithLastCall);
       } else {
-        segmentedLeads.new.push(leadWithLastCall)
+        segmentedLeads['new'].push(leadWithLastCall);
       }
     })
 

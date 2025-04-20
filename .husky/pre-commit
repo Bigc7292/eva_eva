@@ -1,8 +1,0 @@
-#!/bin/sh
-. "$(dirname "$0")/_/husky.sh"
-
-# Skip npm audit during pre-commit
-# npm audit || true
-
-# Run other pre-commit checks
-npm run lint

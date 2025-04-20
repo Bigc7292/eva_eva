@@ -461,7 +461,7 @@ export function EnhancedCallAnalytics() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {loading ? 'Loading...' : `${(enhancedData?.avg_call_latency || 0).toFixed(2)}s`}
+                  {loading ? 'Loading...' : `${Number(enhancedData?.avg_call_latency ?? 0).toFixed(2)}s`}
                 </div>
               </CardContent>
             </Card>

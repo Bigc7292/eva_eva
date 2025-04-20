@@ -82,7 +82,7 @@ export async function GET(request: NextRequest) {
       // Calculate averages and rates
       const result = Array.from(callsByAgent.values()).map(agent => {
         const avgDuration = agent.durations.length > 0
-          ? agent.durations.reduce((sum, duration) => sum + duration, 0) / agent.durations.length
+          ? agent.durations.reduce((sum: number, duration: number) => sum + duration, 0) / agent.durations.length
           : 0
           
         const callPickedUpRate = agent.total_calls > 0 

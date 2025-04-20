@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
       // Calculate average durations
       const result = Array.from(callsByDay.values()).map(day => {
         const avgDuration = day.durations.length > 0
-          ? day.durations.reduce((sum, duration) => sum + duration, 0) / day.durations.length
+          ? day.durations.reduce((sum: number, duration: number) => sum + duration, 0) / day.durations.length
           : 0
           
         return {

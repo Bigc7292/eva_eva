@@ -5,16 +5,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Phone, 
-  PhoneCall, 
-  PhoneOff, 
   Clock, 
   DollarSign, 
   Calendar, 
   MapPin, 
   Building, 
-  Home, 
   Users, 
-  RefreshCw 
+  RefreshCw, 
+  PhoneCall, 
+  Home
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { formatCurrency, formatNumber, formatDuration } from '@/lib/utils';
@@ -168,7 +167,7 @@ export function CallManagementMetrics() {
 
       <Tabs defaultValue="calls" className="w-full">
         <TabsList className="mb-4">
-          <TabsTrigger value="calls">Call Metrics</TabsTrigger>
+          <TabsTrigger value="calls">Calendar</TabsTrigger>
           <TabsTrigger value="costs">Cost Metrics</TabsTrigger>
           <TabsTrigger value="meetings">Meeting Metrics</TabsTrigger>
           <TabsTrigger value="leads">Lead Segmentation</TabsTrigger>
@@ -238,12 +237,19 @@ export function CallManagementMetrics() {
             
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Avg Calls Per Meeting</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-sm font-medium">Total Call Minutes (Week)</CardTitle>
+                <Clock className="h-4 w-4 text-blue-500" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {loading ? 'Loading...' : formatMetric(callMetrics?.avg_calls_per_meeting)}
+                  {loading ? 'Loading...' :
+                    (() => {
+                      const totalMinutes = callMetrics?.calls_this_week && callMetrics?.avg_call_duration
+                        ? Math.round((callMetrics.calls_this_week * callMetrics.avg_call_duration) / 60)
+                        : 0;
+                      return `${totalMinutes} min`;
+                    })()
+                  }
                 </div>
               </CardContent>
             </Card>
