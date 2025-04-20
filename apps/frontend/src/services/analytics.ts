@@ -6,6 +6,13 @@ import { simpleLogger } from '@/components/debug/SimpleLogger'
 
 export const analyticsService = {
   async getCallMetrics(dateRange: DateRange): Promise<CallMetrics> {
+    simpleLogger.info('Getting call metrics', {
+      dateRange: {
+        start: dateRange.start.toISOString(),
+        end: dateRange.end.toISOString()
+      }
+    })
+
     // Simulate API call delay
     await new Promise(resolve => setTimeout(resolve, 600))
 
@@ -14,6 +21,8 @@ export const analyticsService = {
       const callDate = new Date(call.timestamp)
       return callDate >= dateRange.start && callDate <= dateRange.end
     })
+
+    simpleLogger.info('Call metrics filtered', { count: data.length })
 
     return {
       total: data.length,
@@ -43,35 +52,93 @@ export const analyticsService = {
 
   // Get dashboard stats
   async getDashboardStats() {
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 700))
+    simpleLogger.startTimer('getDashboardStats')
+    simpleLogger.info('Getting dashboard stats')
 
-    return {
-      totalLeads: dummyLeadAnalytics.totalLeads,
-      newLeadsToday: dummyLeadAnalytics.newLeadsToday,
-      totalCalls: dummyCallAnalytics.totalCalls,
-      missedCalls: dummyCallAnalytics.missedCalls,
-      completedCalls: dummyCallAnalytics.completedCalls,
-      averageCallDuration: dummyCallAnalytics.averageCallDuration,
-      leadsConversionRate: dummyLeadAnalytics.leadsConversionRate,
-      callsByDay: dummyCallAnalytics.callsByDay,
-      leadsByStatus: dummyLeadAnalytics.leadsByStatus,
-      callsByType: dummyCallAnalytics.callsByType
+    try {
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 700))
+
+      const stats = {
+        totalLeads: dummyLeadAnalytics.totalLeads,
+        newLeadsToday: dummyLeadAnalytics.newLeadsToday,
+        totalCalls: dummyCallAnalytics.totalCalls,
+        missedCalls: dummyCallAnalytics.missedCalls,
+        completedCalls: dummyCallAnalytics.completedCalls,
+        averageCallDuration: dummyCallAnalytics.averageCallDuration,
+        leadsConversionRate: dummyLeadAnalytics.leadsConversionRate,
+        callsByDay: dummyCallAnalytics.callsByDay,
+        leadsByStatus: dummyLeadAnalytics.leadsByStatus,
+        callsByType: dummyCallAnalytics.callsByType
+      }
+
+      simpleLogger.info('Dashboard stats retrieved', {
+        totalLeads: stats.totalLeads,
+        totalCalls: stats.totalCalls
+      })
+
+      const duration = simpleLogger.endTimer('getDashboardStats')
+      simpleLogger.info(`Dashboard stats retrieved in ${duration.toFixed(2)}ms`)
+
+      return stats
+    } catch (error) {
+      simpleLogger.error('Error getting dashboard stats', {
+        error: error instanceof Error ? error.message : String(error)
+      })
+      throw error
     }
   },
 
   // Get call analytics
   async getCallAnalytics(): Promise<CallAnalytics> {
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 600))
-    return dummyCallAnalytics
+    simpleLogger.startTimer('getCallAnalytics')
+    simpleLogger.info('Getting call analytics')
+
+    try {
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 600))
+
+      simpleLogger.info('Call analytics retrieved', {
+        totalCalls: dummyCallAnalytics.totalCalls,
+        completedCalls: dummyCallAnalytics.completedCalls
+      })
+
+      const duration = simpleLogger.endTimer('getCallAnalytics')
+      simpleLogger.info(`Call analytics retrieved in ${duration.toFixed(2)}ms`)
+
+      return dummyCallAnalytics
+    } catch (error) {
+      simpleLogger.error('Error getting call analytics', {
+        error: error instanceof Error ? error.message : String(error)
+      })
+      throw error
+    }
   },
 
   // Get lead analytics
   async getLeadAnalytics(): Promise<LeadAnalytics> {
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 500))
-    return dummyLeadAnalytics
+    simpleLogger.startTimer('getLeadAnalytics')
+    simpleLogger.info('Getting lead analytics')
+
+    try {
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 500))
+
+      simpleLogger.info('Lead analytics retrieved', {
+        totalLeads: dummyLeadAnalytics.totalLeads,
+        newLeadsToday: dummyLeadAnalytics.newLeadsToday
+      })
+
+      const duration = simpleLogger.endTimer('getLeadAnalytics')
+      simpleLogger.info(`Lead analytics retrieved in ${duration.toFixed(2)}ms`)
+
+      return dummyLeadAnalytics
+    } catch (error) {
+      simpleLogger.error('Error getting lead analytics', {
+        error: error instanceof Error ? error.message : String(error)
+      })
+      throw error
+    }
   },
 
   // Additional analysis methods
@@ -99,7 +166,7 @@ export const analyticsService = {
     }, {})
   },
 
-  private generateCSV(metrics: CallMetrics): string {
+  generateCSV(metrics: CallMetrics): string {
     // Implementation for CSV generation
     const rows = [
       ['Date', 'Total Calls', 'Outbound', 'Inbound', 'Conversion Rate'],
