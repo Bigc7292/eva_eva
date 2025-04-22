@@ -22,10 +22,22 @@ import { CallManagementMetrics } from '@/components/dashboard/CallManagementMetr
 import { VapiCallPanel } from '@/components/dashboard/VapiCallPanel'
 import { EnhancedCallAnalytics } from '@/components/dashboard/EnhancedCallAnalytics'
 import { MeetingsAnalytics } from '@/components/dashboard/MeetingsAnalytics'
+import { GoogleCalendarWidget } from '@/components/dashboard/GoogleCalendarWidget'
+import { PredictiveAnalyticsWidget } from '@/components/dashboard/PredictiveAnalyticsWidget'
+import { EnhancedAnalyticsWidget } from '@/components/dashboard/EnhancedAnalyticsWidget'
+import { EnhancedCallQualityWidget } from '@/components/dashboard/EnhancedCallQualityWidget'
+import { EnhancedCallTrendsWidget } from '@/components/dashboard/EnhancedCallTrendsWidget'
+import { EnhancedTeamPerformanceWidget } from '@/components/dashboard/EnhancedTeamPerformanceWidget'
+import { EnhancedMeetingStatisticsWidget } from '@/components/dashboard/EnhancedMeetingStatisticsWidget'
+import { EnhancedLeadPerformanceWidget } from '@/components/dashboard/EnhancedLeadPerformanceWidget'
+import { EnhancedCustomerFeedbackWidget } from '@/components/dashboard/EnhancedCustomerFeedbackWidget'
+import { EnhancedAlertsNotificationsWidget } from '@/components/dashboard/EnhancedAlertsNotificationsWidget'
+import { EnhancedDebugPanelWidget } from '@/components/dashboard/EnhancedDebugPanelWidget'
+import { EnhancedGoogleCalendar } from '@/components/dashboard/EnhancedGoogleCalendar'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Progress } from '@/components/ui/progress'
-import { ArrowUpRight, ArrowDownRight, Phone, PhoneOff, Clock, Users, Calendar, BarChart3, PieChart, TrendingUp, Award } from 'lucide-react'
+import { ArrowUpRight, ArrowDownRight, Phone, PhoneOff, Clock, Users, Calendar, BarChart3, PieChart, TrendingUp, Award, Download, Brain } from 'lucide-react'
 
 interface Call {
   id: string
@@ -47,7 +59,7 @@ interface Call {
   callback_time?: string
   created_at: string
   updated_at: string
-  metadata?: any
+  metadata?: Record<string, unknown>
 
   // Compatibility fields
   leadId?: string
@@ -81,9 +93,9 @@ interface DashboardStats {
 
 export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
-  const [callAnalytics, setCallAnalytics] = useState<any>(null)
-  const [leadAnalytics, setLeadAnalytics] = useState<any>(null)
-  const [meetingAnalytics, setMeetingAnalytics] = useState<any>(null)
+  const [callAnalytics, setCallAnalytics] = useState<Record<string, unknown> | null>(null)
+  const [leadAnalytics, setLeadAnalytics] = useState<Record<string, unknown> | null>(null)
+  const [meetingAnalytics, setMeetingAnalytics] = useState<Record<string, unknown> | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [dateRange, setDateRange] = useState({
     start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
@@ -228,7 +240,7 @@ export default function DashboardPage() {
   // Format team members data based on actual call data
   // Get agent data from the API or use a placeholder if no data is available
   const teamMembers = callAnalytics?.agents?.length > 0 ?
-    callAnalytics.agents.map((agent: any) => ({
+    callAnalytics.agents.map((agent: Record<string, unknown>) => ({
       id: agent.id,
       name: agent.name,
       avatar: agent.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(agent.name)}`,
@@ -366,7 +378,7 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-950 dark:to-indigo-900">
+            <Card className="bg-gradient-to-br from-purple-50 to-indigo-100 dark:from-purple-950 dark:to-indigo-900">
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-sm font-medium">Meetings Booked</CardTitle>
@@ -374,71 +386,23 @@ export default function DashboardPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{meetingAnalytics?.totalMeetings || 0}</div>
+                <div className="text-3xl font-bold">{meetingAnalytics?.scheduled_meetings || 0}</div>
                 <div className="text-xs text-muted-foreground mt-1">
-                  {meetingAnalytics?.totalMeetings > 0 ? (
-                    <span>Total scheduled meetings</span>
-                  ) : (
-                    <span>No meetings scheduled yet</span>
-                  )}
+                  <span>Total scheduled meetings</span>
                 </div>
-                <Progress className="mt-2" value={meetingAnalytics?.totalMeetings > 0 ? 100 : 0} />
+                <Progress className="mt-2" value={meetingAnalytics?.scheduled_meetings ? 100 : 0} />
               </CardContent>
             </Card>
           </div>
 
           <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-2">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <div>
-                  <CardTitle className="text-base font-medium">Call Metrics</CardTitle>
-                  <p className="text-xs text-muted-foreground">Detailed call performance metrics</p>
-                </div>
-                <BarChart3 className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <CallMetrics metrics={callMetrics} />
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <div>
-                  <CardTitle className="text-base font-medium">Call Quality</CardTitle>
-                  <p className="text-xs text-muted-foreground">Distribution by call duration</p>
-                </div>
-                <PieChart className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <CallQualityChart quality={callQuality} />
-              </CardContent>
-            </Card>
+            <EnhancedAnalyticsWidget />
+            <EnhancedCallQualityWidget quality={callQuality} />
           </div>
 
           <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-2">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <div>
-                  <CardTitle className="text-base font-medium">Call Trends</CardTitle>
-                  <p className="text-xs text-muted-foreground">Daily call volume over time</p>
-                </div>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <CallTrends data={callTrendsData} />
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <div>
-                  <CardTitle className="text-base font-medium">Team Performance</CardTitle>
-                  <p className="text-xs text-muted-foreground">Agent performance metrics</p>
-                </div>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <TeamPerformance members={teamMembers} />
-              </CardContent>
-            </Card>
+            <EnhancedCallTrendsWidget data={callTrendsData} />
+            <EnhancedTeamPerformanceWidget members={teamMembers} />
           </div>
         </TabsContent>
 
@@ -489,6 +453,63 @@ export default function DashboardPage() {
 
         <TabsContent value="meetings" className="space-y-4">
           <div className="grid gap-4">
+            <EnhancedGoogleCalendar
+              fullHeight={true}
+              autoRefresh={true}
+              refreshInterval={60000}
+            />
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <EnhancedMeetingStatisticsWidget
+              totalMeetings={meetingAnalytics?.total_meetings || 0}
+              completedMeetings={meetingAnalytics?.completed_meetings || 0}
+              cancelledMeetings={meetingAnalytics?.cancelled_meetings || 0}
+              scheduledMeetings={meetingAnalytics?.scheduled_meetings || 0}
+            />
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <div>
+                  <CardTitle className="text-base font-medium">Export Options</CardTitle>
+                  <p className="text-xs text-muted-foreground">Download meeting data</p>
+                </div>
+                <Download className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm font-medium mb-2">Export Format</p>
+                    <div className="flex space-x-2">
+                      <Button variant="outline" size="sm" className="flex-1">
+                        <Download className="h-3.5 w-3.5 mr-1" />
+                        CSV
+                      </Button>
+                      <Button variant="outline" size="sm" className="flex-1">
+                        <Download className="h-3.5 w-3.5 mr-1" />
+                        PDF
+                      </Button>
+                      <Button variant="outline" size="sm" className="flex-1">
+                        <Download className="h-3.5 w-3.5 mr-1" />
+                        Excel
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-sm font-medium mb-2">Date Range</p>
+                    <div className="flex space-x-2">
+                      <Button variant="outline" size="sm" className="flex-1">This Week</Button>
+                      <Button variant="outline" size="sm" className="flex-1">This Month</Button>
+                      <Button variant="outline" size="sm" className="flex-1">Custom</Button>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid gap-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <div>
@@ -499,11 +520,14 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent>
                 <MeetingsAnalytics
-                  totalMeetings={meetingAnalytics?.totalMeetings || 0}
-                  offplanMeetings={meetingAnalytics?.offplanMeetings || 0}
-                  secondaryMeetings={meetingAnalytics?.secondaryMeetings || 0}
-                  costPerMeeting={meetingAnalytics?.costPerMeeting || 0}
-                  totalCost={meetingAnalytics?.totalCost || 0}
+                  totalMeetings={meetingAnalytics?.total_meetings || 0}
+                  completedMeetings={meetingAnalytics?.completed_meetings || 0}
+                  cancelledMeetings={meetingAnalytics?.cancelled_meetings || 0}
+                  scheduledMeetings={meetingAnalytics?.scheduled_meetings || 0}
+                  locations={meetingAnalytics?.locations || []}
+                  types={meetingAnalytics?.types || []}
+                  costPerMeeting={meetingAnalytics?.avg_cost_per_meeting || 0}
+                  totalCost={meetingAnalytics?.total_cost || 0}
                 />
               </CardContent>
             </Card>
@@ -511,33 +535,9 @@ export default function DashboardPage() {
         </TabsContent>
 
         <TabsContent value="leads" className="space-y-4">
-          <div className="grid gap-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <div>
-                  <CardTitle className="text-base font-medium">Lead Performance</CardTitle>
-                  <p className="text-xs text-muted-foreground">Conversion metrics and lead quality</p>
-                </div>
-                <Award className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <LeadPerformance />
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="grid gap-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <div>
-                  <CardTitle className="text-base font-medium">Customer Feedback</CardTitle>
-                  <p className="text-xs text-muted-foreground">Sentiment analysis from calls</p>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <CustomerFeedback />
-              </CardContent>
-            </Card>
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-2">
+            <EnhancedLeadPerformanceWidget />
+            <EnhancedCustomerFeedbackWidget />
           </div>
         </TabsContent>
 
@@ -557,28 +557,8 @@ export default function DashboardPage() {
           </div>
 
           <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-2">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <div>
-                  <CardTitle className="text-base font-medium">Alerts & Notifications</CardTitle>
-                  <p className="text-xs text-muted-foreground">System alerts and notifications</p>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <AlertsNotifications />
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <div>
-                  <CardTitle className="text-base font-medium">Debug Panel</CardTitle>
-                  <p className="text-xs text-muted-foreground">System diagnostics</p>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <DebugPanel />
-              </CardContent>
-            </Card>
+            <EnhancedAlertsNotificationsWidget />
+            <EnhancedDebugPanelWidget />
           </div>
         </TabsContent>
       </Tabs>

@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Phone, Mail, MapPin, Calendar, Clock, User, FileText, AudioLines, MessageSquare } from 'lucide-react'
+import { Phone, Mail, MapPin, Calendar, Clock, User /*, FileText as FileIcon, Headphones as HeadphonesIcon, ChatBubble as MessageSquareIcon, Download as DownloadIcon, ArrowDown as ChevronDownIcon, ArrowUp as ChevronUpIcon, Brain as BrainCircuit */ } from 'lucide-react'
 
 interface Lead {
   id: string
@@ -63,7 +63,7 @@ interface Call {
   callback_time?: string
   created_at: string
   updated_at: string
-  metadata?: any
+  metadata?: Record<string, unknown>
 }
 
 interface Meeting {
@@ -90,6 +90,7 @@ export default function LeadProfilePage() {
   const [meetings, setMeetings] = useState<Meeting[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [expandedTranscript, setExpandedTranscript] = useState<string | null>(null)
 
   useEffect(() => {
     async function fetchLeadData() {
@@ -97,98 +98,182 @@ export default function LeadProfilePage() {
         setLoading(true)
         setError(null)
 
-        // Fetch lead data from enhanced_leads
-        const { data: leadData, error: leadError } = await supabase
-          .from('enhanced_leads')
-          .select('*')
-          .eq('lead_id', leadId)
-          .single()
+        // Try to fetch lead data from contacts table first
+        let leadData: Record<string, unknown> = {};
+        let leadError: Error | null = null;
 
+        try {
+          // First try with contact_id field
+          const contactResult = await supabase
+            .from('contacts')
+            .select('*')
+            .eq('contact_id', leadId)
+            .single();
+
+          leadData = contactResult.data;
+          leadError = contactResult.error;
+
+          // If not found, try with id field
+          if (leadError) {
+            const contactResult2 = await supabase
+              .from('contacts')
+              .select('*')
+              .eq('id', leadId)
+              .single();
+
+            leadData = contactResult2.data;
+            leadError = contactResult2.error;
+          }
+        } catch (contactError: unknown) {
+          console.log(`Contact not found with ID ${leadId}, trying leads table`);
+          leadError = contactError as Error;
+        }
+
+        // If contact not found, try leads table
         if (leadError) {
-          throw new Error(`Error fetching lead: ${leadError.message}`)
+          try {
+            const leadResult = await supabase
+              .from('leads')
+              .select('*')
+              .eq('id', leadId)
+              .single();
+
+            leadData = leadResult.data;
+            leadError = leadResult.error;
+
+            if (leadError) {
+              throw new Error(`Error fetching lead: ${leadError.message}`);
+            }
+          } catch (error) {
+            console.error('Error fetching from leads table:', error);
+            throw new Error(`Lead not found with ID: ${leadId}`);
+          }
         }
 
         if (!leadData) {
-          throw new Error('Lead not found')
+          throw new Error('Lead not found');
         }
 
-        // Convert enhanced_leads data to our Lead interface
+        // Convert contact/lead data to our Lead interface
         const processedLead: Lead = {
-          id: leadData.lead_id,
-          name: leadData.name || 'Unknown',
-          phone: leadData.phone_number || leadData.phone || '',
-          email: leadData.email || '',
-          status: leadData.status || 'new',
-          property_interest: leadData.property_interest || '',
-          budget: leadData.budget || 0,
-          location: leadData.location || '',
-          nationality: leadData.nationality || '',
-          notes: leadData.notes || '',
-          created_at: leadData.created_at,
-          updated_at: leadData.updated_at
+          id: String(leadData.id || leadData.contact_id || ''),
+          name: String(leadData.name || 'Unknown'),
+          phone: String(leadData.phone || leadData.phone_number || ''),
+          email: String(leadData.email || ''),
+          status: String(leadData.status || 'new'),
+          property_interest: String(leadData.property_interest || leadData.interests || ''),
+          budget: Number(leadData.budget || 0),
+          location: String(leadData.location || ''),
+          nationality: String(leadData.nationality || ''),
+          notes: String(leadData.notes || ''),
+          created_at: String(leadData.created_at || new Date().toISOString()),
+          updated_at: String(leadData.updated_at || new Date().toISOString())
         }
 
         setLead(processedLead)
 
-        // Create profile data from enhanced_leads
+        // Fetch calls for this contact/lead to calculate profile metrics
+        let callsData = [];
+        let callsError = null;
+
+        // Get the contact ID from either id or contact_id field
+        const contactId = leadData.id || leadData.contact_id;
+        console.log(`Fetching calls for contact ID: ${contactId}`);
+
+        // Try with contact_id field first
+        try {
+          const contactIdResult = await supabase
+            .from('calls')
+            .select('*')
+            .eq('contact_id', contactId)
+            .order('created_at', { ascending: false });
+
+          callsData = contactIdResult.data || [];
+          callsError = contactIdResult.error;
+
+          console.log(`Found ${callsData.length} calls with contact_id=${contactId}`);
+
+          // If no calls found, try with lead_id field
+          if (callsError || callsData.length === 0) {
+            const leadIdResult = await supabase
+              .from('calls')
+              .select('*')
+              .eq('lead_id', contactId)
+              .order('created_at', { ascending: false });
+
+            callsData = leadIdResult.data || [];
+            callsError = leadIdResult.error;
+
+            console.log(`Found ${callsData.length} calls with lead_id=${contactId}`);
+          }
+        } catch (error) {
+          console.error('Error fetching calls:', error);
+          callsError = error;
+        }
+
+        // Calculate call statistics
+        const totalCalls = callsData?.length || 0;
+        const answeredCalls = callsData?.filter(call => {
+          const status = String(call.status || call.call_status || '').toLowerCase();
+          return status === 'completed' || status === 'answered';
+        }).length || 0;
+
+        const missedCalls = callsData?.filter(call => {
+          const status = String(call.status || call.call_status || '').toLowerCase();
+          return status === 'missed' || status === 'no answer' || status === 'failed';
+        }).length || 0;
+
+        // Get last call date and status
+        let lastCallDate = null;
+        let lastCallStatus = null;
+
+        if (callsData && callsData.length > 0) {
+          lastCallDate = callsData[0].created_at || callsData[0].timestamp;
+          lastCallStatus = callsData[0].status || callsData[0].call_status;
+        }
+
+        // Create profile data from contact/lead and calculated metrics
         const profileData: LeadProfile = {
-          id: leadData.lead_id,
-          lead_id: leadData.lead_id,
-          phone: leadData.phone_number || leadData.phone || '',
-          first_contact_date: leadData.created_at,
-          successful_meetings: leadData.successful_meetings || 0,
-          total_calls: leadData.total_calls || 0,
-          answered_calls: leadData.answered_calls || 0,
-          missed_calls: leadData.missed_calls || 0,
-          last_call_date: leadData.last_call_date,
-          last_call_status: leadData.last_call_status,
-          interest_level: leadData.lead_quality || 'Unknown',
-          created_at: leadData.created_at,
-          updated_at: leadData.updated_at
+          id: String(leadData.id || ''),
+          lead_id: String(leadData.id || ''),
+          phone: String(leadData.phone || ''),
+          first_contact_date: String(leadData.created_at || new Date().toISOString()),
+          successful_meetings: 0, // Will be calculated from meetings table if available
+          total_calls: totalCalls,
+          answered_calls: answeredCalls,
+          missed_calls: missedCalls,
+          last_call_date: lastCallDate || '',
+          last_call_status: lastCallStatus || '',
+          interest_level: String(leadData.interest_level || 'Unknown'),
+          created_at: String(leadData.created_at || new Date().toISOString()),
+          updated_at: String(leadData.updated_at || new Date().toISOString())
         }
 
         setProfile(profileData)
 
-        // Fetch calls for this lead
-        // Since the calls table doesn't have a direct lead_id column, we'll fetch all calls
-        // and filter them in the frontend for now
-        const { data: callsData, error: callsError } = await supabase
-          .from('calls')
-          .select('*')
-          .order('start_time', { ascending: false })
-
-        if (callsError) {
-          console.error('Error fetching calls:', callsError)
-        }
-
-        // Get the lead's phone number
-        const leadPhoneNumber = leadData.phone_number || leadData.phone
-
-        // Filter calls by phone number to match the lead
-        const filteredCalls = callsData?.filter(call => call.phone_number === leadPhoneNumber) || []
-
+        // We already fetched calls above, so we can use that data
         // Process calls data
-        const processedCalls = filteredCalls.map(call => ({
-          id: call.call_id,
-          call_id: call.call_id,
+        const processedCalls = callsData?.map(call => ({
+          id: call.id || call.call_id || '',
+          call_id: call.call_id || call.id || '',
           lead_id: leadId,
-          phone_number: call.phone_number,
-          call_type: call.call_type || 'Unknown',
-          call_status: call.call_status || 'Unknown',
-          call_outcome: call.call_outcome,
-          timestamp: call.start_time,
-          end_time: call.end_time,
-          call_duration: call.call_duration,
-          recording_url: call.recording_url,
-          transcript: call.transcript,
-          summary: call.summary,
+          phone_number: call.phone_number || call.phone || '',
+          call_type: call.call_type || call.type || 'Unknown',
+          call_status: call.call_status || call.status || 'Unknown',
+          call_outcome: call.call_outcome || call.outcome || null,
+          timestamp: call.start_time || call.timestamp || call.created_at || '',
+          end_time: call.end_time || '',
+          call_duration: call.call_duration || call.duration || 0,
+          recording_url: call.recording_url || call.audio_url || '',
+          transcript: call.transcript || '',
+          summary: call.summary || '',
           meeting_scheduled: call.meeting_scheduled || false,
-          meeting_time: call.meeting_time,
+          meeting_time: call.meeting_time || '',
           callback_scheduled: call.callback_scheduled || false,
-          callback_time: call.callback_time,
-          created_at: call.created_at,
-          updated_at: call.updated_at,
-          metadata: null
+          callback_time: call.callback_time || '',
+          created_at: call.created_at || '',
+          updated_at: call.updated_at || '',
+          metadata: call.metadata || null
         })) || []
 
         setCalls(processedCalls)
@@ -344,11 +429,11 @@ export default function LeadProfilePage() {
           <div>
             <h1 className="text-2xl font-bold">{lead.name}</h1>
             <div className="flex items-center space-x-2 text-muted-foreground">
-              <Badge variant={getStatusBadgeVariant(lead.status)}>
+              <Badge variant={getStatusBadgeVariant(lead.status) as "default" | "secondary" | "success" | "destructive" | "outline"}>
                 {lead.status?.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
               </Badge>
               {profile?.interest_level && (
-                <Badge variant={getInterestLevelBadgeVariant(profile.interest_level)}>
+                <Badge variant={getInterestLevelBadgeVariant(profile.interest_level) as "default" | "secondary" | "success" | "destructive" | "outline"}>
                   {profile.interest_level} Interest
                 </Badge>
               )}
@@ -365,7 +450,7 @@ export default function LeadProfilePage() {
             Schedule Call
           </Button>
           <Button variant="outline" size="sm">
-            <MessageSquare className="mr-2 h-4 w-4" />
+            {/* <MessageSquareIcon className="mr-2 h-4 w-4" /> */}
             Send Message
           </Button>
         </div>
@@ -498,21 +583,72 @@ export default function LeadProfilePage() {
                   {call.summary && (
                     <div className="pt-2 border-t">
                       <div className="flex items-center mb-1">
-                        <FileText className="mr-2 h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium">Summary</span>
+                        {/* <BrainCircuit className="mr-2 h-4 w-4 text-muted-foreground" /> */}
+                        <span className="font-medium">AI Summary</span>
                       </div>
                       <p className="text-sm text-muted-foreground">{call.summary}</p>
                     </div>
                   )}
+
+                  {call.transcript && (
+                    <div className="pt-2 border-t">
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center">
+                          {/* <FileIcon className="mr-2 h-4 w-4 text-muted-foreground" /> */}
+                          <span className="font-medium">Transcript</span>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setExpandedTranscript(expandedTranscript === call.id ? null : call.id)}
+                          className="h-8 px-2"
+                        >
+                          {expandedTranscript === call.id ? (
+                            <>
+                              {/* <ChevronUpIcon className="h-4 w-4 mr-1" /> */}
+                              Hide
+                            </>
+                          ) : (
+                            <>
+                              {/* <ChevronDownIcon className="h-4 w-4 mr-1" /> */}
+                              Show
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                      {expandedTranscript === call.id && (
+                        <div className="bg-muted p-3 rounded-md max-h-60 overflow-y-auto">
+                          <pre className="text-xs whitespace-pre-line font-sans">{call.transcript}</pre>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </CardContent>
                 {call.recording_url && (
-                  <CardFooter className="flex justify-between border-t pt-4 pb-2">
-                    <div className="flex items-center">
-                      <AudioLines className="mr-2 h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm font-medium">Recording</span>
+                  <CardFooter className="flex flex-col border-t pt-4 pb-2 space-y-2">
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center">
+                        {/* <HeadphonesIcon className="mr-2 h-4 w-4 text-muted-foreground" /> */}
+                        <span className="text-sm font-medium">Call Recording</span>
+                      </div>
+                      <a
+                        href={call.recording_url}
+                        download
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center text-xs text-primary hover:underline"
+                      >
+                        {/* <DownloadIcon className="h-3 w-3 mr-1" /> */}
+                        Download
+                      </a>
                     </div>
-                    <audio controls className="w-2/3 h-8">
+                    <audio
+                      controls
+                      className="w-full h-8"
+                      aria-label={`Call recording from ${formatDate(call.timestamp)}`}
+                    >
                       <source src={call.recording_url} type="audio/mpeg" />
+                      <track kind="captions" src="" label="English captions" />
                       Your browser does not support the audio element.
                     </audio>
                   </CardFooter>
