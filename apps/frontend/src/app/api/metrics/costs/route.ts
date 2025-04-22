@@ -8,64 +8,104 @@ import { supabase } from '@/lib/services/supabase'
  */
 export async function GET(request: NextRequest) {
   try {
-    // Calculate cost metrics from enhanced_calls table
-    const { data: totalCost, error: totalCostError } = await supabase
-      .from('enhanced_calls')
-      .select('cost')
-      .not('cost', 'is', null)
+    // Calculate cost metrics from calls table
+    const { data: callsData, error: callsError } = await supabase
+      .from('calls')
+      .select('*')
 
-    if (totalCostError) {
-      console.error('Error fetching call costs:', totalCostError)
+    if (callsError) {
+      console.error('Error fetching calls:', callsError)
       return NextResponse.json(
-        { error: 'Failed to fetch call costs' },
+        { error: 'Failed to fetch calls' },
         { status: 500 }
       )
     }
 
-    // Calculate total cost
-    const sumTotalCost = totalCost?.reduce((sum, call) => sum + (Number(call.cost) || 0), 0) || 0
+    // Calculate estimated costs based on call duration
+    // Assuming $0.15 to $0.40 per minute based on model and prompts
+    const baseCostPerMinute = 0.15;
+    let sumTotalCost = 0;
+
+    if (callsData) {
+      for (const call of callsData) {
+        const duration = call.duration || call.call_duration || 0;
+        const durationInMinutes = typeof duration === 'number' ? duration / 60 : 0;
+        const callCost = durationInMinutes * baseCostPerMinute;
+        sumTotalCost += callCost;
+      }
+    }
+
+    // Group calls by day to calculate average cost per day
+    const callsByDay = new Map();
+
+    if (callsData) {
+      for (const call of callsData) {
+        try {
+          const dateField = call.created_at || call.timestamp || call.date;
+          if (dateField) {
+            const date = new Date(dateField).toISOString().split('T')[0];
+
+            if (!callsByDay.has(date)) {
+              callsByDay.set(date, { totalCost: 0, count: 0 });
+            }
+
+            const duration = call.duration || call.call_duration || 0;
+            const durationInMinutes = typeof duration === 'number' ? duration / 60 : 0;
+            const callCost = durationInMinutes * baseCostPerMinute;
+
+            const dayData = callsByDay.get(date);
+            dayData.totalCost += callCost;
+            dayData.count += 1;
+          }
+        } catch (error) {
+          console.log('Error processing call date:', error);
+        }
+      }
+    }
 
     // Calculate average cost per day
-    const { data: callsByDay, error: callsByDayError } = await supabase
-      .from('daily_analytics')
-      .select('date, total_cost')
-      .order('date', { ascending: false })
-      .limit(30)
+    let avgCostPerDay = 0;
+    let totalDays = 0;
 
-    if (callsByDayError) {
-      console.error('Error fetching daily costs:', callsByDayError)
-      return NextResponse.json(
-        { error: 'Failed to fetch daily costs' },
-        { status: 500 }
-      )
+    for (const [_, dayData] of callsByDay) {
+      avgCostPerDay += dayData.totalCost;
+      totalDays++;
     }
 
-    const avgCostPerDay = callsByDay && callsByDay.length > 0
-      ? callsByDay.reduce((sum, day) => sum + (Number(day.total_cost) || 0), 0) / callsByDay.length
-      : 0
+    if (totalDays > 0) {
+      avgCostPerDay = avgCostPerDay / totalDays;
+    }
 
     // Calculate average cost per meeting
     const { data: meetings, error: meetingsError } = await supabase
       .from('meetings')
       .select('meeting_id')
-      .neq('status', 'cancelled')
 
     if (meetingsError) {
       console.error('Error fetching meetings:', meetingsError)
-      return NextResponse.json(
-        { error: 'Failed to fetch meetings' },
-        { status: 500 }
-      )
+      // Continue without meetings data
     }
 
     const totalMeetings = meetings?.length || 0
     const avgCostPerMeeting = totalMeetings > 0 ? sumTotalCost / totalMeetings : 0
+    const avgCostPerCall = callsData && callsData.length > 0 ? sumTotalCost / callsData.length : 0
+
+    // Calculate cost per minute
+    const totalMinutes = callsData?.reduce((total, call) => {
+      const duration = call.duration || call.call_duration || 0;
+      return total + (typeof duration === 'number' ? duration / 60 : 0);
+    }, 0) || 0;
+
+    // Calculate the actual cost per minute based on total cost and minutes
+    const actualCostPerMinute = totalMinutes > 0 ? sumTotalCost / totalMinutes : baseCostPerMinute
 
     return NextResponse.json({
       total_cost: sumTotalCost,
       avg_cost_per_day: avgCostPerDay,
       avg_cost_per_meeting: avgCostPerMeeting,
-      avg_cost_per_call: totalCost && totalCost.length > 0 ? sumTotalCost / totalCost.length : 0
+      avg_cost_per_call: avgCostPerCall,
+      cost_per_minute: actualCostPerMinute,
+      total_minutes: totalMinutes
     })
   } catch (error) {
     console.error('Error in cost metrics API:', error)

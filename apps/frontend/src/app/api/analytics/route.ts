@@ -51,39 +51,110 @@ export async function GET(_request: NextRequest) {
     // Get calls from Supabase
     const { data: calls, error: callsError } = await supabase
       .from('calls')
-      .select('*')
-      .order('start_time', { ascending: false })
+      .select('*');
 
-    // Get leads from Supabase
-    const { data: leads, error: leadsError } = await supabase
-      .from('enhanced_leads')
-      .select('*') as { data: Lead[] | null, error: Error | null }
+    // Get contacts from Supabase
+    const { data: contacts, error: contactsError } = await supabase
+      .from('contacts')
+      .select('*');
 
-    if (callsError) throw callsError
-    if (leadsError) throw leadsError
+    // Get meetings from Supabase
+    const { data: meetings, error: meetingsError } = await supabase
+      .from('meetings')
+      .select('*');
+
+    // Get emails from Supabase
+    const { data: emails, error: emailsError } = await supabase
+      .from('emails')
+      .select('*');
+
+    // Get SMS from Supabase
+    const { data: sms, error: smsError } = await supabase
+      .from('sms')
+      .select('*');
+
+    // Get tasks from Supabase
+    const { data: tasks, error: tasksError } = await supabase
+      .from('tasks')
+      .select('*');
+
+    // Get notes from Supabase
+    const { data: notes, error: notesError } = await supabase
+      .from('notes')
+      .select('*');
+
+    // Log any errors but continue with empty arrays
+    if (callsError) console.log('Error fetching calls:', callsError);
+    if (contactsError) console.log('Error fetching contacts:', contactsError);
+    if (meetingsError) console.log('Error fetching meetings:', meetingsError);
+    if (emailsError) console.log('Error fetching emails:', emailsError);
+    if (smsError) console.log('Error fetching sms:', smsError);
+    if (tasksError) console.log('Error fetching tasks:', tasksError);
+    if (notesError) console.log('Error fetching notes:', notesError);
+
+    // Use empty arrays if data is null
+    const safeContacts = contacts || [];
+    const safeCalls = calls || [];
+    const safeMeetings = meetings || [];
+    const safeEmails = emails || [];
+    const safeSms = sms || [];
+    const safeTasks = tasks || [];
+    const safeNotes = notes || [];
 
     // Calculate analytics
-    const totalCalls = calls?.length || 0
-    const completedCalls = calls?.filter(call => call.status === 'completed' || call.call_status === 'completed').length || 0
-    const inboundCalls = calls?.filter(call => call.call_type === 'Inbound').length || 0
-    const outboundCalls = calls?.filter(call => call.call_type === 'Outbound').length || 0
-    const missedCalls = calls?.filter(call => call.status === 'missed' || call.call_status === 'missed').length || 0
+    const totalCalls = safeCalls.length;
+    const totalContacts = safeContacts.length;
+    const totalMeetings = safeMeetings.length;
+    const totalEmails = safeEmails.length;
+    const totalSms = safeSms.length;
+    const totalTasks = safeTasks.length;
+    const totalNotes = safeNotes.length;
+
+    // Calculate call statistics
+    const completedCalls = safeCalls.filter(call => {
+      const status = String(call.status || '').toLowerCase();
+      return status === 'completed' || status === 'answered' || status === 'complete';
+    }).length;
+
+    const inboundCalls = safeCalls.filter(call => {
+      const type = String(call.type || '').toLowerCase();
+      return type === 'inbound' || type === 'incoming';
+    }).length;
+
+    const outboundCalls = safeCalls.filter(call => {
+      const type = String(call.type || '').toLowerCase();
+      return type === 'outbound' || type === 'outgoing';
+    }).length;
+
+    const missedCalls = safeCalls.filter(call => {
+      const status = String(call.status || '').toLowerCase();
+      return status === 'missed' || status === 'no answer' || status === 'failed';
+    }).length;
 
     // Calculate average call duration
-    let averageCallDuration = 0
+    let averageCallDuration = 0;
     if (totalCalls > 0) {
-      const totalDuration = calls?.reduce((acc, call) => acc + (call.call_duration || 0), 0) || 0
-      averageCallDuration = totalDuration / totalCalls
+      const totalDuration = safeCalls.reduce((acc, call) => {
+        const duration = call.duration || 0;
+        return acc + (typeof duration === 'number' ? duration : 0);
+      }, 0);
+      averageCallDuration = totalDuration / totalCalls;
     }
 
     // Group calls by day
-    const callsByDay: DailyCallCount[] = []
-    const callDates: Record<string, number> = {}
+    const callsByDay: DailyCallCount[] = [];
+    const callDates: Record<string, number> = {};
 
-    if (calls) {
-      for (const call of calls) {
-        const date = new Date(call.start_time).toISOString().split('T')[0]
-        callDates[date] = (callDates[date] || 0) + 1
+    for (const call of safeCalls) {
+      try {
+        // Try to get date from created_at or timestamp field
+        const dateField = call.created_at || call.timestamp || call.date;
+        if (dateField) {
+          const date = new Date(dateField).toISOString().split('T')[0];
+          callDates[date] = (callDates[date] || 0) + 1;
+        }
+      } catch (error) {
+        console.log('Error parsing call date:', error);
       }
     }
 
@@ -92,44 +163,65 @@ export async function GET(_request: NextRequest) {
     }
 
     // Group calls by agent
-    const callsByAgent: AgentCallData[] = []
-    const agentCalls: Record<string, AgentCallData> = {}
+    const callsByAgent: AgentCallData[] = [];
+    const agentCalls: Record<string, AgentCallData> = {};
 
-    if (calls) {
-      for (const call of calls) {
-        const agentName = call.agent_name || 'Unassigned'
-        if (!agentCalls[agentName]) {
-          agentCalls[agentName] = {
-            agent_id: call.agent_id || 'unknown',
-            agent_name: agentName,
-            calls: []
-          }
-        }
-        agentCalls[agentName].calls.push(call)
+    for (const call of safeCalls) {
+      const agentName = call.agent_name || 'Unassigned';
+      if (!agentCalls[agentName]) {
+        agentCalls[agentName] = {
+          agent_id: call.agent_id || 'unknown',
+          agent_name: agentName,
+          calls: []
+        };
       }
+      agentCalls[agentName].calls.push(call);
     }
 
     for (const agent of Object.values(agentCalls)) {
-      callsByAgent.push(agent)
+      callsByAgent.push(agent);
     }
 
-    // If no data, return empty analytics
-    if (totalCalls === 0) {
-      console.log('No call data found in database');
+    // Calculate contact analytics
+    const today = new Date().toISOString().split('T')[0];
+    const newContactsToday = safeContacts.filter(contact => {
+      try {
+        const createdAt = contact.created_at || '';
+        return createdAt && new Date(createdAt).toISOString().split('T')[0] === today;
+      } catch (error) {
+        return false;
+      }
+    }).length;
+
+    // Calculate meeting statistics
+    const completedMeetings = safeMeetings.filter(meeting => {
+      const status = String(meeting.status || '').toLowerCase();
+      return status === 'completed' || status === 'done';
+    }).length;
+
+    const scheduledMeetings = safeMeetings.filter(meeting => {
+      const status = String(meeting.status || '').toLowerCase();
+      return status === 'scheduled' || status === 'pending';
+    }).length;
+
+    const cancelledMeetings = safeMeetings.filter(meeting => {
+      const status = String(meeting.status || '').toLowerCase();
+      return status === 'cancelled' || status === 'canceled';
+    }).length;
+
+    // Calculate conversion rate (contacts with meetings)
+    const contactsWithMeetings = new Set();
+    for (const meeting of safeMeetings) {
+      if (meeting.contact_id) {
+        contactsWithMeetings.add(meeting.contact_id);
+      }
     }
 
-    // Calculate lead analytics
-    const totalLeads = leads?.length || 0
-    const today = new Date().toISOString().split('T')[0]
-    const newLeadsToday = leads?.filter(lead =>
-      lead.created_at && new Date(lead.created_at).toISOString().split('T')[0] === today
-    ).length || 0
-
-    const convertedLeads = leads?.filter(lead => (lead.successful_meetings ?? 0) > 0 || lead.status === 'booked').length || 0
-    const leadsConversionRate = totalLeads > 0 ? (convertedLeads / totalLeads) * 100 : 0
+    const conversionRate = totalContacts > 0 ? (contactsWithMeetings.size / totalContacts) * 100 : 0;
 
     // Return analytics data
     return NextResponse.json({
+      // Call statistics
       totalCalls,
       completedCalls,
       inboundCalls,
@@ -138,12 +230,28 @@ export async function GET(_request: NextRequest) {
       averageCallDuration,
       callsByDay,
       callsByAgent,
-      totalLeads,
-      newLeadsToday,
-      leadsConversionRate,
-      leadsByStatus: [
-        { status: 'Active', count: totalLeads - convertedLeads },
-        { status: 'Converted', count: convertedLeads }
+
+      // Contact statistics
+      totalContacts,
+      newContactsToday,
+      conversionRate,
+
+      // Meeting statistics
+      totalMeetings,
+      completedMeetings,
+      scheduledMeetings,
+      cancelledMeetings,
+
+      // Other data counts
+      totalEmails,
+      totalSms,
+      totalTasks,
+      totalNotes,
+
+      // Status breakdown
+      contactsByStatus: [
+        { status: 'Active', count: totalContacts - contactsWithMeetings.size },
+        { status: 'Converted', count: contactsWithMeetings.size }
       ]
     })
   } catch (error) {

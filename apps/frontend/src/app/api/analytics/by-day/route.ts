@@ -11,50 +11,43 @@ export async function GET(request: NextRequest) {
   try {
     // Get query parameters
     const searchParams = request.nextUrl.searchParams
-    const days = parseInt(searchParams.get('days') || '30')
-    
+    const days = Number.parseInt(searchParams.get('days') || '30')
+
     // Calculate start date
     const startDate = subDays(new Date(), days).toISOString()
-    
-    // Get data from daily_analytics
-    const { data: dailyAnalytics, error: dailyAnalyticsError } = await supabase
-      .from('daily_analytics')
-      .select('*')
-      .gte('date', startDate)
-      .order('date', { ascending: true })
 
-    if (dailyAnalyticsError) {
-      console.error('Error fetching daily analytics:', dailyAnalyticsError)
+    // Get all calls within the date range
+    const { data: calls, error: callsError } = await supabase
+      .from('calls')
+      .select('*')
+
+    if (callsError) {
+      console.error('Error fetching calls:', callsError)
       return NextResponse.json(
-        { error: 'Failed to fetch daily analytics' },
+        { error: 'Failed to fetch calls' },
         { status: 500 }
       )
     }
 
-    // If no daily analytics data is available, calculate from enhanced_calls
-    if (!dailyAnalytics || dailyAnalytics.length === 0) {
-      // Get all calls within the date range
-      const { data: calls, error: callsError } = await supabase
-        .from('enhanced_calls')
-        .select('*')
-        .gte('timestamp', startDate)
-        .order('timestamp', { ascending: true })
+    // Group calls by day
+    const callsByDay = new Map()
 
-      if (callsError) {
-        console.error('Error fetching calls:', callsError)
-        return NextResponse.json(
-          { error: 'Failed to fetch calls' },
-          { status: 500 }
-        )
-      }
+    // Process each call and group by date
+    if (calls) {
+      for (const call of calls) {
+        // Try different date fields
+        const dateField = call.timestamp || call.created_at || call.date;
+        if (!dateField) continue;
 
-      // Group calls by day
-      const callsByDay = new Map()
-      
-      calls?.forEach(call => {
-        const date = call.timestamp ? new Date(call.timestamp).toISOString().split('T')[0] : null
-        if (!date) return
-        
+        // Extract the date part
+        let date: string;
+        try {
+          date = new Date(dateField).toISOString().split('T')[0];
+        } catch (e) {
+          continue; // Skip if date is invalid
+        }
+
+        // Initialize the day data if not exists
         if (!callsByDay.has(date)) {
           callsByDay.set(date, {
             call_date: format(new Date(date), 'MMM dd'),
@@ -66,48 +59,40 @@ export async function GET(request: NextRequest) {
             durations: []
           })
         }
-        
+
         const dayData = callsByDay.get(date)
         dayData.total_calls++
-        
-        if (call.outcome === 'successful') {
-          dayData.successful_calls++
-        } else if (call.outcome && call.outcome !== 'successful') {
-          dayData.unsuccessful_calls++
+
+        // Check call status
+        const status = String(call.status || '').toLowerCase();
+        if (status === 'completed' || status === 'answered') {
+          dayData.successful_calls++;
+        } else if (status === 'missed' || status === 'failed' || status === 'no answer') {
+          dayData.unsuccessful_calls++;
         }
-        
-        if (call.duration) {
-          dayData.durations.push(call.duration)
+
+        // Add duration if available
+        const duration = call.duration || call.call_duration;
+        if (duration) {
+          dayData.durations.push(Number(duration));
         }
-      })
-      
-      // Calculate average durations
-      const result = Array.from(callsByDay.values()).map(day => {
-        const avgDuration = day.durations.length > 0
-          ? day.durations.reduce((sum, duration) => sum + duration, 0) / day.durations.length
-          : 0
-          
-        return {
-          ...day,
-          avg_call_duration: avgDuration,
-          durations: undefined // Remove the durations array
-        }
-      })
-      
-      return NextResponse.json(result)
+      }
     }
 
-    // Format the daily analytics data
-    const formattedData = dailyAnalytics.map(day => ({
-      call_date: format(new Date(day.date), 'MMM dd'),
-      date: day.date,
-      total_calls: day.total_calls,
-      successful_calls: day.successful_calls,
-      unsuccessful_calls: day.unsuccessful_calls,
-      avg_call_duration: day.avg_call_duration
-    }))
+    // Calculate average durations and format the result
+    const result = Array.from(callsByDay.values()).map(day => {
+      const avgDuration = day.durations.length > 0
+        ? day.durations.reduce((sum, duration) => sum + duration, 0) / day.durations.length
+        : 0
 
-    return NextResponse.json(formattedData)
+      return {
+        ...day,
+        avg_call_duration: avgDuration,
+        durations: undefined // Remove the durations array
+      }
+    })
+
+    return NextResponse.json(result)
   } catch (error) {
     console.error('Error in daily analytics API:', error)
     return NextResponse.json(

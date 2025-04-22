@@ -3,18 +3,18 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Phone, 
-  PhoneCall, 
-  PhoneOff, 
-  Clock, 
-  DollarSign, 
-  Calendar, 
-  MapPin, 
-  Building, 
-  Home, 
-  Users, 
-  RefreshCw 
+import {
+  Phone,
+  PhoneCall,
+  PhoneOff,
+  Clock,
+  DollarSign,
+  Calendar,
+  MapPin,
+  Building,
+  Home,
+  Users,
+  RefreshCw
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { formatCurrency, formatNumber, formatDuration } from '@/lib/utils';
@@ -89,27 +89,81 @@ export function CallManagementMetrics() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch all metrics in parallel
-      const [callResponse, costResponse, meetingResponse, leadResponse] = await Promise.all([
-        fetch('http://localhost:3004/api/metrics/calls'),
-        fetch('http://localhost:3004/api/metrics/costs'),
-        fetch('http://localhost:3004/api/metrics/meetings'),
-        fetch('http://localhost:3004/api/leads/segmented')
+      // Fetch all metrics in parallel with error handling for each request
+      const callPromise = fetch('/api/metrics/calls')
+        .then(res => res.ok ? res.json() : null)
+        .catch(err => {
+          console.error('Error fetching call metrics:', err);
+          return null;
+        });
+
+      const costPromise = fetch('/api/metrics/costs')
+        .then(res => res.ok ? res.json() : null)
+        .catch(err => {
+          console.error('Error fetching cost metrics:', err);
+          return null;
+        });
+
+      const meetingPromise = fetch('/api/metrics/meetings')
+        .then(res => res.ok ? res.json() : null)
+        .catch(err => {
+          console.error('Error fetching meeting metrics:', err);
+          return null;
+        });
+
+      const leadPromise = fetch('/api/leads/segmented')
+        .then(res => res.ok ? res.json() : null)
+        .catch(err => {
+          console.error('Error fetching lead segmentation:', err);
+          return null;
+        });
+
+      // Wait for all promises to resolve
+      const [callData, costData, meetingData, leadData] = await Promise.all([
+        callPromise,
+        costPromise,
+        meetingPromise,
+        leadPromise
       ]);
 
-      if (!callResponse.ok || !costResponse.ok || !meetingResponse.ok || !leadResponse.ok) {
-        throw new Error('Failed to fetch dashboard data');
-      }
+      // Set data with fallbacks
+      setCallMetrics(callData || {
+        total_calls: 0,
+        calls_today: 0,
+        calls_this_week: 0,
+        total_answered: 0,
+        answered_today: 0,
+        answered_this_week: 0,
+        avg_call_duration: 0,
+        avg_calls_per_meeting: 0,
+        avg_answered_per_day: 0
+      });
 
-      const callData = await callResponse.json();
-      const costData = await costResponse.json();
-      const meetingData = await meetingResponse.json();
-      const leadData = await leadResponse.json();
+      setCostMetrics(costData || {
+        avg_cost_per_day: 0,
+        avg_cost_per_meeting: 0
+      });
 
-      setCallMetrics(callData);
-      setCostMetrics(costData);
-      setMeetingMetrics(meetingData);
-      setLeadSegmentation(leadData);
+      setMeetingMetrics(meetingData || {
+        total_meetings: 0,
+        meetings_today: 0,
+        meetings_this_week: 0,
+        off_plan_meetings: 0,
+        secondary_meetings: 0,
+        avg_budget: 0,
+        locations: []
+      });
+
+      setLeadSegmentation(leadData || {
+        summary: [],
+        detailed: {
+          not_interested: [],
+          call_back_later: [],
+          no_answer: [],
+          booked: [],
+          new: []
+        }
+      });
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
       toast({
@@ -124,11 +178,12 @@ export function CallManagementMetrics() {
 
   useEffect(() => {
     fetchData();
-    
+
     // Set up polling for real-time updates (every 30 seconds)
     const intervalId = setInterval(fetchData, 30000);
-    
+
     return () => clearInterval(intervalId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleRefresh = () => {
@@ -142,17 +197,17 @@ export function CallManagementMetrics() {
   // Helper function to format numbers
   const formatMetric = (value: number | undefined, type: 'number' | 'currency' | 'duration' = 'number') => {
     if (value === undefined || value === null) return 'N/A';
-    
+
     if (type === 'currency') {
       return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
     }
-    
+
     if (type === 'duration') {
       const minutes = Math.floor(value / 60);
       const seconds = Math.floor(value % 60);
       return `${minutes}m ${seconds}s`;
     }
-    
+
     return new Intl.NumberFormat('en-US').format(value);
   };
 
@@ -173,7 +228,7 @@ export function CallManagementMetrics() {
           <TabsTrigger value="meetings">Meeting Metrics</TabsTrigger>
           <TabsTrigger value="leads">Lead Segmentation</TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="calls" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <Card>
@@ -187,7 +242,7 @@ export function CallManagementMetrics() {
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Calls (Today)</CardTitle>
@@ -199,7 +254,7 @@ export function CallManagementMetrics() {
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Answered Calls (Week)</CardTitle>
@@ -211,7 +266,7 @@ export function CallManagementMetrics() {
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Answered Calls (Today)</CardTitle>
@@ -223,7 +278,7 @@ export function CallManagementMetrics() {
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Average Call Duration</CardTitle>
@@ -235,7 +290,7 @@ export function CallManagementMetrics() {
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Avg Calls Per Meeting</CardTitle>
@@ -249,7 +304,7 @@ export function CallManagementMetrics() {
             </Card>
           </div>
         </TabsContent>
-        
+
         <TabsContent value="costs" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Card>
@@ -263,7 +318,7 @@ export function CallManagementMetrics() {
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Average Cost Per Meeting</CardTitle>
@@ -277,7 +332,7 @@ export function CallManagementMetrics() {
             </Card>
           </div>
         </TabsContent>
-        
+
         <TabsContent value="meetings" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <Card>
@@ -291,7 +346,7 @@ export function CallManagementMetrics() {
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Meetings (Today)</CardTitle>
@@ -303,7 +358,7 @@ export function CallManagementMetrics() {
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Off-Plan Properties</CardTitle>
@@ -315,7 +370,7 @@ export function CallManagementMetrics() {
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Secondary Properties</CardTitle>
@@ -327,7 +382,7 @@ export function CallManagementMetrics() {
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Average Budget</CardTitle>
@@ -340,7 +395,7 @@ export function CallManagementMetrics() {
               </CardContent>
             </Card>
           </div>
-          
+
           {meetingMetrics?.locations && meetingMetrics.locations.length > 0 && (
             <Card>
               <CardHeader>
@@ -348,8 +403,8 @@ export function CallManagementMetrics() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {meetingMetrics.locations.map((location, index) => (
-                    <div key={index} className="flex items-center justify-between">
+                  {meetingMetrics.locations.map((location) => (
+                    <div key={location.location} className="flex items-center justify-between">
                       <div className="flex items-center">
                         <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
                         <span>{location.location}</span>
@@ -362,12 +417,12 @@ export function CallManagementMetrics() {
             </Card>
           )}
         </TabsContent>
-        
+
         <TabsContent value="leads" className="space-y-4">
           {leadSegmentation?.summary && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {leadSegmentation.summary.map((segment, index) => (
-                <Card key={index}>
+              {leadSegmentation.summary.map((segment) => (
+                <Card key={segment.status}>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium capitalize">
                       {segment.status.replace(/_/g, ' ')}
@@ -381,10 +436,10 @@ export function CallManagementMetrics() {
               ))}
             </div>
           )}
-          
+
           {leadSegmentation?.detailed && (
             <div className="grid grid-cols-1 gap-4">
-              {Object.entries(leadSegmentation.detailed).map(([status, leads]) => (
+              {Object.entries(leadSegmentation.detailed).map(([status, leads], index) => (
                 leads.length > 0 && (
                   <Card key={status}>
                     <CardHeader>
@@ -409,8 +464,8 @@ export function CallManagementMetrics() {
                                 <td className="py-2 px-2">{lead.name || 'Unknown'}</td>
                                 <td className="py-2 px-2">{lead.phone_number}</td>
                                 <td className="py-2 px-2">
-                                  {lead.last_call_date 
-                                    ? new Date(lead.last_call_date).toLocaleDateString() 
+                                  {lead.last_call_date
+                                    ? new Date(lead.last_call_date).toLocaleDateString()
                                     : 'Never'}
                                 </td>
                                 <td className="py-2 px-2">{lead.total_calls}</td>

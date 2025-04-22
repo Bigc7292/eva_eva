@@ -15,101 +15,69 @@ export async function setupDatabase() {
 
 async function insertSampleData() {
   try {
-    // Check if we already have data
+    // Check if we already have data in contacts table
     const { count, error: countError } = await supabase
-      .from('leads')
+      .from('contacts')
       .select('*', { count: 'exact', head: true })
 
     if (countError) {
-      console.error('Error checking for existing data:', countError)
+      console.error('Error checking for existing contacts data:', countError)
       return
     }
 
-    // Only insert sample data if we don't have any leads yet
+    // Only insert sample data if we don't have any contacts yet
     if (count === 0) {
-      // Insert sample leads
-      const { error: leadsError } = await supabase
-        .from('leads')
+      // Insert sample contacts
+      const { error: contactsError } = await supabase
+        .from('contacts')
         .insert([
           {
             name: 'John Smith',
-            phone: '+1234567890',
+            phone_number: '+1234567890',
             email: 'john.smith@example.com',
-            status: 'new',
-            property_interest: 'Off-plan',
-            budget: 1500000,
-            location: 'Dubai Marina',
-            nationality: 'British',
+            interests: 'Off-plan',
             notes: 'Looking for investment property'
           },
           {
             name: 'Sarah Johnson',
-            phone: '+9876543210',
+            phone_number: '+9876543210',
             email: 'sarah.j@example.com',
-            status: 'call_back_later',
-            property_interest: 'Secondary',
-            budget: 2000000,
-            location: 'Palm Jumeirah',
-            nationality: 'American',
+            interests: 'Secondary',
             notes: 'Interested in beachfront properties'
           },
           {
             name: 'Mohammed Al Farsi',
-            phone: '+971565401583',
+            phone_number: '+971565401583',
             email: 'mohammed.f@example.com',
-            status: 'new',
-            property_interest: 'Both',
-            budget: 3000000,
-            location: 'Downtown Dubai',
-            nationality: 'Emirati',
+            interests: 'Both',
             notes: 'Looking for both investment and personal use'
           }
         ])
 
-      if (leadsError) {
-        console.error('Error inserting sample leads:', leadsError)
+      if (contactsError) {
+        console.error('Error inserting sample contacts:', contactsError)
         return
       }
 
-      console.log('Inserted sample leads')
+      console.log('Inserted sample contacts')
 
-      // Get the inserted leads to create profiles and calls
-      const { data: leads, error: fetchError } = await supabase
-        .from('leads')
+      // Get the inserted contacts to create calls
+      const { data: contacts, error: fetchError } = await supabase
+        .from('contacts')
         .select('*')
 
-      if (fetchError || !leads) {
-        console.error('Error fetching inserted leads:', fetchError)
+      if (fetchError || !contacts) {
+        console.error('Error fetching inserted contacts:', fetchError)
         return
       }
 
-      // Insert lead profiles
-      const leadProfiles = leads.map(lead => ({
-        lead_id: lead.id,
-        phone: lead.phone,
-        first_contact_date: new Date().toISOString(),
-        total_calls: 0,
-        answered_calls: 0,
-        missed_calls: 0,
-        interest_level: 'Medium'
-      }))
-
-      const { error: profilesError } = await supabase
-        .from('lead_profiles')
-        .insert(leadProfiles)
-
-      if (profilesError) {
-        console.error('Error inserting lead profiles:', profilesError)
-        return
-      }
-
-      console.log('Inserted lead profiles')
+      console.log('Successfully fetched contacts')
 
       // Insert sample calls
       const sampleCalls = [
         {
           call_id: 'vapi_call_001',
-          lead_id: leads.find(l => l.phone === '+971565401583')?.id,
+          contact_id: contacts.find(c => c.phone_number === '+971565401583')?.contact_id,
           phone_number: '+971565401583',
           call_type: 'Outbound',
           call_status: 'Completed',
@@ -124,7 +92,7 @@ async function insertSampleData() {
         },
         {
           call_id: 'vapi_call_002',
-          lead_id: leads.find(l => l.phone === '+1234567890')?.id,
+          contact_id: contacts.find(c => c.phone_number === '+1234567890')?.contact_id,
           phone_number: '+1234567890',
           call_type: 'Outbound',
           call_status: 'Missed',
@@ -133,7 +101,7 @@ async function insertSampleData() {
         },
         {
           call_id: 'vapi_call_003',
-          lead_id: leads.find(l => l.phone === '+9876543210')?.id,
+          contact_id: contacts.find(c => c.phone_number === '+9876543210')?.contact_id,
           phone_number: '+9876543210',
           call_type: 'Outbound',
           call_status: 'Completed',
@@ -161,33 +129,9 @@ async function insertSampleData() {
 
       console.log('Inserted sample calls')
 
-      // Update lead profiles with call data
-      for (const lead of leads) {
-        const leadCalls = sampleCalls.filter(call => call.lead_id === lead.id)
-        if (leadCalls.length > 0) {
-          const answeredCalls = leadCalls.filter(call => call.call_status === 'Completed').length
-          const missedCalls = leadCalls.filter(call => call.call_status === 'Missed').length
-
-          const { error: updateError } = await supabase
-            .from('lead_profiles')
-            .update({
-              total_calls: leadCalls.length,
-              answered_calls: answeredCalls,
-              missed_calls: missedCalls,
-              last_call_date: leadCalls[0].timestamp,
-              last_call_status: leadCalls[0].call_status
-            })
-            .eq('lead_id', lead.id)
-
-          if (updateError) {
-            console.error(`Error updating profile for lead ${lead.id}:`, updateError)
-          }
-        }
-      }
-
-      console.log('Updated lead profiles with call data')
+      console.log('Sample calls prepared')
     } else {
-      console.log(`Skipping sample data insertion, ${count} leads already exist`)
+      console.log(`Skipping sample data insertion, ${count} contacts already exist`)
     }
   } catch (error) {
     console.error('Error inserting sample data:', error)

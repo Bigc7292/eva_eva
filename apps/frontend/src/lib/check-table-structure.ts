@@ -24,23 +24,22 @@ export async function checkTableStructure(client?: SupabaseClient) {
       console.log('Calls table exists but is empty');
     }
 
-    // Check if the lead_profiles table exists
-    const { data: leadsData, error: leadsError } = await supabaseClient
-      .from('lead_profiles')
+    // Check if the contacts table exists
+    const { data: contactsData, error: contactsError } = await supabaseClient
+      .from('contacts')
       .select('*')
       .limit(1);
 
-    if (leadsError) {
-      console.error('Error accessing lead_profiles table:', leadsError);
-      return;
-    }
-
-    // Log the structure of the first row
-    if (leadsData && leadsData.length > 0) {
-      console.log('Lead profiles table structure:', Object.keys(leadsData[0]));
-      console.log('Sample lead data:', leadsData[0]);
+    if (contactsError) {
+      console.error('Error accessing contacts table:', contactsError);
     } else {
-      console.log('Lead profiles table exists but is empty');
+      // Log the structure of the first row
+      if (contactsData && contactsData.length > 0) {
+        console.log('Contacts table structure:', Object.keys(contactsData[0]));
+        console.log('Sample contact data:', contactsData[0]);
+      } else {
+        console.log('Contacts table exists but is empty');
+      }
     }
 
   } catch (error) {

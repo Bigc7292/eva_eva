@@ -51,12 +51,14 @@ interface CallAnalytics {
 }
 
 interface MeetingAnalytics {
-  totalMeetings: number;
-  offplanMeetings: number;
-  secondaryMeetings: number;
-  costPerMeeting: number;
-  totalCost: number;
-  meetingsByPropertyType: Array<{name: string; value: number}>;
+  total_meetings: number;
+  completed_meetings: number;
+  cancelled_meetings: number;
+  scheduled_meetings: number;
+  locations: Array<{location: string; count: number}>;
+  types: Array<{type: string; count: number}>;
+  avg_cost_per_meeting: number;
+  total_cost: number;
 }
 
 interface LeadAnalytics {
@@ -114,72 +116,47 @@ export async function getCallAnalytics(): Promise<CallAnalytics> {
 
 export async function getMeetingAnalytics(): Promise<MeetingAnalytics> {
   try {
-    // Fetch calls data to analyze meetings
-    const { data: calls, error } = await supabase
-      .from('calls')
-      .select('*')
-      .eq('meeting_scheduled', true);
+    // Fetch meeting metrics from the API
+    const response = await fetch('/api/metrics/meetings');
 
-    if (error) {
-      console.error('Error fetching meeting data:', error);
-      // Return default values instead of throwing an error
-      return {
-        totalMeetings: 0,
-        offplanMeetings: 0,
-        secondaryMeetings: 0,
-        costPerMeeting: 0,
-        totalCost: 0,
-        meetingsByPropertyType: [
-          { name: 'Offplan', value: 0 },
-          { name: 'Secondary', value: 0 }
-        ]
-      };
+    if (!response.ok) {
+      throw new AnalyticsError('Failed to fetch meeting metrics');
     }
 
-    // Calculate meeting metrics
-    const totalMeetings = calls?.length || 0;
+    const meetingData = await response.json();
 
-    // Count property types (using metadata or other fields)
-    // Safely check if metadata exists and is an object before accessing properties
-    const offplanMeetings = calls?.filter(call => {
-      const metadata = call.metadata || {};
-      const summary = call.summary || '';
-      const transcript = call.transcript || '';
+    // Fetch cost data
+    const costResponse = await fetch('/api/metrics/costs');
+    let costData = { avg_cost_per_meeting: 0, total_cost: 0 };
 
-      return (
-        (typeof metadata === 'object' && metadata?.property_type === 'offplan') ||
-        summary.toLowerCase().includes('offplan') ||
-        transcript.toLowerCase().includes('off plan') ||
-        transcript.toLowerCase().includes('offplan')
-      );
-    }).length || 0;
+    if (costResponse.ok) {
+      costData = await costResponse.json();
+    }
 
-    const secondaryMeetings = totalMeetings - offplanMeetings;
-
-    // Calculate costs based on actual call data
-    const avgCallDuration = calls?.reduce((sum, call) => sum + (call.call_duration || 0), 0) / (totalMeetings || 1);
-
-    // Use actual cost data if available, otherwise calculate based on duration
-    // Cost is calculated at $0.15 per minute of call time
-    const costPerMinute = 0.15;
-    const costPerMeeting = avgCallDuration ? (avgCallDuration / 60) * costPerMinute : 0;
-    const totalCost = costPerMeeting * totalMeetings;
-
+    // Return the data in the format expected by the MeetingsAnalytics component
     return {
-      totalMeetings,
-      offplanMeetings,
-      secondaryMeetings,
-      costPerMeeting,
-      totalCost,
-      meetingsByPropertyType: [
-        { name: 'Offplan', value: offplanMeetings },
-        { name: 'Secondary', value: secondaryMeetings }
-      ],
-      // Add more metrics as needed
+      total_meetings: meetingData.total_meetings || 0,
+      completed_meetings: meetingData.completed_meetings || 0,
+      cancelled_meetings: meetingData.cancelled_meetings || 0,
+      scheduled_meetings: meetingData.scheduled_meetings || 0,
+      locations: meetingData.locations || [],
+      types: meetingData.types || [],
+      avg_cost_per_meeting: costData.avg_cost_per_meeting || 0,
+      total_cost: costData.total_cost || 0
     };
   } catch (error) {
     console.error('Error in getMeetingAnalytics:', error);
-    throw error;
+    // Return default values instead of throwing an error
+    return {
+      total_meetings: 0,
+      completed_meetings: 0,
+      cancelled_meetings: 0,
+      scheduled_meetings: 0,
+      locations: [],
+      types: [],
+      avg_cost_per_meeting: 0,
+      total_cost: 0
+    };
   }
 }
 

@@ -2,16 +2,17 @@
   "version": "0.2",
   "language": "en",
   "words": [
-    "Mailjet",
     "mailjet",
+    "Mailjet",
     "MAILJET",
-    "Vapi",
-    "vapi",
-    "VAPI",
+    "PGRST",
+    "sendgrid",
     "supabase",
     "Supabase",
-    "PGRST",
-    "toploaderagent"
+    "toploaderagent",
+    "vapi",
+    "Vapi",
+    "VAPI"
   ],
   "ignorePaths": [
     "node_modules/**",

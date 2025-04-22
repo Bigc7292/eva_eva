@@ -1,6 +1,7 @@
 import { google } from 'googleapis'
 import { createTransport } from 'nodemailer'
 import twilio from 'twilio'
+import { supabase } from './supabase'
 
 // Google Calendar setup
 const calendar = google.calendar({
@@ -33,6 +34,9 @@ interface MeetingDetails {
   leadName: string
   leadEmail: string
   leadPhone: string
+  contactId?: string
+  location?: string
+  notes?: string
 }
 
 export const calendarService = {
@@ -43,6 +47,7 @@ export const calendarService = {
       const event = {
         summary: details.title,
         description: details.description,
+        location: details.location,
         start: {
           dateTime: details.startTime.toISOString(),
           timeZone: 'Asia/Dubai',
@@ -67,6 +72,14 @@ export const calendarService = {
       })
 
       const meetingLink = response.data.hangoutLink
+      const eventId = response.data.id
+
+      // Log meeting to database
+      await this.logMeetingToDatabase({
+        eventId,
+        meetingLink,
+        details
+      })
 
       // Send email invitation
       await this.sendEmailInvite({
@@ -86,11 +99,44 @@ export const calendarService = {
       return {
         success: true,
         meetingLink,
-        eventId: response.data.id
+        eventId
       }
     } catch (error) {
       console.error('Error scheduling meeting:', error)
       throw error
+    }
+  },
+
+  // Log meeting to database
+  async logMeetingToDatabase({ eventId, meetingLink, details }: {
+    eventId: string,
+    meetingLink: string,
+    details: MeetingDetails
+  }) {
+    try {
+      // Create meeting record in database
+      const { data, error } = await supabase
+        .from('meetings')
+        .insert({
+          contact_id: details.contactId,
+          meeting_time: details.startTime.toISOString(),
+          status: 'scheduled',
+          notes: details.notes || details.description,
+          location: details.location || 'Virtual Meeting',
+          type: details.type,
+          google_event_id: eventId,
+          google_meet_link: meetingLink
+        })
+        .select()
+
+      if (error) throw error
+
+      console.log('Meeting logged to database:', data)
+      return data
+    } catch (error) {
+      console.error('Error logging meeting to database:', error)
+      // Don't throw here to prevent blocking the main meeting creation flow
+      // Just log the error and continue
     }
   },
 
@@ -149,8 +195,9 @@ export const calendarService = {
   },
 
   // Update meeting status
-  async updateMeetingStatus(eventId: string, status: string) {
+  async updateMeetingStatus(eventId: string, status: string, meetingId?: string) {
     try {
+      // Update Google Calendar event
       const event = await calendar.events.get({
         calendarId: 'primary',
         eventId
@@ -166,6 +213,36 @@ export const calendarService = {
         eventId,
         requestBody: updatedEvent
       })
+
+      // Update meeting status in database if meetingId is provided
+      if (meetingId) {
+        const { error } = await supabase
+          .from('meetings')
+          .update({ status })
+          .eq('meeting_id', meetingId)
+
+        if (error) {
+          console.error('Error updating meeting status in database:', error)
+        }
+      } else {
+        // Try to find the meeting by Google event ID
+        const { data, error } = await supabase
+          .from('meetings')
+          .select('meeting_id')
+          .eq('google_event_id', eventId)
+          .single()
+
+        if (!error && data) {
+          const { error: updateError } = await supabase
+            .from('meetings')
+            .update({ status })
+            .eq('meeting_id', data.meeting_id)
+
+          if (updateError) {
+            console.error('Error updating meeting status in database:', updateError)
+          }
+        }
+      }
 
       return { success: true }
     } catch (error) {
@@ -190,5 +267,81 @@ export const calendarService = {
       console.error('Error fetching meetings:', error)
       throw error
     }
+  },
+
+  // Schedule a follow-up meeting
+  async scheduleFollowUp(details: MeetingDetails) {
+    try {
+      // Create a follow-up meeting with specific type
+      const followUpDetails = {
+        ...details,
+        title: `Follow-up: ${details.title}`,
+        description: `Follow-up meeting for ${details.title}\n\n${details.description}`,
+        type: 'followup' as 'followup'
+      }
+
+      return await this.scheduleMeeting(followUpDetails)
+    } catch (error) {
+      console.error('Error scheduling follow-up:', error)
+      throw error
+    }
+  },
+
+  // Sync Google Calendar events with database
+  async syncCalendarWithDatabase(startDate: Date, endDate: Date) {
+    try {
+      // Get events from Google Calendar
+      const events = await this.getMeetings(startDate, endDate)
+
+      // Get existing meetings from database
+      const { data: existingMeetings, error } = await supabase
+        .from('meetings')
+        .select('google_event_id')
+
+      if (error) throw error
+
+      // Create a set of existing Google event IDs for quick lookup
+      const existingEventIds = new Set(existingMeetings.map(m => m.google_event_id))
+
+      // Filter events that don't exist in the database
+      const newEvents = events.filter(event => !existingEventIds.has(event.id))
+
+      // Log new events to database
+      for (const event of newEvents) {
+        // Extract meeting details from event
+        const startTime = new Date(event.start.dateTime || event.start.date)
+        const endTime = new Date(event.end.dateTime || event.end.date)
+
+        // Try to determine meeting type from event summary or description
+        let type: 'offplan' | 'secondary' | 'callback' | 'not-interested' | 'no-answer' = 'callback'
+        if (event.summary?.toLowerCase().includes('follow')) {
+          type = 'followup'
+        } else if (event.summary?.toLowerCase().includes('property') ||
+                  event.summary?.toLowerCase().includes('viewing')) {
+          type = 'offplan'
+        }
+
+        // Log to database
+        await supabase
+          .from('meetings')
+          .insert({
+            meeting_time: startTime.toISOString(),
+            status: 'scheduled',
+            notes: event.description || '',
+            location: event.location || 'Virtual Meeting',
+            type,
+            google_event_id: event.id,
+            google_meet_link: event.hangoutLink || ''
+          })
+      }
+
+      return {
+        success: true,
+        syncedEvents: newEvents.length
+      }
+    } catch (error) {
+      console.error('Error syncing calendar with database:', error)
+      throw error
+    }
   }
-} 
+}

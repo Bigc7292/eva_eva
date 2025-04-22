@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     // Get call metrics directly from the calls table
     const { data: callsData, error: callsDataError } = await supabase
       .from('calls')
-      .select('call_status, call_duration')
+      .select('*')
 
     if (callsDataError) {
       console.error('Error fetching calls data:', callsDataError)
@@ -23,13 +23,21 @@ export async function GET(request: NextRequest) {
 
     // Calculate metrics manually
     const totalCalls = callsData?.length || 0
-    const answeredCalls = callsData?.filter(c =>
-      c.call_status === 'Completed' || c.call_status === 'Answered'
-    ).length || 0
-    const missedCalls = callsData?.filter(c =>
-      c.call_status === 'Missed' || c.call_status === 'No Answer'
-    ).length || 0
-    const totalDuration = callsData?.reduce((sum, call) => sum + (call.call_duration || 0), 0) || 0
+    const answeredCalls = callsData?.filter(c => {
+      const status = String(c.status || c.call_status || '').toLowerCase();
+      return status === 'completed' || status === 'answered';
+    }).length || 0
+
+    const missedCalls = callsData?.filter(c => {
+      const status = String(c.status || c.call_status || '').toLowerCase();
+      return status === 'missed' || status === 'no answer';
+    }).length || 0
+
+    const totalDuration = callsData?.reduce((sum, call) => {
+      const duration = call.duration || call.call_duration || 0;
+      return sum + (typeof duration === 'number' ? duration : 0);
+    }, 0) || 0
+
     const avgDuration = answeredCalls > 0 ? totalDuration / answeredCalls : 0
 
     const callMetrics = {
@@ -60,24 +68,66 @@ export async function GET(request: NextRequest) {
       ? Number(totalCalls) / Number(totalMeetings)
       : 0
 
-    // Calculate average answered calls per day
-    const { data: answeredPerDay, error: answeredPerDayError } = await supabase
-      .rpc('get_answered_calls_per_day')
-
-    if (answeredPerDayError) {
-      console.error('Error getting answered calls per day:', answeredPerDayError)
-      // Continue without this metric if the function doesn't exist
-    }
-
     // Define the type for the row
     interface AnsweredCallsRow {
       call_date: string;
       answered_calls: number;
     }
 
-    const avgAnsweredPerDay = answeredPerDay && answeredPerDay.length > 0
-      ? answeredPerDay.reduce((sum: number, row: AnsweredCallsRow) => sum + Number(row.answered_calls), 0) / answeredPerDay.length
-      : 0
+    // Try to use the RPC function first
+    let answeredPerDay: AnsweredCallsRow[] = [];
+    let avgAnsweredPerDay = 0;
+
+    try {
+      const { data, error } = await supabase
+        .rpc('get_answered_calls_per_day')
+
+      if (error) {
+        console.error('Error getting answered calls per day:', error)
+        // If RPC fails, we'll calculate it manually below
+      } else if (data && data.length > 0) {
+        answeredPerDay = data;
+        avgAnsweredPerDay = answeredPerDay.reduce(
+          (sum: number, row: AnsweredCallsRow) => sum + Number(row.answered_calls), 0
+        ) / answeredPerDay.length;
+      }
+    } catch (rpcError) {
+      console.error('RPC function not available, calculating manually:', rpcError);
+    }
+
+    // If RPC failed or returned no data, calculate manually
+    if (answeredPerDay.length === 0 && callsData && callsData.length > 0) {
+      // Group calls by date
+      const callsByDate = new Map<string, number>();
+
+      for (const call of callsData) {
+        try {
+          // Check if call was answered
+          const status = String(call.status || call.call_status || '').toLowerCase();
+          if (status !== 'completed' && status !== 'answered') continue;
+
+          // Get the date
+          const dateField = call.created_at || call.timestamp || call.date;
+          if (!dateField) continue;
+
+          const date = new Date(dateField).toISOString().split('T')[0];
+          callsByDate.set(date, (callsByDate.get(date) || 0) + 1);
+        } catch (error) {
+          console.error('Error processing call date:', error);
+        }
+      }
+
+      // Convert to array format
+      answeredPerDay = Array.from(callsByDate.entries()).map(([call_date, answered_calls]) => ({
+        call_date,
+        answered_calls
+      }));
+
+      // Calculate average
+      avgAnsweredPerDay = answeredPerDay.length > 0
+        ? answeredPerDay.reduce((sum, row) => sum + row.answered_calls, 0) / answeredPerDay.length
+        : 0;
+    }
 
     return NextResponse.json({
       ...callMetrics,

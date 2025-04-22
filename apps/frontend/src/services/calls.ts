@@ -80,74 +80,88 @@ export class CallsService {
 
   async createLeadProfile(phone: string, name?: string, email?: string): Promise<LeadProfile> {
     try {
-      // First check if lead exists
-      const { data: existingLead, error: existingLeadError } = await supabase
-        .from('leads')
-        .select('lead_uuid')
+      // First check if contact exists
+      const { data: existingContact, error: existingContactError } = await supabase
+        .from('contacts')
+        .select('id, phone')
         .eq('phone', phone)
         .single();
 
-      let leadId: string;
+      let contactId: string;
 
-      if (existingLeadError || !existingLead) {
-        // Create new lead with generated UUID
-        const { data: newLead, error: createLeadError } = await supabase
-          .from('leads')
+      if (existingContactError || !existingContact) {
+        // Create new contact
+        const { data: newContact, error: createContactError } = await supabase
+          .from('contacts')
           .insert([{
             name: name || 'Unknown',
             phone,
             email: email || null,
             status: 'new',
             created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            lead_uuid: crypto.randomUUID() // Generate a new UUID for the new lead
+            updated_at: new Date().toISOString()
           }])
           .select()
           .single();
 
-        if (createLeadError || !newLead) {
-          throw new DatabaseError('Failed to create lead', createLeadError);
+        if (createContactError || !newContact) {
+          throw new DatabaseError('Failed to create contact', createContactError);
         }
 
-        leadId = newLead.lead_uuid;
+        contactId = newContact.id;
       } else {
-        leadId = existingLead.lead_uuid;
+        contactId = existingContact.id;
       }
 
-      // Now check if lead profile exists
-      const { data: existingProfile, error: existingProfileError } = await supabase
-        .from('lead_profiles')
+      // Get call statistics for this contact
+      const { data: callsData, error: callsError } = await supabase
+        .from('calls')
         .select('*')
-        .eq('lead_id', leadId)
-        .single();
+        .eq('contact_id', contactId);
 
-      if (!existingProfileError && existingProfile) {
-        return existingProfile;
+      if (callsError) {
+        console.error('Error fetching calls for contact:', callsError);
       }
 
-      // Create new lead profile
-      const { data: newProfile, error: createProfileError } = await supabase
-        .from('lead_profiles')
-        .insert([{
-          lead_id: leadId,
-          phone,
-          first_contact_date: new Date().toISOString(),
-          successful_meetings: 0,
-          total_calls: 0,
-          answered_calls: 0,
-          missed_calls: 0,
-          interest_level: 'Unknown',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }])
-        .select()
-        .single();
+      // Calculate call statistics
+      const totalCalls = callsData?.length || 0;
+      const answeredCalls = callsData?.filter(call => {
+        const status = String(call.status || call.call_status || '').toLowerCase();
+        return status === 'completed' || status === 'answered';
+      }).length || 0;
 
-      if (createProfileError) {
-        throw new DatabaseError('Failed to create lead profile', createProfileError);
+      const missedCalls = callsData?.filter(call => {
+        const status = String(call.status || call.call_status || '').toLowerCase();
+        return status === 'missed' || status === 'no answer' || status === 'failed';
+      }).length || 0;
+
+      // Get last call date and status
+      let lastCallDate = null;
+      let lastCallStatus = null;
+
+      if (callsData && callsData.length > 0) {
+        lastCallDate = callsData[0].created_at || callsData[0].timestamp;
+        lastCallStatus = callsData[0].status || callsData[0].call_status;
       }
 
-      return newProfile;
+      // Create a profile object from the contact and call data
+      const profile: LeadProfile = {
+        id: contactId,
+        lead_id: contactId,
+        phone,
+        first_contact_date: existingContact?.created_at || new Date().toISOString(),
+        successful_meetings: 0, // Will be calculated from meetings table if available
+        total_calls: totalCalls,
+        answered_calls: answeredCalls,
+        missed_calls: missedCalls,
+        last_call_date: lastCallDate,
+        last_call_status: lastCallStatus,
+        interest_level: 'Unknown',
+        created_at: existingContact?.created_at || new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      return profile;
     } catch (error) {
       console.error('Error in createLeadProfile:', error);
       throw error;
@@ -218,35 +232,35 @@ export class CallsService {
 
       // Map the data to ensure it matches our Call interface
       const calls = callsData.map((call): Call => ({
-        id: call.call_id,
-        call_id: call.call_id,
-        lead_id: data.lead_id || null,
-        phone_number: call.phone_number,
-        call_type: call.call_type,
-        call_status: call.call_status,
+        id: call.call_id || call.id || '',
+        call_id: call.call_id || call.id || '',
+        lead_id: call.contact_id || null,
+        phone_number: call.phone_number || call.phone || '',
+        call_type: call.call_type || call.type || '',
+        call_status: call.call_status || call.status || '',
         call_outcome: null, // We don't have this in the current schema
-        timestamp: call.start_time,
-        end_time: call.end_time,
-        call_duration: call.call_duration,
-        recording_url: call.recording_url,
-        transcript: call.transcript,
-        summary: call.summary,
+        timestamp: call.start_time || call.created_at || '',
+        end_time: call.end_time || '',
+        call_duration: call.call_duration || call.duration || 0,
+        recording_url: call.recording_url || call.audio_url || '',
+        transcript: call.transcript || '',
+        summary: call.summary || '',
         meeting_scheduled: call.meeting_scheduled || false,
-        meeting_time: call.meeting_time,
+        meeting_time: call.meeting_time || '',
         callback_scheduled: false, // We don't have this in the current schema
         callback_time: null, // We don't have this in the current schema
-        created_at: call.created_at,
-        updated_at: call.updated_at,
-        metadata: call.metadata,
+        created_at: call.created_at || '',
+        updated_at: call.updated_at || '',
+        metadata: call.metadata || null,
 
         // Compatibility fields
-        leadId: data.lead_id || null,
+        leadId: call.contact_id || null,
         leadName: 'Unknown', // We don't have this in the current schema
-        leadPhone: call.phone_number,
-        callType: call.call_type,
-        callStatus: call.call_status,
-        callDuration: call.call_duration,
-        audioUrl: call.recording_url
+        leadPhone: call.phone_number || call.phone || '',
+        callType: call.call_type || call.type || '',
+        callStatus: call.call_status || call.status || '',
+        callDuration: call.call_duration || call.duration || 0,
+        audioUrl: call.recording_url || call.audio_url || ''
       }));
 
       // Prepare calls by date for charts

@@ -138,7 +138,7 @@ The application now has a fully functional VAPI integration with the following f
 1. Navigate to the Schedule Call page
 2. Enter a valid phone number with country code
 3. Select a date and time for the call
-4. Add optional notes or lead ID
+4. Add optional notes or contact ID
 5. Click "Schedule Call"
 6. The system will display the scheduled call in the "Upcoming Scheduled Calls" section
 7. Calls will be automatically initiated at the scheduled time
@@ -291,24 +291,34 @@ The application now has a fully functional VAPI integration with the following f
 
 The implementation uses the following key tables in Supabase:
 
-1. **calls**
+1. **contacts**
+   - `contact_id` (primary key) - UUID
+   - `name` - String (required)
+   - `phone_number` - String (required)
+   - `email` - String (optional, can be empty)
+   - `profile_created_at` - Timestamp
+   - `transcripts` - JSON or related table (optional, empty array by default)
+   - `summaries` - JSON or related table (optional, empty array by default)
+   - `audio_files` - JSON or related table (optional, empty array by default)
+
+> When a contact is imported, a profile is created with at least name and phone number. Other fields (email, transcripts, summaries, audio files) are filled in as data becomes available. Utility functions are available to update these fields as calls are made or data is collected.
+
+2. **calls**
    - `call_id` (primary key) - UUID
-   - `phone_number` - String
+   - `contact_id` - UUID (foreign key to contacts)
    - `call_type` - String (Inbound/Outbound)
    - `call_status` - String
    - `start_time` - Timestamp
    - `end_time` - Timestamp
    - `duration` - Integer (seconds)
-   - `lead_id` - UUID (optional)
    - `metadata` - JSON
 
-2. **scheduled_calls**
+3. **scheduled_calls**
    - `id` (primary key) - UUID
-   - `phone_number` - String
+   - `contact_id` - UUID (foreign key to contacts)
    - `scheduled_time` - Timestamp
    - `status` - String (Pending, Processing, Initiated, Completed, Failed, Cancelled)
    - `call_id` - UUID (after initiation)
-   - `lead_id` - UUID (optional)
    - `metadata` - JSON
 
 ## API Endpoints
@@ -317,7 +327,7 @@ The implementation includes the following key API endpoints:
 
 1. **Call Management**
    - `POST /api/calls` - Initiate a single call
-     - Request: `{ phoneNumber: string, leadId?: string, metadata?: object }`
+     - Request: `{ phoneNumber: string, contactId?: string, metadata?: object }`
      - Response: `{ success: boolean, call: object }`
    
    - `GET /api/calls/status/[id]` - Get call status
@@ -333,7 +343,7 @@ The implementation includes the following key API endpoints:
 
 2. **Call Scheduling**
    - `POST /api/calls/schedule` - Schedule a call
-     - Request: `{ phoneNumber: string, leadId?: string, scheduledTime: string, metadata?: object }`
+     - Request: `{ phoneNumber: string, contactId?: string, scheduledTime: string, metadata?: object }`
      - Response: `{ success: boolean, message: string, schedule: object }`
    
    - `GET /api/calls/schedule` - Get scheduled calls

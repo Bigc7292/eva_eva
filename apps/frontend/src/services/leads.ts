@@ -58,36 +58,52 @@ export const leadsService = {
     try {
       console.log('Fetching leads from Supabase...');
 
-      // Get leads from enhanced_leads table
-      const { data, error } = await supabase
-        .from('enhanced_leads')
+      // Try to get leads from contacts table first
+      let { data, error } = await supabase
+        .from('contacts')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Supabase error fetching leads:', error);
-        throw error;
+        console.error('Supabase error fetching contacts:', error);
+
+        // If contacts table fails, try leads table
+        const leadsResult = await supabase
+          .from('leads')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        data = leadsResult.data;
+        error = leadsResult.error;
+
+        if (error) {
+          console.error('Supabase error fetching leads:', error);
+          throw error;
+        }
       }
 
-      // Process leads from enhanced_leads table
-      const processedLeads = data?.map(lead => ({
-        id: lead.lead_uuid || lead.id,
-        name: lead.name || 'Unknown',
-        email: lead.email || '',
-        phone: lead.phone_number || lead.phone || '',
-        status: lead.status || 'new',
-        property_interest: lead.property_interest || '',
-        budget: lead.budget || 0,
-        location: lead.location || '',
-        nationality: lead.nationality || '',
-        notes: lead.notes || '',
-        interest_level: lead.lead_quality || 'Unknown',
-        total_calls: lead.total_calls || 0,
-        answered_calls: lead.answered_calls || 0,
-        missed_calls: lead.missed_calls || 0,
-        created_at: lead.created_at,
-        updated_at: lead.updated_at
-      })) || [];
+      // Process leads from contacts/leads table
+      const processedLeads = data?.map(lead => {
+        // Use contact_id as the primary ID if available
+        const leadId = lead.contact_id || lead.id || lead.lead_uuid || '';
+        console.log(`Processing lead: ${lead.name}, ID: ${leadId}`);
+
+        return {
+          id: leadId,
+          name: lead.name || 'Unknown',
+          email: lead.email || '',
+          phone: lead.phone || lead.phone_number || '',
+          status: lead.status || 'new',
+          property_interest: lead.property_interest || lead.interests || '',
+          budget: lead.budget || 0,
+          location: lead.location || '',
+          nationality: lead.nationality || '',
+          notes: lead.notes || '',
+          interest_level: lead.interest_level || 'Unknown',
+          created_at: lead.created_at,
+          updated_at: lead.updated_at
+        };
+      }) || [];
 
       console.log('Leads data from Supabase:', processedLeads);
       return processedLeads;
@@ -101,36 +117,55 @@ export const leadsService = {
     try {
       console.log(`Searching leads with query: "${query}"`);
       const lowerQuery = query.toLowerCase();
-      const { data, error } = await supabase
-        .from('enhanced_leads')
+
+      // Try to search in contacts table first
+      let { data, error } = await supabase
+        .from('contacts')
         .select('*')
-        .or(`name.ilike.%${lowerQuery}%,email.ilike.%${lowerQuery}%,phone_number.ilike.%${lowerQuery}%,lead_id.ilike.%${lowerQuery}%`)
+        .or(`name.ilike.%${lowerQuery}%,email.ilike.%${lowerQuery}%,phone.ilike.%${lowerQuery}%`)
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Supabase error searching leads:', error);
-        throw error;
+        console.error('Supabase error searching contacts:', error);
+
+        // If contacts table fails, try leads table
+        const leadsResult = await supabase
+          .from('leads')
+          .select('*')
+          .or(`name.ilike.%${lowerQuery}%,email.ilike.%${lowerQuery}%,phone.ilike.%${lowerQuery}%`)
+          .order('created_at', { ascending: false });
+
+        data = leadsResult.data;
+        error = leadsResult.error;
+
+        if (error) {
+          console.error('Supabase error searching leads:', error);
+          throw error;
+        }
       }
 
-      // Process leads from enhanced_leads table
-      const processedLeads = data?.map(lead => ({
-        id: lead.lead_uuid || lead.id,
-        name: lead.name || 'Unknown',
-        email: lead.email || '',
-        phone: lead.phone_number || lead.phone || '',
-        status: lead.status || 'new',
-        property_interest: lead.property_interest || '',
-        budget: lead.budget || 0,
-        location: lead.location || '',
-        nationality: lead.nationality || '',
-        notes: lead.notes || '',
-        interest_level: lead.lead_quality || 'Unknown',
-        total_calls: lead.total_calls || 0,
-        answered_calls: lead.answered_calls || 0,
-        missed_calls: lead.missed_calls || 0,
-        created_at: lead.created_at,
-        updated_at: lead.updated_at
-      })) || [];
+      // Process leads from contacts/leads table
+      const processedLeads = data?.map(lead => {
+        // Use contact_id as the primary ID if available
+        const leadId = lead.contact_id || lead.id || lead.lead_uuid || '';
+        console.log(`Processing search result: ${lead.name}, ID: ${leadId}`);
+
+        return {
+          id: leadId,
+          name: lead.name || 'Unknown',
+          email: lead.email || '',
+          phone: lead.phone || lead.phone_number || '',
+          status: lead.status || 'new',
+          property_interest: lead.property_interest || lead.interests || '',
+          budget: lead.budget || 0,
+          location: lead.location || '',
+          nationality: lead.nationality || '',
+          notes: lead.notes || '',
+          interest_level: lead.interest_level || 'Unknown',
+          created_at: lead.created_at,
+          updated_at: lead.updated_at
+        };
+      }) || [];
 
       console.log(`Found ${processedLeads.length} leads matching "${query}":`, processedLeads);
       return processedLeads;
@@ -147,43 +182,79 @@ export const leadsService = {
     try {
       console.log(`Fetching lead with ID: ${id}`);
 
-      // Get lead from enhanced_leads table
-      const { data, error } = await supabase
-        .from('enhanced_leads')
-        .select(`
-          *
-        `)
-        .eq('lead_id', id)
-        .single();
+      // Try to get lead from contacts table first
+      let data: any = null;
+      let error: any = null;
 
+      // First try with contact_id field
+      try {
+        const contactResult = await supabase
+          .from('contacts')
+          .select('*')
+          .eq('contact_id', id)
+          .single();
+
+        data = contactResult.data;
+        error = contactResult.error;
+
+        // If not found, try with id field
+        if (error) {
+          const contactResult2 = await supabase
+            .from('contacts')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+          data = contactResult2.data;
+          error = contactResult2.error;
+        }
+      } catch (contactError) {
+        console.log(`Contact not found with ID ${id}, trying leads table`);
+        error = contactError;
+      }
+
+      // If contact not found, try leads table
       if (error) {
-        console.error(`Supabase error fetching lead ${id}:`, error);
-        throw error;
+        const leadResult = await supabase
+          .from('leads')
+          .select('*')
+          .eq('id', id)
+          .single();
+
+        data = leadResult.data;
+        error = leadResult.error;
+
+        if (error) {
+          console.error(`Supabase error fetching lead ${id}:`, error);
+          throw error;
+        }
       }
 
       // Get calls for this lead
       const { data: callsData, error: callsError } = await supabase
-        .from('enhanced_calls')
+        .from('calls')
         .select('*')
-        .eq('metadata->lead_id', id)
-        .order('timestamp', { ascending: false });
+        .eq('contact_id', id)
+        .order('created_at', { ascending: false });
 
       if (callsError) {
         console.error(`Error fetching calls for lead ${id}:`, callsError);
       }
 
-      // Process the lead data from enhanced_leads
+      // Process the lead data
       const processedLead = {
         ...data,
-        id: data.lead_id || data.id,
-        phone: data.phone_number || data.phone || '',
-        interest_level: data.lead_quality || 'Unknown',
-        total_calls: data.total_calls || 0,
-        answered_calls: data.answered_calls || 0,
-        missed_calls: data.missed_calls || 0,
-        last_call_date: data.last_call_date,
-        last_call_status: data.last_call_status,
-        successful_meetings: data.successful_meetings || 0,
+        id: data.id || '',
+        name: data.name || 'Unknown',
+        email: data.email || '',
+        phone: data.phone || '',
+        status: data.status || 'new',
+        property_interest: data.property_interest || '',
+        budget: data.budget || 0,
+        location: data.location || '',
+        nationality: data.nationality || '',
+        notes: data.notes || '',
+        interest_level: data.interest_level || 'Unknown',
         calls: callsData || [],
         interactions: [],
         // Add empty arrays for UI components that expect these properties
@@ -218,21 +289,47 @@ export const leadsService = {
 
   async updateLeadStatus(leadId: string, status: CrmStatus) {
     try {
-      const { data, error } = await supabase
-        .from('enhanced_leads')
-        .update({
-          status,
-          updated_at: new Date().toISOString()
-        })
-        .eq('lead_uuid', leadId)
-        .select()
+      // Try to update in contacts table first
+      let error = null;
 
-      if (error) throw error
-      console.log(`Updated lead ${leadId} status to ${status}`)
-      return true
+      try {
+        const { error: contactError } = await supabase
+          .from('contacts')
+          .update({
+            status,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', leadId)
+          .select();
+
+        error = contactError;
+      } catch (contactError) {
+        console.log(`Contact not found with ID ${leadId}, trying leads table`);
+        error = contactError;
+      }
+
+      // If contact update failed, try leads table
+      if (error) {
+        const { error: leadError } = await supabase
+          .from('leads')
+          .update({
+            status,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', leadId)
+          .select();
+
+        if (leadError) {
+          console.error(`Error updating lead ${leadId} status:`, leadError);
+          throw leadError;
+        }
+      }
+
+      console.log(`Updated lead ${leadId} status to ${status}`);
+      return true;
     } catch (error) {
-      console.error('Error updating lead status:', error)
-      throw error
+      console.error('Error updating lead status:', error);
+      throw error;
     }
   },
 
@@ -244,29 +341,41 @@ export const leadsService = {
         updated_at: new Date().toISOString()
       };
 
-      // Convert fields to match enhanced_leads schema
-      const enhancedDetails: any = { ...updatedDetails };
-      if (details.phone) {
-        enhancedDetails.phone_number = details.phone;
-        delete enhancedDetails.phone;
-      }
-      if (details.interest_level) {
-        enhancedDetails.lead_quality = details.interest_level;
-        delete enhancedDetails.interest_level;
+      // Try to update in contacts table first
+      let error = null;
+
+      try {
+        const { error: contactError } = await supabase
+          .from('contacts')
+          .update(updatedDetails)
+          .eq('id', leadId)
+          .select();
+
+        error = contactError;
+      } catch (contactError) {
+        console.log(`Contact not found with ID ${leadId}, trying leads table`);
+        error = contactError;
       }
 
-      const { data, error } = await supabase
-        .from('enhanced_leads')
-        .update(enhancedDetails)
-        .eq('lead_uuid', leadId)
-        .select()
+      // If contact update failed, try leads table
+      if (error) {
+        const { error: leadError } = await supabase
+          .from('leads')
+          .update(updatedDetails)
+          .eq('id', leadId)
+          .select();
 
-      if (error) throw error
-      console.log(`Updated lead ${leadId} details:`, enhancedDetails)
-      return true
+        if (leadError) {
+          console.error(`Error updating lead ${leadId} details:`, leadError);
+          throw leadError;
+        }
+      }
+
+      console.log(`Updated lead ${leadId} details:`, updatedDetails);
+      return true;
     } catch (error) {
-      console.error('Error updating lead details:', error)
-      throw error
+      console.error('Error updating lead details:', error);
+      throw error;
     }
   },
 
@@ -295,16 +404,52 @@ export const leadsService = {
     try {
       console.log(`Initiating call to lead ID: ${leadId}`);
 
-      // Get lead details from Supabase
-      const { data: lead, error: leadError } = await supabase
-        .from('enhanced_leads')
-        .select('*')
-        .eq('lead_uuid', leadId)
-        .single()
+      // Try to get lead from contacts table first
+      let lead: any = null;
+      let leadError: any = null;
 
+      // First try with contact_id field
+      try {
+        const contactResult = await supabase
+          .from('contacts')
+          .select('*')
+          .eq('contact_id', leadId)
+          .single();
+
+        lead = contactResult.data;
+        leadError = contactResult.error;
+
+        // If not found, try with id field
+        if (leadError) {
+          const contactResult2 = await supabase
+            .from('contacts')
+            .select('*')
+            .eq('id', leadId)
+            .single();
+
+          lead = contactResult2.data;
+          leadError = contactResult2.error;
+        }
+      } catch (contactError) {
+        console.log(`Contact not found with ID ${leadId}, trying leads table`);
+        leadError = contactError;
+      }
+
+      // If contact not found, try leads table
       if (leadError) {
-        console.error(`Error fetching lead ${leadId}:`, leadError);
-        throw leadError;
+        const leadResult = await supabase
+          .from('leads')
+          .select('*')
+          .eq('id', leadId)
+          .single();
+
+        lead = leadResult.data;
+        leadError = leadResult.error;
+
+        if (leadError) {
+          console.error(`Error fetching lead ${leadId}:`, leadError);
+          throw leadError;
+        }
       }
 
       if (!lead) {
@@ -312,31 +457,25 @@ export const leadsService = {
         throw new Error('Lead not found');
       }
 
-      console.log(`Found lead: ${lead.name}, phone: ${lead.phone_number || lead.phone}`);
+      console.log(`Found lead: ${lead.name}, phone: ${lead.phone}`);
 
       // Create a call record with VAPI assistant ID
       const callId = `call-${Date.now()}`;
       console.log(`Generated call ID: ${callId}`);
 
-      // Add call to enhanced_calls table with new schema
+      // Add call to calls table
       const { error: callError } = await supabase
-        .from('enhanced_calls')
+        .from('calls')
         .insert({
-          call_id: callId,
-          lead_id: leadId,
-          phone_number: lead.phone_number || lead.phone,
-          call_type: 'Outbound',
-          call_status: 'Initiated',
-          timestamp: new Date().toISOString(),
-          metadata: {
-            lead_id: leadId,
-            lead_name: lead.name,
-            direction: 'outbound',
-            agent_id: process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID || 'cfaa163c-4a47-471b-a39e-95c12d0cb738',
-            agent_name: 'Top Loader Agent AI'
-          },
+          id: callId,
+          contact_id: leadId,
+          phone: lead.phone,
+          type: 'outbound',
+          status: 'initiated',
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
+          agent_name: 'Top Loader Agent AI',
+          agent_id: process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID || 'cfaa163c-4a47-471b-a39e-95c12d0cb738'
         });
 
       if (callError) {
@@ -345,17 +484,6 @@ export const leadsService = {
       }
 
       console.log(`Call record created successfully: ${callId}`);
-
-      // Update lead with call information
-      await supabase
-        .from('enhanced_leads')
-        .update({
-          total_calls: (lead.total_calls || 0) + 1,
-          last_call_date: new Date().toISOString(),
-          last_call_status: 'Initiated',
-          updated_at: new Date().toISOString()
-        })
-        .eq('lead_uuid', leadId);
 
       return callId;
     } catch (error) {
@@ -366,42 +494,93 @@ export const leadsService = {
 
   async scheduleFollowUp(leadId: string, date: Date) {
     try {
-      // Add a follow-up task to the enhanced_leads table
-      const { error } = await supabase
-        .from('enhanced_leads')
-        .update({
-          status: 'call_back_later',
-          callback_date: date.toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('lead_uuid', leadId)
+      // Try to update in contacts table first
+      let error = null;
 
-      if (error) throw error
-      console.log(`Scheduled follow-up for lead ${leadId} on ${date.toISOString()}`)
-      return true
+      try {
+        const { error: contactError } = await supabase
+          .from('contacts')
+          .update({
+            status: 'call_back_later',
+            callback_date: date.toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', leadId);
+
+        error = contactError;
+      } catch (contactError) {
+        console.log(`Contact not found with ID ${leadId}, trying leads table`);
+        error = contactError;
+      }
+
+      // If contact update failed, try leads table
+      if (error) {
+        const { error: leadError } = await supabase
+          .from('leads')
+          .update({
+            status: 'call_back_later',
+            callback_date: date.toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', leadId);
+
+        if (leadError) {
+          console.error(`Error scheduling follow-up for lead ${leadId}:`, leadError);
+          throw leadError;
+        }
+      }
+
+      console.log(`Scheduled follow-up for lead ${leadId} on ${date.toISOString()}`);
+      return true;
     } catch (error) {
-      console.error('Error scheduling follow-up:', error)
-      throw error
+      console.error('Error scheduling follow-up:', error);
+      throw error;
     }
   },
 
   async assignLeadToAgent(leadId: string, agentId: string, agentName: string) {
     try {
-      // Update the lead with the agent information in metadata
-      const { error } = await supabase
-        .from('leads')
-        .update({
-          metadata: { agent_id: agentId, agent_name: agentName },
-          updated_at: new Date().toISOString()
-        })
-        .eq('lead_uuid', leadId)
+      // Try to update in contacts table first
+      let error = null;
 
-      if (error) throw error
-      console.log(`Assigned lead ${leadId} to agent ${agentName} (${agentId})`)
-      return true
+      try {
+        const { error: contactError } = await supabase
+          .from('contacts')
+          .update({
+            agent_id: agentId,
+            agent_name: agentName,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', leadId);
+
+        error = contactError;
+      } catch (contactError) {
+        console.log(`Contact not found with ID ${leadId}, trying leads table`);
+        error = contactError;
+      }
+
+      // If contact update failed, try leads table
+      if (error) {
+        const { error: leadError } = await supabase
+          .from('leads')
+          .update({
+            agent_id: agentId,
+            agent_name: agentName,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', leadId);
+
+        if (leadError) {
+          console.error(`Error assigning lead ${leadId} to agent:`, leadError);
+          throw leadError;
+        }
+      }
+
+      console.log(`Assigned lead ${leadId} to agent ${agentName} (${agentId})`);
+      return true;
     } catch (error) {
-      console.error('Error assigning lead to agent:', error)
-      throw error
+      console.error('Error assigning lead to agent:', error);
+      throw error;
     }
   }
 }

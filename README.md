@@ -89,6 +89,19 @@ The webhook handler is located at `apps/frontend/src/app/api/webhooks/vapi/route
 2. Enter a phone number in the format `+1234567890`
 3. Click "Make Call"
 
+## Contact Profiles
+
+Every contact imported into the system automatically gets a profile page. Each profile contains:
+
+- Name
+- Phone number
+- Email
+- Transcripts from all calls
+- Summaries from all calls
+- MP4 audio files from all calls
+
+All interactions with a contact are logged and accessible from their profile page.
+
 ## Troubleshooting
 
 If you encounter issues with VAPI integration, refer to the debugging guide:
@@ -113,3 +126,13 @@ Common issues:
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Analysis Checklist
+
+Analyze for:
+- Project description present?
+- Setup/installation instructions clear and accurate?
+- Usage examples provided?
+- Contribution guidelines included?
+- License and contact info present?
+- All links and badges working?

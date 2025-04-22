@@ -1,12 +1,12 @@
 VAPI seems well-suited for your application, enabling bulk call handling, call logging, transcription, summarization, and audio storage through its API and Web SDK.
-It likely supports creating profiles for each dialed number by storing call metadata, transcripts, summaries, and audio files, though you’ll need to manage profile organization in your database.
+It likely supports creating profiles for each contact by storing call metadata, transcripts, summaries, and audio files, though you’ll need to manage profile organization in your database.
 Email and SMS reminders for meetings can be implemented using external services like Zapier or Pipedream, as VAPI doesn’t directly support these features.
 The platform’s scalability suggests it can handle high call volumes, but you may need to test concurrency limits for your specific use case.
 Getting Started with VAPI
 You can integrate VAPI into your application to make and receive calls in bulk, log conversations, and store relevant data. Start by setting up an assistant in the VAPI Dashboard or via the API. Assistants are AI configurations that handle voice interactions, and you’ll configure them for transcription, summarization, and recording.
 
 Handling Calls and Data
-Use the VAPI Web SDK for web-based calls or the API for phone calls. The API’s /call/web endpoint lists calls and includes artifacts like transcripts and audio files. You can create profiles for each phone number by storing call metadata (e.g., phone number, transcript, summary, audio URL) in your database.
+Use the VAPI Web SDK for web-based calls or the API for phone calls. The API’s /call/web endpoint lists calls and includes artifacts like transcripts and audio files. You can create profiles for each contact by storing call metadata (e.g., name, phone number, email, transcript, summary, audio URL) in your database.
 
 Email and SMS Reminders
 VAPI doesn’t directly send emails or SMS, but you can use webhooks to trigger these actions via platforms like Zapier or Pipedream. For example, when a meeting is booked, a webhook can initiate an email or SMS reminder.
@@ -15,7 +15,7 @@ Scalability and Profiles
 VAPI’s infrastructure appears capable of handling millions of calls, making it suitable for bulk operations. For profiles, use the phone number from call metadata to organize conversation details, ensuring each profile includes the exact transcript, summary, and audio file.
 
 Comprehensive Guide to Integrating VAPI Services for Bulk Call Applications
-This guide provides detailed instructions for integrating VAPI services into an application designed to make and receive calls in bulk, log all phone calls, create separate profiles for each dialed number with conversation details (including exact transcripts, summaries, and audio files), and send email and SMS reminders for booked meetings. The guide is tailored for an augmented AI coding assistant to understand and implement VAPI functionalities.
+This guide provides detailed instructions for integrating VAPI services into an application designed to make and receive calls in bulk, log all phone calls, create separate profiles for each contact with conversation details (including exact transcripts, summaries, and audio files), and send email and SMS reminders for booked meetings. The guide is tailored for an augmented AI coding assistant to understand and implement VAPI functionalities.
 
 1. Overview of VAPI
 VAPI is a Voice AI platform that enables developers to build, test, and deploy voice agents efficiently. It abstracts complex voice AI challenges such as turn-taking, interruption handling, and backchanneling, allowing focus on application logic. Key features include:
@@ -107,7 +107,7 @@ Use the /call/web endpoint to list incoming calls and retrieve metadata.
 VAPI’s infrastructure supports millions of calls with high concurrency, suitable for bulk operations.
 Test concurrency limits to ensure performance for your specific use case.
 4. Logging Calls and Creating Profiles
-Your application needs to log all calls and create profiles for each dialed number with conversation details.
+Your application needs to log all calls and create profiles for each contact with conversation details.
 
 4.1 Call Logging
 API Endpoint: Use /call/web to list calls.
@@ -126,16 +126,22 @@ Copy
   }
 }
 4.2 Creating Profiles
-Metadata: Use phoneNumberId from call metadata to identify each dialed number.
+Metadata: Use phoneNumberId from call metadata to identify each contact.
 Profile Data:
+Name: Store the contact's name.
+Phone Number: Store the contact's phone number.
+Email: Store the contact's email address.
 Transcript: Store call.artifact.transcript for exact word-for-word conversation.
 Summary: Store call.analysis.summary for a concise summary.
-Audio: Store call.artifact.recording (URL to WAV file).
+Audio: Store call.artifact.recording (URL to MP4 file).
 Implementation:
 Store profile data in your database, linking each profile to the phoneNumberId.
 Example Database Schema:
 Field	Type	Description
 phoneNumberId	String	Unique phone number identifier
+name	String	Contact's name
+phoneNumber	String	Contact's phone number
+email	String	Contact's email address
 transcript	Text	Full conversation transcript
 summary	Text	2-3 sentence call summary
 audioUrl	String	URL to recorded audio file
@@ -273,6 +279,9 @@ async function startCall(assistantId, phoneNumber) {
       // Store profile data
       const profile = {
         phoneNumberId: callDetails.data.phoneNumberId,
+        name: callDetails.data.contact.name,
+        phoneNumber: callDetails.data.contact.phoneNumber,
+        email: callDetails.data.contact.email,
         transcript: callDetails.data.artifact.transcript,
         summary: callDetails.data.analysis.summary,
         audioUrl: callDetails.data.artifact.recording,
@@ -286,7 +295,7 @@ async function startCall(assistantId, phoneNumber) {
       // Trigger webhook for reminders if meeting booked
       if (profile.meetingBooked) {
         await axios.post('https://your-server.com/webhook', {
-          phoneNumber: profile.phoneNumberId,
+          phoneNumber: profile.phoneNumber,
           meetingTime: profile.meetingTime
         });
       }
@@ -326,10 +335,3 @@ Make.com VAPI Call Transcripts via Email
 VAPI Introduction and Compliance
 VAPI Dashboard Quickstart
 VAPI Server Events and Webhooks
-
-
-
-
-
-
-3 / 3
