@@ -232,9 +232,27 @@ export function EnhancedGoogleCalendar({
     return events;
   }, []);
 
+  // Check authentication status with Google Calendar
+  const checkAuthStatus = useCallback(async () => {
+    try {
+      const response = await fetch('/api/auth/google/check');
+      if (response.ok) {
+        const { isAuthenticated: authStatus } = await response.json();
+        setIsAuthenticated(authStatus);
+        return authStatus;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error checking auth status:', error);
+      return false;
+    }
+  }, []);
+
   // Function to fetch calendar events from the API
   const fetchCalendarEvents = useCallback(async () => {
-    if (!isAuthenticated) return;
+    // Check authentication status first
+    const authStatus = await checkAuthStatus();
+    if (!authStatus) return;
 
     setLoading(true);
 
@@ -267,12 +285,44 @@ export function EnhancedGoogleCalendar({
     } finally {
       setLoading(false);
     }
-  }, [currentDate, isAuthenticated, generateSampleEvents]);
+  }, [currentDate, checkAuthStatus, generateSampleEvents]);
 
-  // Initial fetch of calendar events
+  // Check for auth parameter in URL
   useEffect(() => {
-    fetchCalendarEvents();
+    // Check if we have auth=success or auth=error in the URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const authParam = urlParams.get('auth');
+    const reasonParam = urlParams.get('reason');
+
+    if (authParam === 'success') {
+      console.log('Google Calendar authentication successful');
+      // Remove the auth parameter from the URL
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete('auth');
+      newUrl.searchParams.delete('reason');
+      window.history.replaceState({}, document.title, newUrl.toString());
+
+      // Refresh calendar events
+      fetchCalendarEvents();
+    } else if (authParam === 'error') {
+      console.error('Google Calendar authentication failed:', reasonParam);
+      setError(`Failed to authenticate with Google Calendar${reasonParam ? `: ${reasonParam}` : ''}`);
+      // Remove the auth parameter from the URL
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete('auth');
+      newUrl.searchParams.delete('reason');
+      window.history.replaceState({}, document.title, newUrl.toString());
+    }
   }, [fetchCalendarEvents]);
+
+  // Initial auth check and fetch of calendar events
+  useEffect(() => {
+    checkAuthStatus().then((authStatus) => {
+      if (authStatus) {
+        fetchCalendarEvents();
+      }
+    });
+  }, [checkAuthStatus, fetchCalendarEvents]);
 
   // Set up auto-refresh if enabled
   useEffect(() => {
@@ -304,19 +354,40 @@ export function EnhancedGoogleCalendar({
   };
 
   const handleAuth = async () => {
-    // In a real implementation, we would redirect to Google OAuth
-    // For now, we'll just set isAuthenticated to true and trigger a sync
-    setIsAuthenticated(true);
-
-    // Trigger a sync with the database
     try {
-      const response = await fetch('/api/calendar/sync');
-      if (response.ok) {
-        const result = await response.json();
-        console.log('Calendar sync result:', result);
+      // Show loading state
+      setLoading(true);
+
+      // Log the current origin for debugging
+      console.log('Current origin:', window.location.origin);
+
+      // Create the auth URL directly with hardcoded client ID
+      const clientId = '889823691212-l5ooomrd37jpbisohg1q8vofmupbr3c3.apps.googleusercontent.com';
+      const redirectUri = `${window.location.origin}/api/auth/google/callback`;
+      const scopes = [
+        'https://www.googleapis.com/auth/calendar',
+        'https://www.googleapis.com/auth/calendar.events'
+      ];
+
+      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(scopes.join(' '))}&access_type=offline&prompt=consent`;
+
+      console.log('Generated auth URL:', authUrl);
+
+      // Make a direct fetch request to test the API endpoint
+      try {
+        const response = await fetch('/api/auth/google/check');
+        const data = await response.json();
+        console.log('Auth check response:', data);
+      } catch (checkError) {
+        console.error('Error checking auth status:', checkError);
       }
+
+      // Redirect to Google OAuth
+      window.location.href = authUrl;
     } catch (err) {
-      console.error('Error syncing calendar:', err);
+      console.error('Error initiating Google auth:', err);
+      setError(`Failed to connect to Google Calendar: ${err instanceof Error ? err.message : String(err)}`);
+      setLoading(false);
     }
   };
 
@@ -730,10 +801,29 @@ export function EnhancedGoogleCalendar({
         {!isAuthenticated ? (
           <div className="flex flex-col items-center justify-center py-8">
             <p className="text-sm text-center mb-4">Connect your Google Calendar to view and manage your schedule</p>
-            <Button onClick={handleAuth} className="bg-indigo-600 hover:bg-indigo-700">
-              <Calendar className="mr-2 h-4 w-4" />
-              Connect Calendar
-            </Button>
+            <div className="space-y-2">
+              <Button onClick={handleAuth} className="bg-indigo-600 hover:bg-indigo-700">
+                <Calendar className="mr-2 h-4 w-4" />
+                Connect Calendar
+              </Button>
+
+              <div className="text-xs text-center text-gray-500 mt-2">
+                If the button doesn't work, try these alternatives:
+                <div className="flex justify-center space-x-2 mt-1">
+                  <a
+                    href="/api/auth/google/test"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-indigo-600 hover:underline"
+                  >Test API</a>
+                  <span>|</span>
+                  <a
+                    href={`https://accounts.google.com/o/oauth2/v2/auth?client_id=889823691212-l5ooomrd37jpbisohg1q8vofmupbr3c3.apps.googleusercontent.com&redirect_uri=${encodeURIComponent(`${window.location.origin}/api/auth/google/callback`)}&response_type=code&scope=https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.events&access_type=offline&prompt=consent`}
+                    className="text-indigo-600 hover:underline"
+                  >Direct Auth</a>
+                </div>
+              </div>
+            </div>
           </div>
         ) : loading ? (
           <div className="flex justify-center items-center py-12">

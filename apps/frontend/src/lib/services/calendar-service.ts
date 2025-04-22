@@ -2,12 +2,41 @@ import { google } from 'googleapis'
 import { createTransport } from 'nodemailer'
 import twilio from 'twilio'
 import { supabase } from './supabase'
+import { googleAuthService } from './google-auth-service'
+import { OAuth2Client } from 'google-auth-library'
 
-// Google Calendar setup
-const calendar = google.calendar({
+// Create OAuth2 client with hardcoded credentials
+const oauth2Client = new OAuth2Client(
+  '889823691212-l5ooomrd37jpbisohg1q8vofmupbr3c3.apps.googleusercontent.com', // Client ID
+  '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', // Client Secret
+  'http://localhost:3004/api/auth/google/callback' // Redirect URI
+)
+
+// Google Calendar setup with API key (for public data only)
+const publicCalendar = google.calendar({
   version: 'v3',
-  auth: process.env.GOOGLE_API_KEY
+  auth: 'AIzaSyCK7x6tXVVu1NYOtuzN9i0Gh-CiDwKHCtE' // Hardcoded API key
 })
+
+// Function to get authenticated calendar client
+const getAuthenticatedCalendar = () => {
+  // Check if we have tokens
+  const tokens = googleAuthService.getTokens()
+
+  if (tokens) {
+    // Set credentials
+    oauth2Client.setCredentials(tokens)
+
+    // Return authenticated calendar client
+    return google.calendar({
+      version: 'v3',
+      auth: oauth2Client
+    })
+  }
+
+  // Fall back to public calendar if no tokens
+  return publicCalendar
+}
 
 // Email setup (using nodemailer)
 const emailTransporter = createTransport({
@@ -24,13 +53,23 @@ const twilioClient = twilio(
   process.env.TWILIO_AUTH_TOKEN
 )
 
+// Define token interface
+interface GoogleTokens {
+  access_token: string;
+  refresh_token?: string;
+  expiry_date?: number;
+  token_type?: string;
+  id_token?: string;
+  scope?: string;
+}
+
 interface MeetingDetails {
   title: string
   description: string
   startTime: Date
   endTime: Date
   attendees: string[]
-  type: 'offplan' | 'secondary' | 'callback' | 'not-interested' | 'no-answer'
+  type: 'offplan' | 'secondary' | 'callback' | 'followup' | 'not-interested' | 'no-answer'
   leadName: string
   leadEmail: string
   leadPhone: string
@@ -40,9 +79,28 @@ interface MeetingDetails {
 }
 
 export const calendarService = {
+  // Get auth URL for Google Calendar
+  getAuthUrl() {
+    return googleAuthService.getAuthUrl();
+  },
+
+  // Check if user is authenticated with Google Calendar
+  isAuthenticated() {
+    return googleAuthService.isAuthenticated();
+  },
+
+  // Store tokens from OAuth flow
+  storeTokens(tokens: GoogleTokens) {
+    googleAuthService.storeTokens(tokens);
+    return googleAuthService.storeTokensInDatabase(tokens);
+  },
+
   // Schedule a meeting and send invites
   async scheduleMeeting(details: MeetingDetails) {
     try {
+      // Get authenticated calendar client
+      const calendar = getAuthenticatedCalendar();
+
       // Create Google Calendar event
       const event = {
         summary: details.title,
@@ -197,6 +255,9 @@ export const calendarService = {
   // Update meeting status
   async updateMeetingStatus(eventId: string, status: string, meetingId?: string) {
     try {
+      // Get authenticated calendar client
+      const calendar = getAuthenticatedCalendar();
+
       // Update Google Calendar event
       const event = await calendar.events.get({
         calendarId: 'primary',
@@ -254,6 +315,9 @@ export const calendarService = {
   // Get all meetings for a date range
   async getMeetings(startDate: Date, endDate: Date) {
     try {
+      // Get authenticated calendar client
+      const calendar = getAuthenticatedCalendar();
+
       const response = await calendar.events.list({
         calendarId: 'primary',
         timeMin: startDate.toISOString(),
@@ -277,7 +341,7 @@ export const calendarService = {
         ...details,
         title: `Follow-up: ${details.title}`,
         description: `Follow-up meeting for ${details.title}\n\n${details.description}`,
-        type: 'followup' as 'followup'
+        type: 'followup'
       }
 
       return await this.scheduleMeeting(followUpDetails)
@@ -304,7 +368,7 @@ export const calendarService = {
       const existingEventIds = new Set(existingMeetings.map(m => m.google_event_id))
 
       // Filter events that don't exist in the database
-      const newEvents = events.filter(event => !existingEventIds.has(event.id))
+      const newEvents = events.filter((event: any) => !existingEventIds.has(event.id))
 
       // Log new events to database
       for (const event of newEvents) {
@@ -313,7 +377,7 @@ export const calendarService = {
         const endTime = new Date(event.end.dateTime || event.end.date)
 
         // Try to determine meeting type from event summary or description
-        let type: 'offplan' | 'secondary' | 'callback' | 'not-interested' | 'no-answer' = 'callback'
+        let type: MeetingDetails['type'] = 'callback'
         if (event.summary?.toLowerCase().includes('follow')) {
           type = 'followup'
         } else if (event.summary?.toLowerCase().includes('property') ||

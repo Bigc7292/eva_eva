@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Google Sign-In Test</title>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .container {
+      background: #f5f5f5;
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 20px;
+    }
+    h1 {
+      color: #4285f4;
+    }
+    pre {
+      background: #e0e0e0;
+      padding: 10px;
+      border-radius: 4px;
+      overflow-x: auto;
+    }
+    button {
+      background: #4285f4;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      margin-top: 10px;
+    }
+    button:hover {
+      background: #3367d6;
+    }
+  </style>
+</head>
+<body>
+  <h1>Google Sign-In Test</h1>
+
+  <div class="container">
+    <h2>1. Google Identity Services Sign-In</h2>
+    <p>This uses the new Google Identity Services library:</p>
+    <div id="g_id_onload"
+         data-client_id="889823691212-l5ooomrd37jpbisohg1q8vofmupbr3c3.apps.googleusercontent.com"
+         data-callback="handleCredentialResponse">
+    </div>
+    <div class="g_id_signin" data-type="standard"></div>
+  </div>
+
+  <div class="container">
+    <h2>2. Manual OAuth Flow</h2>
+    <p>This uses a direct link to the OAuth endpoint:</p>
+    <button id="manualAuth" type="button">Sign in with Google</button>
+  </div>
+
+  <div class="container">
+    <h2>3. Email-only Scope</h2>
+    <p>This uses a minimal scope (email only):</p>
+    <button id="emailAuth" type="button">Sign in with Email Scope Only</button>
+  </div>
+
+  <div class="container">
+    <h2>Results</h2>
+    <div id="results">Not signed in</div>
+  </div>
+
+  <script>
+    // Handle the credential response from Google Identity Services
+    function handleCredentialResponse(response) {
+      document.getElementById('results').innerHTML =
+        '<p>Signed in successfully with Google Identity Services!</p>' +
+        '<pre>' + JSON.stringify(response, null, 2) + '</pre>';
+    }
+
+    // Set up the manual auth button
+    document.getElementById('manualAuth').addEventListener('click', function() {
+      const clientId = '889823691212-l5ooomrd37jpbisohg1q8vofmupbr3c3.apps.googleusercontent.com';
+      const redirectUri = `http://localhost:3004/api/auth/google/callback`;
+      const scopes = [
+        'https://www.googleapis.com/auth/calendar',
+        'https://www.googleapis.com/auth/calendar.events'
+      ];
+
+      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(scopes.join(' '))}&access_type=offline&prompt=consent`;
+
+      window.location.href = authUrl;
+    });
+
+    // Set up the email auth button
+    document.getElementById('emailAuth').addEventListener('click', function() {
+      const clientId = '889823691212-l5ooomrd37jpbisohg1q8vofmupbr3c3.apps.googleusercontent.com';
+      const redirectUri = `http://localhost:3004/api/auth/google/callback`;
+      const scopes = ['email', 'profile'];
+
+      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(scopes.join(' '))}&access_type=offline&prompt=consent`;
+
+      window.location.href = authUrl;
+    });
+
+    // Check for error in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const error = urlParams.get('error');
+    if (error) {
+      document.getElementById('results').innerHTML =
+        '<p style="color: red;">Error: ' + error + '</p>';
+    }
+  </script>
+</body>
+</html>
