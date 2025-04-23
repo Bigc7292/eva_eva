@@ -10,7 +10,7 @@ export default function GoogleTestPage() {
 
   // Client ID from your Google Cloud Console
   const CLIENT_ID = '889823691212-l5ooomrd37jpbisohg1q8vofmupbr3c3.apps.googleusercontent.com';
-  const REDIRECT_URI = 'http://localhost:3004/api/auth/google/callback';
+  const REDIRECT_URI = 'https://7ffc-91-73-200-83.ngrok-free.app/api/auth/google/callback';
 
   // Function to handle direct OAuth flow
   const handleDirectAuth = (customRedirectUri?: string, minimalScope = false) => {
@@ -41,7 +41,7 @@ export default function GoogleTestPage() {
 
   // Function to handle auth with original callback
   const handleOriginalAuth = () => {
-    handleDirectAuth('http://localhost:3004/api/auth/google/callback');
+    handleDirectAuth('https://7ffc-91-73-200-83.ngrok-free.app/api/auth/google/callback');
   };
 
   // Function to handle auth with minimal scope
@@ -53,7 +53,7 @@ export default function GoogleTestPage() {
   const handleEmailAuth = () => {
     try {
       const scopes = ['email', 'profile'];
-      const redirectUri = 'http://localhost:3004/api/auth/google/callback';
+      const redirectUri = 'https://7ffc-91-73-200-83.ngrok-free.app/api/auth/google/callback';
 
       const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(scopes.join(' '))}&access_type=offline&prompt=consent`;
 

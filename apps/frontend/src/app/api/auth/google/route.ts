@@ -17,7 +17,8 @@ export async function GET(request: NextRequest) {
 
     // Generate Google OAuth URL with hardcoded client ID and redirect URI
     const clientId = '889823691212-l5ooomrd37jpbisohg1q8vofmupbr3c3.apps.googleusercontent.com';
-    const redirectUri = 'http://localhost:3004/api/auth/google/callback';
+    // Use ngrok URL for production or localhost for development
+    const redirectUri = 'https://7ffc-91-73-200-83.ngrok-free.app/api/auth/google/callback';
     const scopes = [
       'https://www.googleapis.com/auth/calendar',
       'https://www.googleapis.com/auth/calendar.events'

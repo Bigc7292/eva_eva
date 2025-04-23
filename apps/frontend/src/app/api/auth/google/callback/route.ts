@@ -28,8 +28,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Use hardcoded redirect URI
-    const redirectUri = 'http://localhost:3004/api/auth/google/callback';
+    // Use hardcoded redirect URI with ngrok URL
+    const redirectUri = 'https://7ffc-91-73-200-83.ngrok-free.app/api/auth/google/callback';
     console.log('Using redirect URI:', redirectUri);
 
     // Exchange code for tokens

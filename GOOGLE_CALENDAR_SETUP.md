@@ -14,10 +14,15 @@ Add the following environment variables to your `.env` file:
 
 ```
 # Google Calendar API Configuration
-NEXT_PUBLIC_GOOGLE_API_KEY=AIzaSyA66k97dVoIORhpcWqOxB65B1tJfxFCPBQ
-NEXT_PUBLIC_GOOGLE_CLIENT_ID=974252402471-64efp7elfchr9rlbk7ovgm8q8gnuah1g.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=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
-GOOGLE_REDIRECT_URI=http://localhost:3004/api/auth/google/callback
+NEXT_PUBLIC_GOOGLE_API_KEY=AIzaSyCK7x6tXVVu1NYOtuzN9i0Gh-CiDwKHCtE
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=889823691212-l5ooomrd37jpbisohg1q8vofmupbr3c3.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=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
+
+# For local development
+# GOOGLE_REDIRECT_URI=http://localhost:3004/api/auth/google/callback
+
+# For ngrok tunnel
+GOOGLE_REDIRECT_URI=https://7ffc-91-73-200-83.ngrok-free.app/api/auth/google/callback
 ```
 
 ## Step 2: Create the Database Table
@@ -71,10 +76,33 @@ You can run this script using the Supabase SQL Editor or by using the `create_ca
    - Go to "APIs & Services" > "Credentials"
    - Click "Create Credentials" > "OAuth client ID"
    - Select "Web application" as the application type
-   - Add your redirect URI: `http://localhost:3004/api/auth/google/callback`
+   - Add your redirect URIs:
+     - `http://localhost:3004/api/auth/google/callback` (for local development)
+     - `https://7ffc-91-73-200-83.ngrok-free.app/api/auth/google/callback` (for ngrok tunnel)
    - Click "Create"
 
-## Step 4: Using the Google Calendar Integration
+## Step 4: Using ngrok for External Access
+
+If you need to access your application from outside your local network (for testing or development), you can use ngrok:
+
+1. Start your application on port 3004
+2. Run ngrok to expose your local server:
+   ```
+   ngrok http 3004
+   ```
+3. Note the ngrok URL provided (e.g., `https://7ffc-91-73-200-83.ngrok-free.app`)
+4. Update your Google Cloud Console OAuth credentials to include the ngrok URL:
+   - Add the ngrok URL to the Authorized JavaScript origins
+   - Add `https://your-ngrok-url/api/auth/google/callback` to the Authorized redirect URIs
+5. Update your .env file to use the ngrok URL for the redirect URI:
+   ```
+   GOOGLE_REDIRECT_URI=https://your-ngrok-url/api/auth/google/callback
+   ```
+6. Restart your application
+
+**Note**: The ngrok URL changes each time you restart ngrok unless you have a paid account with a fixed subdomain.
+
+## Step 5: Using the Google Calendar Integration
 
 The integration is now set up and ready to use. Here's how to use it:
 
@@ -89,9 +117,15 @@ If you encounter any issues:
 
 1. Check that all environment variables are correctly set
 2. Ensure the Google Calendar API is enabled in your Google Cloud Console
-3. Verify that the redirect URI is correctly configured
-4. Check the browser console for any error messages
-5. Make sure your application is running on the correct port (3004)
+3. Verify that the redirect URI is correctly configured in both:
+   - Your Google Cloud Console OAuth credentials
+   - Your application's environment variables
+4. When using ngrok, make sure to:
+   - Update the redirect URI in your Google Cloud Console to include the ngrok URL
+   - Update the GOOGLE_REDIRECT_URI in your .env file
+   - Restart your application after making these changes
+5. Check the browser console for any error messages
+6. Make sure your application is running on the correct port (3004)
 
 ## Additional Resources
 

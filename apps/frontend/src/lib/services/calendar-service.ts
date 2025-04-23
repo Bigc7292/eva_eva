@@ -9,7 +9,7 @@ import { OAuth2Client } from 'google-auth-library'
 const oauth2Client = new OAuth2Client(
   '889823691212-l5ooomrd37jpbisohg1q8vofmupbr3c3.apps.googleusercontent.com', // Client ID
   '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', // Client Secret
-  'http://localhost:3004/api/auth/google/callback' // Redirect URI
+  'https://7ffc-91-73-200-83.ngrok-free.app/api/auth/google/callback' // Redirect URI with ngrok URL
 )
 
 // Google Calendar setup with API key (for public data only)
