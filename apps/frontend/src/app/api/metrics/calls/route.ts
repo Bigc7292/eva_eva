@@ -95,8 +95,15 @@ export async function GET(request: NextRequest) {
       console.error('RPC function not available, calculating manually:', rpcError);
     }
 
+    // If we don't have data from the RPC function, calculate manually
+    if (answeredPerDay.length === 0) {
+      console.log('No data from RPC function, will calculate manually');
+      // Manual calculation logic will be executed below
+    }
+
     // If RPC failed or returned no data, calculate manually
     if (answeredPerDay.length === 0 && callsData && callsData.length > 0) {
+      console.log('Calculating answered calls per day manually');
       // Group calls by date
       const callsByDate = new Map<string, number>();
 

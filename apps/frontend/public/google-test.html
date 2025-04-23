@@ -83,7 +83,7 @@
     // Set up the manual auth button
     document.getElementById('manualAuth').addEventListener('click', function() {
       const clientId = '889823691212-l5ooomrd37jpbisohg1q8vofmupbr3c3.apps.googleusercontent.com';
-      const redirectUri = `https://7ffc-91-73-200-83.ngrok-free.app/api/auth/google/callback`;
+      const redirectUri = `https://7ffc-91-73-200-83.ngrok-free.app/api/auth/google/simple-html-callback`;
       const scopes = [
         'https://www.googleapis.com/auth/calendar',
         'https://www.googleapis.com/auth/calendar.events'
@@ -97,7 +97,7 @@
     // Set up the email auth button
     document.getElementById('emailAuth').addEventListener('click', function() {
       const clientId = '889823691212-l5ooomrd37jpbisohg1q8vofmupbr3c3.apps.googleusercontent.com';
-      const redirectUri = `https://7ffc-91-73-200-83.ngrok-free.app/api/auth/google/callback`;
+      const redirectUri = `https://7ffc-91-73-200-83.ngrok-free.app/api/auth/google/simple-html-callback`;
       const scopes = ['email', 'profile'];
 
       const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(scopes.join(' '))}&access_type=offline&prompt=consent`;

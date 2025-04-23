@@ -1,0 +1,16 @@
+{
+  "name": "vapi-mcp-integration",
+  "version": "1.0.0",
+  "description": "Integration with Vapi using MCP Server",
+  "type": "module",
+  "scripts": {
+    "setup": "node setup_vapi_mcp_server.js",
+    "create-call": "node create_vapi_call.js",
+    "start-local-mcp": "npx -y @vapi-ai/mcp-server"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.1.0",
+    "@vapi-ai/mcp-server": "latest",
+    "dotenv": "^16.0.3"
+  }
+}

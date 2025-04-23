@@ -1,16 +1,14 @@
-import { createClient } from '@supabase/supabase-js';
-import dotenv from 'dotenv';
-import path from 'path';
-import { fileURLToPath } from 'url';
+const { createClient } = require('@supabase/supabase-js');
+const dotenv = require('dotenv');
+const path = require('path');
 
 // Load environment variables from .env.local
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, '../.env') });
 dotenv.config({ path: path.join(__dirname, '../../frontend/.env.local') });
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const WEBHOOK_URL = 'https://53d8-91-73-200-83.ngrok-free.app/api/webhooks/vapi';
+const WEBHOOK_URL = 'https://ee20-91-73-200-83.ngrok-free.app/api/webhooks/vapi';
 
 async function registerSupabaseWebhook() {
   try {

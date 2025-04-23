@@ -8,7 +8,7 @@ export const googleAuthService = {
   getAuthUrl() {
     // Hardcoded client ID and redirect URI with ngrok URL
     const clientId = '889823691212-l5ooomrd37jpbisohg1q8vofmupbr3c3.apps.googleusercontent.com';
-    const redirectUri = 'https://7ffc-91-73-200-83.ngrok-free.app/api/auth/google/callback';
+    const redirectUri = 'https://7ffc-91-73-200-83.ngrok-free.app/api/auth/google/simple-html-callback';
 
     const scopes = [
       'https://www.googleapis.com/auth/calendar',

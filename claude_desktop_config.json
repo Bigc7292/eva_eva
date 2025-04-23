@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "vapi-mcp-server": {
+      "command": "npx",
+      "args": [
+          "-y",
+          "@vapi-ai/mcp-server"
+      ],
+      "env": {
+        "VAPI_TOKEN": "d1529b85-51d5-47c0-9332-a73d40f7d62b"
+      }
+    }
+  }
+}

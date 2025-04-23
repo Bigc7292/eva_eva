@@ -77,8 +77,8 @@ You can run this script using the Supabase SQL Editor or by using the `create_ca
    - Click "Create Credentials" > "OAuth client ID"
    - Select "Web application" as the application type
    - Add your redirect URIs:
-     - `http://localhost:3004/api/auth/google/callback` (for local development)
-     - `https://7ffc-91-73-200-83.ngrok-free.app/api/auth/google/callback` (for ngrok tunnel)
+     - `http://localhost:3004/api/auth/google/simple-html-callback` (for local development)
+     - `https://7ffc-91-73-200-83.ngrok-free.app/api/auth/google/simple-html-callback` (for ngrok tunnel)
    - Click "Create"
 
 ## Step 4: Using ngrok for External Access
@@ -93,10 +93,10 @@ If you need to access your application from outside your local network (for test
 3. Note the ngrok URL provided (e.g., `https://7ffc-91-73-200-83.ngrok-free.app`)
 4. Update your Google Cloud Console OAuth credentials to include the ngrok URL:
    - Add the ngrok URL to the Authorized JavaScript origins
-   - Add `https://your-ngrok-url/api/auth/google/callback` to the Authorized redirect URIs
+   - Add `https://your-ngrok-url/api/auth/google/simple-html-callback` to the Authorized redirect URIs
 5. Update your .env file to use the ngrok URL for the redirect URI:
    ```
-   GOOGLE_REDIRECT_URI=https://your-ngrok-url/api/auth/google/callback
+   GOOGLE_REDIRECT_URI=https://your-ngrok-url/api/auth/google/simple-html-callback
    ```
 6. Restart your application
 

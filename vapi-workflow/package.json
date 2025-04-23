@@ -1,0 +1,17 @@
+{
+  "name": "vapi-workflow-creator",
+  "version": "1.0.0",
+  "description": "Create a real estate workflow using Vapi MCP Server",
+  "type": "module",
+  "scripts": {
+    "create-workflow": "node create_real_estate_workflow_mcp.js",
+    "start-local-mcp": "node start_mcp_server.js",
+    "start": "node start_mcp_server.js",
+    "test-workflow": "node test_workflow.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.1.0",
+    "@vapi-ai/mcp-server": "latest",
+    "dotenv": "^16.0.3"
+  }
+}

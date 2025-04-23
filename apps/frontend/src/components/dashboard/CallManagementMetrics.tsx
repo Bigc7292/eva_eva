@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -86,33 +86,58 @@ export function CallManagementMetrics() {
   const [leadSegmentation, setLeadSegmentation] = useState<LeadSegmentationData | null>(null);
   const { toast } = useToast();
 
+  // Define fetchData outside of the component to avoid dependency issues
   const fetchData = async () => {
     setLoading(true);
     try {
       // Fetch all metrics in parallel with error handling for each request
       const callPromise = fetch('/api/metrics/calls')
-        .then(res => res.ok ? res.json() : null)
+        .then(res => {
+          if (!res.ok) {
+            console.error('Call metrics API returned status:', res.status);
+            return null;
+          }
+          return res.json();
+        })
         .catch(err => {
           console.error('Error fetching call metrics:', err);
           return null;
         });
 
       const costPromise = fetch('/api/metrics/costs')
-        .then(res => res.ok ? res.json() : null)
+        .then(res => {
+          if (!res.ok) {
+            console.error('Cost metrics API returned status:', res.status);
+            return null;
+          }
+          return res.json();
+        })
         .catch(err => {
           console.error('Error fetching cost metrics:', err);
           return null;
         });
 
       const meetingPromise = fetch('/api/metrics/meetings')
-        .then(res => res.ok ? res.json() : null)
+        .then(res => {
+          if (!res.ok) {
+            console.error('Meeting metrics API returned status:', res.status);
+            return null;
+          }
+          return res.json();
+        })
         .catch(err => {
           console.error('Error fetching meeting metrics:', err);
           return null;
         });
 
       const leadPromise = fetch('/api/leads/segmented')
-        .then(res => res.ok ? res.json() : null)
+        .then(res => {
+          if (!res.ok) {
+            console.error('Lead segmentation API returned status:', res.status);
+            return null;
+          }
+          return res.json();
+        })
         .catch(err => {
           console.error('Error fetching lead segmentation:', err);
           return null;
@@ -125,6 +150,13 @@ export function CallManagementMetrics() {
         meetingPromise,
         leadPromise
       ]);
+
+      console.log('API responses:', {
+        callData,
+        costData,
+        meetingData,
+        leadData
+      });
 
       // Set data with fallbacks
       setCallMetrics(callData || {
@@ -177,13 +209,22 @@ export function CallManagementMetrics() {
   };
 
   useEffect(() => {
-    fetchData();
+    // Define a local function to avoid dependency issues
+    const loadData = async () => {
+      try {
+        await fetchData();
+      } catch (error) {
+        console.error('Error in useEffect fetchData:', error);
+      }
+    };
+
+    loadData();
 
     // Set up polling for real-time updates (every 30 seconds)
-    const intervalId = setInterval(fetchData, 30000);
+    const intervalId = setInterval(loadData, 30000);
 
     return () => clearInterval(intervalId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleRefresh = () => {
@@ -230,7 +271,20 @@ export function CallManagementMetrics() {
         </TabsList>
 
         <TabsContent value="calls" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {loading ? (
+            <div className="flex justify-center items-center h-40">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
+            </div>
+          ) : !callMetrics || (callMetrics.total_calls === 0 && callMetrics.calls_today === 0) ? (
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <p className="text-muted-foreground">No call data available. Make some calls to see metrics here.</p>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Calls (Week)</CardTitle>
@@ -303,10 +357,24 @@ export function CallManagementMetrics() {
               </CardContent>
             </Card>
           </div>
+          )}
         </TabsContent>
 
         <TabsContent value="costs" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {loading ? (
+            <div className="flex justify-center items-center h-40">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
+            </div>
+          ) : !costMetrics || (costMetrics.avg_cost_per_day === 0 && costMetrics.avg_cost_per_meeting === 0) ? (
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <p className="text-muted-foreground">No cost data available. Make some calls to see metrics here.</p>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Average Cost Per Day</CardTitle>
@@ -331,10 +399,24 @@ export function CallManagementMetrics() {
               </CardContent>
             </Card>
           </div>
+          )}
         </TabsContent>
 
         <TabsContent value="meetings" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {loading ? (
+            <div className="flex justify-center items-center h-40">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
+            </div>
+          ) : !meetingMetrics || (meetingMetrics.total_meetings === 0 && meetingMetrics.meetings_today === 0) ? (
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <p className="text-muted-foreground">No meeting data available. Schedule some meetings to see metrics here.</p>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Meetings (Week)</CardTitle>
@@ -395,8 +477,9 @@ export function CallManagementMetrics() {
               </CardContent>
             </Card>
           </div>
+          )}
 
-          {meetingMetrics?.locations && meetingMetrics.locations.length > 0 && (
+          {loading ? null : meetingMetrics?.locations && meetingMetrics.locations.length > 0 ? (
             <Card>
               <CardHeader>
                 <CardTitle>Meeting Locations</CardTitle>
@@ -415,81 +498,97 @@ export function CallManagementMetrics() {
                 </div>
               </CardContent>
             </Card>
-          )}
+          ) : null}
         </TabsContent>
 
         <TabsContent value="leads" className="space-y-4">
-          {leadSegmentation?.summary && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {leadSegmentation.summary.map((segment) => (
-                <Card key={segment.status}>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium capitalize">
-                      {segment.status.replace(/_/g, ' ')}
-                    </CardTitle>
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{segment.count}</div>
-                  </CardContent>
-                </Card>
-              ))}
+          {loading ? (
+            <div className="flex justify-center items-center h-40">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
             </div>
-          )}
+          ) : !leadSegmentation?.summary || leadSegmentation.summary.length === 0 ? (
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <p className="text-muted-foreground">No lead data available. Add some leads to see segmentation here.</p>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              {leadSegmentation.summary && leadSegmentation.summary.length > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {leadSegmentation.summary.map((segment) => (
+                    <Card key={segment.status}>
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium capitalize">
+                          {segment.status.replace(/_/g, ' ')}
+                        </CardTitle>
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">{segment.count}</div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
 
-          {leadSegmentation?.detailed && (
-            <div className="grid grid-cols-1 gap-4">
-              {Object.entries(leadSegmentation.detailed).map(([status, leads], index) => (
-                leads.length > 0 && (
-                  <Card key={status}>
-                    <CardHeader>
-                      <CardTitle className="capitalize">{status.replace(/_/g, ' ')} Leads</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                          <thead>
-                            <tr className="border-b">
-                              <th className="text-left py-2 px-2">Name</th>
-                              <th className="text-left py-2 px-2">Phone</th>
-                              <th className="text-left py-2 px-2">Last Call</th>
-                              <th className="text-left py-2 px-2">Total Calls</th>
-                              <th className="text-left py-2 px-2">Budget</th>
-                              <th className="text-left py-2 px-2">Interest</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {leads.slice(0, 5).map((lead) => (
-                              <tr key={lead.lead_id} className="border-b">
-                                <td className="py-2 px-2">{lead.name || 'Unknown'}</td>
-                                <td className="py-2 px-2">{lead.phone_number}</td>
-                                <td className="py-2 px-2">
-                                  {lead.last_call_date
-                                    ? new Date(lead.last_call_date).toLocaleDateString()
-                                    : 'Never'}
-                                </td>
-                                <td className="py-2 px-2">{lead.total_calls}</td>
-                                <td className="py-2 px-2">
-                                  {lead.budget ? formatMetric(lead.budget, 'currency') : 'N/A'}
-                                </td>
-                                <td className="py-2 px-2 capitalize">
-                                  {lead.property_interest?.replace(/_/g, ' ') || 'None'}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                        {leads.length > 5 && (
-                          <div className="text-center mt-2 text-sm text-muted-foreground">
-                            Showing 5 of {leads.length} leads
+              {leadSegmentation?.detailed && Object.entries(leadSegmentation.detailed).some(([_, leads]) => leads.length > 0) && (
+                <div className="grid grid-cols-1 gap-4 mt-4">
+                  {Object.entries(leadSegmentation.detailed).map(([status, leads]) => (
+                    leads.length > 0 && (
+                      <Card key={status}>
+                        <CardHeader>
+                          <CardTitle className="capitalize">{status.replace(/_/g, ' ')} Leads</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                              <thead>
+                                <tr className="border-b">
+                                  <th className="text-left py-2 px-2">Name</th>
+                                  <th className="text-left py-2 px-2">Phone</th>
+                                  <th className="text-left py-2 px-2">Last Call</th>
+                                  <th className="text-left py-2 px-2">Total Calls</th>
+                                  <th className="text-left py-2 px-2">Budget</th>
+                                  <th className="text-left py-2 px-2">Interest</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {leads.slice(0, 5).map((lead) => (
+                                  <tr key={lead.lead_id} className="border-b">
+                                    <td className="py-2 px-2">{lead.name || 'Unknown'}</td>
+                                    <td className="py-2 px-2">{lead.phone_number}</td>
+                                    <td className="py-2 px-2">
+                                      {lead.last_call_date
+                                        ? new Date(lead.last_call_date).toLocaleDateString()
+                                        : 'Never'}
+                                    </td>
+                                    <td className="py-2 px-2">{lead.total_calls}</td>
+                                    <td className="py-2 px-2">
+                                      {lead.budget ? formatMetric(lead.budget, 'currency') : 'N/A'}
+                                    </td>
+                                    <td className="py-2 px-2 capitalize">
+                                      {lead.property_interest?.replace(/_/g, ' ') || 'None'}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                            {leads.length > 5 && (
+                              <div className="text-center mt-2 text-sm text-muted-foreground">
+                                Showing 5 of {leads.length} leads
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )
-              ))}
-            </div>
+                        </CardContent>
+                      </Card>
+                    )
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </TabsContent>
       </Tabs>
