@@ -100,7 +100,10 @@ If you need to access your application from outside your local network (for test
    ```
 6. Restart your application
 
-**Note**: The ngrok URL changes each time you restart ngrok unless you have a paid account with a fixed subdomain.
+**Important Notes**:
+- The ngrok URL changes each time you restart ngrok unless you have a paid account with a fixed subdomain
+- Always use HTTPS for the ngrok URL in your Google Cloud Console and .env file, even though your local server runs on HTTP
+- ngrok handles the SSL termination, so your local server can still run on HTTP while the external URL uses HTTPS
 
 ## Step 5: Using the Google Calendar Integration
 
