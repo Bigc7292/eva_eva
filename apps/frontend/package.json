@@ -5,8 +5,10 @@
   "scripts": {
     "dev": "next dev -p 3004",
     "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "start": "next start -p 3004",
+    "lint": "next lint",
+    "docker:build": "docker build -t eva-frontend .",
+    "docker:run": "docker run -p 3004:3004 --env-file ../.env.docker eva-frontend"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.4",

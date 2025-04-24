@@ -29,25 +29,41 @@ export const googleAuthService = {
 
   // Store tokens in local storage
   storeTokens(tokens: Record<string, unknown>) {
-    localStorage.setItem(TOKEN_STORAGE_KEY, JSON.stringify(tokens));
+    // Check if localStorage is available (client-side only)
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem(TOKEN_STORAGE_KEY, JSON.stringify(tokens));
+    } else {
+      console.warn('localStorage not available, unable to store tokens');
+    }
   },
 
   // Get tokens from local storage
   getTokens() {
-    const tokensStr = localStorage.getItem(TOKEN_STORAGE_KEY);
-    if (!tokensStr) return null;
+    // Check if localStorage is available (client-side only)
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const tokensStr = localStorage.getItem(TOKEN_STORAGE_KEY);
+      if (!tokensStr) return null;
 
-    try {
-      return JSON.parse(tokensStr);
-    } catch (error) {
-      console.error('Error parsing tokens:', error);
+      try {
+        return JSON.parse(tokensStr);
+      } catch (error) {
+        console.error('Error parsing tokens:', error);
+        return null;
+      }
+    } else {
+      console.warn('localStorage not available, unable to retrieve tokens');
       return null;
     }
   },
 
   // Clear tokens from local storage
   clearTokens() {
-    localStorage.removeItem(TOKEN_STORAGE_KEY);
+    // Check if localStorage is available (client-side only)
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.removeItem(TOKEN_STORAGE_KEY);
+    } else {
+      console.warn('localStorage not available, unable to clear tokens');
+    }
   },
 
   // Store tokens in database for server-side access

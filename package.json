@@ -15,7 +15,12 @@
     "vapi:direct": "node vapi_direct_test.js",
     "vapi:webhook": "node update_vapi_webhook.js",
     "vapi:call": "node make_call.js",
-    "vapi:both": "node vapi_call_both_keys.js"
+    "vapi:both": "node vapi_call_both_keys.js",
+    "docker:build": "docker-compose build",
+    "docker:up": "docker-compose --env-file .env.docker up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f",
+    "docker:start": "npm run docker:build && npm run docker:up"
   },
   "workspaces": [
     "apps/*",

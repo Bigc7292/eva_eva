@@ -1,14 +1,20 @@
 import { NextResponse } from 'next/server';
 import { calendarService } from '@/lib/services/calendar-service';
+import { supabase } from '@/lib/services/supabase';
 
 export async function GET() {
   try {
-    // Check if user is authenticated with Google Calendar
-    const isAuthenticated = calendarService.isAuthenticated();
+    // Server-side authentication check should use database tokens
+    // This is a server-side API route, so localStorage is not available
 
-    console.log('Google Calendar auth status:', isAuthenticated ? 'Authenticated' : 'Not authenticated');
+    // For now, we'll just return false since we can't access localStorage
+    // In a production app, you would check for tokens in the database or cookies
 
-    return NextResponse.json({ isAuthenticated });
+    // TODO: Implement server-side token verification with database or cookies
+    console.log('Server-side Google Calendar auth check');
+
+    // Return false for now - client-side components should use their own auth check
+    return NextResponse.json({ isAuthenticated: false });
   } catch (error) {
     console.error('Error checking Google auth status:', error);
     // Return false instead of an error to avoid breaking the UI

@@ -1,0 +1,34 @@
+version: '3.8'
+
+# This file is automatically loaded by docker-compose when running in the same directory
+# It overrides settings from the main docker-compose.yml file for development
+
+services:
+  frontend:
+    build:
+      target: deps # Use the deps stage for development
+    volumes:
+      - ./apps/frontend:/app
+      - /app/node_modules
+    command: npm run dev
+    environment:
+      - NODE_ENV=development
+
+  backend:
+    build:
+      target: deps # Use the deps stage for development
+    volumes:
+      - ./apps/backend:/app
+      - /app/node_modules
+    command: npm run dev
+    environment:
+      - NODE_ENV=development
+
+  # Development tools
+  adminer:
+    image: adminer
+    restart: unless-stopped
+    ports:
+      - "8081:8080"
+    networks:
+      - app-network

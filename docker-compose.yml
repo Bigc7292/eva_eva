@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./apps/frontend
+    ports:
+      - "3004:3004"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:3001
+      - NEXT_PUBLIC_VAPI_API_KEY=e1ac1fa8-286e-4dfd-9c5c-2d36e1cc95e8
+      - NEXT_PUBLIC_VAPI_ASSISTANT_ID=cfaa163c-4a47-471b-a39e-95c12d0cb738
+      - NEXT_PUBLIC_VAPI_API_URL=https://api.vapi.ai
+      - NEXT_PUBLIC_SUPABASE_URL=https://stexfwbuwyyfmkmxcftv.supabase.co
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN0ZXhmd2J1d3l5Zm1rbXhjZnR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ0NjIwNzIsImV4cCI6MjA2MDAzODA3Mn0.0eEPS7CkQQVItLfMQd0z7p6XSLZaCDp4XhYzxIkopvc
+    volumes:
+      - ./apps/frontend:/app
+      - /app/node_modules
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./apps/backend
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - TZ=Asia/Dubai
+      - VAPI_API_KEY=e1ac1fa8-286e-4dfd-9c5c-2d36e1cc95e8
+      - VAPI_ASSISTANT_ID=cfaa163c-4a47-471b-a39e-95c12d0cb738
+      - SUPABASE_URL=https://stexfwbuwyyfmkmxcftv.supabase.co
+      - SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN0ZXhmd2J1d3l5Zm1rbXhjZnR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ0NjIwNzIsImV4cCI6MjA2MDAzODA3Mn0.0eEPS7CkQQVItLfMQd0z7p6XSLZaCDp4XhYzxIkopvc
+    volumes:
+      - ./apps/backend:/app
+      - /app/node_modules
+    restart: unless-stopped
