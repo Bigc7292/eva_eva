@@ -1,15 +1,8 @@
 const fetch = require('node-fetch');
-const dotenv = require('dotenv');
-const path = require('path');
-
-// Load environment variables from .env.local
-dotenv.config({ path: path.join(__dirname, '../.env') });
-dotenv.config({ path: path.join(__dirname, '../../frontend/.env.local') });
 
 const VAPI_API_KEY = 'd1529b85-51d5-47c0-9332-a73d40f7d62b'; // Private API key
-const WEBHOOK_URL = 'https://6294-91-73-200-83.ngrok-free.app/api/webhooks/vapi';
-// Set the correct assistant ID
 const VAPI_ASSISTANT_ID = 'cfaa163c-4a47-471b-a39e-95c12d0cb738';
+const WEBHOOK_URL = 'https://6294-91-73-200-83.ngrok-free.app/api/webhooks/vapi';
 
 async function updateAssistantServerUrl() {
   try {
@@ -18,12 +11,12 @@ async function updateAssistantServerUrl() {
     console.log('Server URL:', WEBHOOK_URL);
 
     if (!VAPI_API_KEY) {
-      console.error('Vapi API key is missing. Please set NEXT_PUBLIC_VAPI_API_KEY in your .env.local file.');
+      console.error('Vapi API key is missing.');
       return false;
     }
 
     if (!VAPI_ASSISTANT_ID) {
-      console.error('Vapi assistant ID is missing. Please set NEXT_PUBLIC_VAPI_ASSISTANT_ID in your .env.local file.');
+      console.error('Vapi assistant ID is missing.');
       return false;
     }
 
@@ -58,6 +51,4 @@ async function updateAssistantServerUrl() {
   }
 }
 
-// Update the assistant server URL
-const VAPI_ASSISTANT_ID = 'cfaa163c-4a47-471b-a39e-95c12d0cb738';
 updateAssistantServerUrl();

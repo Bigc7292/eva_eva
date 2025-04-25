@@ -22,8 +22,9 @@ import { callsService } from '@/services/calls'
 import { leadsService } from '@/services/leads'
 import type { Call } from '@/services/leads'
 import { formatDistanceToNow, format } from 'date-fns'
-import { CallRecording } from '@/components/leads/CallRecording'
+import { EnhancedAudioPlayer } from '@/components/audio/EnhancedAudioPlayer'
 import { supabase } from '@/lib/services/supabase'
+import { formatPhoneNumberForDisplay } from '@/lib/utils/phone-utils'
 
 export default function CallDetailPage() {
   const params = useParams()
@@ -63,10 +64,10 @@ export default function CallDetailPage() {
             id: supabaseCall.call_id.toString(),
             retellCallId: supabaseCall.call_id,
             timestamp: supabaseCall.start_time,
-            callDuration: supabaseCall.call_duration || 0,
+            callDuration: supabaseCall.duration || 0,
             callType: supabaseCall.call_type || 'Outbound',
             callStatus: supabaseCall.call_status || 'Unknown',
-            audioUrl: supabaseCall.recording_url,
+            audioUrl: supabaseCall.audio_url || supabaseCall.recording_url,
             detailedCallSummary: supabaseCall.summary || '',
             leadId: null,
             leadName: 'Unknown',
@@ -195,7 +196,7 @@ export default function CallDetailPage() {
               </div>
               <div className="flex items-center gap-2">
                 <Phone className="h-4 w-4 text-muted-foreground" />
-                <span>Phone: {call.leadPhone || 'Unknown'}</span>
+                <span>Phone: {call.leadPhone ? formatPhoneNumberForDisplay(call.leadPhone) : 'Unknown'}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4 text-muted-foreground" />
@@ -251,17 +252,18 @@ export default function CallDetailPage() {
             {call.audioUrl && (
               <div className="mb-6">
                 <h3 className="text-lg font-medium mb-3">Call Recording</h3>
-                <div className="bg-muted p-4 rounded-md">
-                  <CallRecording
-                    audioUrl={call.audioUrl}
-                    callId={call.retellCallId || call.id}
-                    timestamp={call.timestamp}
-                  />
-                </div>
+                <EnhancedAudioPlayer
+                  audioUrl={call.audioUrl}
+                  transcript={call.transcript || undefined}
+                  showTranscript={showTranscript}
+                  title={`Call on ${formatDate(call.timestamp)}`}
+                  showWaveform={true}
+                  showDownload={true}
+                />
               </div>
             )}
 
-            {call.transcript && (
+            {call.transcript && !call.audioUrl && (
               <div>
                 <div className="flex justify-between items-center mb-3">
                   <h3 className="text-lg font-medium">Call Transcript</h3>
@@ -279,6 +281,18 @@ export default function CallDetailPage() {
                     <pre className="text-sm whitespace-pre-line font-sans">{call.transcript}</pre>
                   </div>
                 )}
+              </div>
+            )}
+
+            {call.transcript && call.audioUrl && (
+              <div className="mb-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowTranscript(!showTranscript)}
+                >
+                  {showTranscript ? 'Hide' : 'Show'} Transcript
+                </Button>
               </div>
             )}
 

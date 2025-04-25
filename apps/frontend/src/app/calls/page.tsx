@@ -11,6 +11,7 @@ import Link from 'next/link'
 import { formatDistanceToNow, format } from 'date-fns'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
+import { formatPhoneNumberForDisplay } from '@/lib/utils/phone-utils'
 
 interface Call {
   id: string;
@@ -279,7 +280,7 @@ export default function CallsPage() {
                         <span>{call.call_status}</span>
                       </div>
                     </td>
-                    <td className="px-4 py-3 font-medium">{call.phone_number}</td>
+                    <td className="px-4 py-3 font-medium">{formatPhoneNumberForDisplay(call.phone_number)}</td>
                     <td className="px-4 py-3">
                       <Badge variant={call.call_type === 'Inbound' ? 'default' : 'secondary'}>
                         {call.call_type}

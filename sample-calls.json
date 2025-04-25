@@ -1,0 +1,59 @@
+[
+  {
+    "id": "sample-call-1",
+    "type": "outboundPhoneCall",
+    "status": "completed",
+    "startedAt": "2023-01-01T12:00:00Z",
+    "endedAt": "2023-01-01T12:05:00Z",
+    "durationSeconds": 300,
+    "customer": {
+      "number": "+971565401583",
+      "name": "Colin Loader"
+    },
+    "artifact": {
+      "transcript": "This is a sample transcript for call 1.",
+      "recordingUrl": "https://example.com/recording1.mp3"
+    },
+    "analysis": {
+      "summary": "This is a sample summary for call 1."
+    }
+  },
+  {
+    "id": "sample-call-2",
+    "type": "outboundPhoneCall",
+    "status": "completed",
+    "startedAt": "2023-01-02T12:00:00Z",
+    "endedAt": "2023-01-02T12:10:00Z",
+    "durationSeconds": 600,
+    "customer": {
+      "number": "+971565401583",
+      "name": "Colin Loader"
+    },
+    "artifact": {
+      "transcript": "This is a sample transcript for call 2.",
+      "recordingUrl": "https://example.com/recording2.mp3"
+    },
+    "analysis": {
+      "summary": "This is a sample summary for call 2."
+    }
+  },
+  {
+    "id": "sample-call-3",
+    "type": "outboundPhoneCall",
+    "status": "completed",
+    "startedAt": "2023-01-03T12:00:00Z",
+    "endedAt": "2023-01-03T12:15:00Z",
+    "durationSeconds": 900,
+    "customer": {
+      "number": "+971565401583",
+      "name": "Colin Loader"
+    },
+    "artifact": {
+      "transcript": "This is a sample transcript for call 3.",
+      "recordingUrl": "https://example.com/recording3.mp3"
+    },
+    "analysis": {
+      "summary": "This is a sample summary for call 3."
+    }
+  }
+]

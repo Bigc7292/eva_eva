@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vapi All Calls Fetcher</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .results {
+            margin-top: 20px;
+            white-space: pre-wrap;
+            overflow-x: auto;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .status {
+            margin-top: 10px;
+            font-style: italic;
+        }
+        .error {
+            color: red;
+        }
+        .success {
+            color: green;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .summary {
+            margin-top: 20px;
+        }
+        .summary h3 {
+            margin-top: 10px;
+            margin-bottom: 5px;
+        }
+        .summary ul {
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1>Vapi All Calls Fetcher</h1>
+            <div>
+                <label for="apiKey">Vapi API Key:</label>
+                <input type="text" id="apiKey" value="d1529b85-51d5-47c0-9332-a73d40f7d62b" style="width: 300px;">
+            </div>
+            <div>
+                <label for="limit">Limit per page:</label>
+                <input type="number" id="limit" value="100" min="1" max="1000">
+            </div>
+            <div>
+                <button id="fetchButton" class="button">Fetch All Calls</button>
+                <button id="stopButton" class="button" disabled>Stop Fetching</button>
+            </div>
+            <div class="status" id="status"></div>
+        </div>
+        
+        <div class="card">
+            <h2>Results</h2>
+            <div>
+                <span id="totalCalls">0</span> total calls found
+            </div>
+            <div>
+                <button id="downloadButton" class="button" disabled>Download Results</button>
+            </div>
+            <div class="summary" id="summary"></div>
+        </div>
+        
+        <div class="card">
+            <h2>Recent Calls</h2>
+            <table id="callsTable">
+                <thead>
+                    <tr>
+                        <th>Call ID</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                        <th>Started At</th>
+                        <th>Duration</th>
+                        <th>Customer Number</th>
+                        <th>Has Transcript</th>
+                        <th>Has Recording</th>
+                    </tr>
+                </thead>
+                <tbody id="callsTableBody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let allCalls = [];
+        let isFetching = false;
+        
+        // DOM elements
+        const apiKeyInput = document.getElementById('apiKey');
+        const limitInput = document.getElementById('limit');
+        const fetchButton = document.getElementById('fetchButton');
+        const stopButton = document.getElementById('stopButton');
+        const statusElement = document.getElementById('status');
+        const totalCallsElement = document.getElementById('totalCalls');
+        const downloadButton = document.getElementById('downloadButton');
+        const callsTableBody = document.getElementById('callsTableBody');
+        const summaryElement = document.getElementById('summary');
+        
+        // Event listeners
+        fetchButton.addEventListener('click', startFetching);
+        stopButton.addEventListener('click', stopFetching);
+        downloadButton.addEventListener('click', downloadResults);
+        
+        // Function to start fetching calls
+        function startFetching() {
+            const apiKey = apiKeyInput.value.trim();
+            const limit = parseInt(limitInput.value);
+            
+            if (!apiKey) {
+                updateStatus('Please enter a valid API key', 'error');
+                return;
+            }
+            
+            if (isNaN(limit) || limit < 1 || limit > 1000) {
+                updateStatus('Please enter a valid limit (1-1000)', 'error');
+                return;
+            }
+            
+            // Reset variables
+            allCalls = [];
+            isFetching = true;
+            
+            // Update UI
+            fetchButton.disabled = true;
+            stopButton.disabled = false;
+            downloadButton.disabled = true;
+            totalCallsElement.textContent = '0';
+            callsTableBody.innerHTML = '';
+            summaryElement.innerHTML = '';
+            
+            // Start fetching
+            updateStatus('Starting to fetch all calls...', 'success');
+            fetchCalls(apiKey, limit);
+        }
+        
+        // Function to stop fetching calls
+        function stopFetching() {
+            isFetching = false;
+            fetchButton.disabled = false;
+            stopButton.disabled = true;
+            updateStatus('Fetching stopped by user', 'error');
+        }
+        
+        // Function to fetch calls with pagination
+        async function fetchCalls(apiKey, limit, cursor = null) {
+            if (!isFetching) return;
+            
+            try {
+                let url = `https://api.vapi.ai/call?limit=${limit}`;
+                if (cursor) {
+                    url += `&cursor=${cursor}`;
+                }
+                
+                updateStatus(`Fetching calls from Vapi (cursor: ${cursor || 'initial'})...`, 'success');
+                
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Failed to fetch calls: ${response.status} - ${errorText}`);
+                }
+                
+                const data = await response.json();
+                const calls = data.calls || [];
+                
+                updateStatus(`Retrieved ${calls.length} calls from Vapi`, 'success');
+                
+                // Add calls to the result
+                allCalls = [...allCalls, ...calls];
+                
+                // Update UI
+                totalCallsElement.textContent = allCalls.length;
+                updateCallsTable();
+                updateSummary();
+                
+                // Check if there are more calls to fetch
+                if (data.next_cursor && isFetching) {
+                    updateStatus(`More calls available, fetching next page with cursor: ${data.next_cursor}`, 'success');
+                    await fetchCalls(apiKey, limit, data.next_cursor);
+                } else {
+                    // Fetching completed
+                    isFetching = false;
+                    fetchButton.disabled = false;
+                    stopButton.disabled = true;
+                    downloadButton.disabled = false;
+                    
+                    updateStatus(`Completed fetching all calls. Total calls: ${allCalls.length}`, 'success');
+                }
+            } catch (error) {
+                updateStatus(`Error fetching calls: ${error.message}`, 'error');
+                isFetching = false;
+                fetchButton.disabled = false;
+                stopButton.disabled = true;
+            }
+        }
+        
+        // Function to update the status
+        function updateStatus(message, type) {
+            statusElement.textContent = message;
+            statusElement.className = 'status ' + type;
+            console.log(message);
+        }
+        
+        // Function to update the calls table
+        function updateCallsTable() {
+            callsTableBody.innerHTML = '';
+            
+            // Show only the most recent 50 calls
+            const recentCalls = allCalls.slice(0, 50);
+            
+            recentCalls.forEach(call => {
+                const row = document.createElement('tr');
+                
+                // Call ID
+                const idCell = document.createElement('td');
+                idCell.textContent = call.id;
+                row.appendChild(idCell);
+                
+                // Type
+                const typeCell = document.createElement('td');
+                typeCell.textContent = call.type || 'Unknown';
+                row.appendChild(typeCell);
+                
+                // Status
+                const statusCell = document.createElement('td');
+                statusCell.textContent = call.status || 'Unknown';
+                row.appendChild(statusCell);
+                
+                // Started At
+                const startedAtCell = document.createElement('td');
+                startedAtCell.textContent = call.startedAt ? new Date(call.startedAt).toLocaleString() : 'Unknown';
+                row.appendChild(startedAtCell);
+                
+                // Duration
+                const durationCell = document.createElement('td');
+                durationCell.textContent = call.durationSeconds ? `${call.durationSeconds.toFixed(1)}s` : 'Unknown';
+                row.appendChild(durationCell);
+                
+                // Customer Number
+                const customerNumberCell = document.createElement('td');
+                customerNumberCell.textContent = call.customer && call.customer.number ? call.customer.number : 'Unknown';
+                row.appendChild(customerNumberCell);
+                
+                // Has Transcript
+                const hasTranscriptCell = document.createElement('td');
+                hasTranscriptCell.textContent = call.artifact && call.artifact.transcript ? 'Yes' : 'No';
+                row.appendChild(hasTranscriptCell);
+                
+                // Has Recording
+                const hasRecordingCell = document.createElement('td');
+                hasRecordingCell.textContent = call.artifact && (call.artifact.recordingUrl || call.artifact.stereoRecordingUrl) ? 'Yes' : 'No';
+                row.appendChild(hasRecordingCell);
+                
+                callsTableBody.appendChild(row);
+            });
+        }
+        
+        // Function to update the summary
+        function updateSummary() {
+            // Create a summary of the calls
+            const summary = {
+                totalCalls: allCalls.length,
+                callsByType: {},
+                callsByStatus: {},
+                callsWithTranscript: 0,
+                callsWithRecording: 0,
+                phoneNumbers: new Set()
+            };
+            
+            // Count calls by type and status
+            allCalls.forEach(call => {
+                // Count by type
+                const type = call.type || 'unknown';
+                summary.callsByType[type] = (summary.callsByType[type] || 0) + 1;
+                
+                // Count by status
+                const status = call.status || 'unknown';
+                summary.callsByStatus[status] = (summary.callsByStatus[status] || 0) + 1;
+                
+                // Count calls with transcript
+                if (call.artifact && call.artifact.transcript) {
+                    summary.callsWithTranscript++;
+                }
+                
+                // Count calls with recording
+                if (call.artifact && (call.artifact.recordingUrl || call.artifact.stereoRecordingUrl)) {
+                    summary.callsWithRecording++;
+                }
+                
+                // Collect phone numbers
+                if (call.customer && call.customer.number) {
+                    summary.phoneNumbers.add(call.customer.number);
+                }
+            });
+            
+            // Convert phone numbers set to array
+            summary.uniquePhoneNumbers = Array.from(summary.phoneNumbers);
+            summary.phoneNumberCount = summary.uniquePhoneNumbers.length;
+            
+            // Update the summary element
+            let summaryHTML = `<h3>Total Calls: ${summary.totalCalls}</h3>`;
+            
+            // Calls by type
+            summaryHTML += '<h3>Calls by Type:</h3><ul>';
+            Object.entries(summary.callsByType).forEach(([type, count]) => {
+                summaryHTML += `<li>${type}: ${count}</li>`;
+            });
+            summaryHTML += '</ul>';
+            
+            // Calls by status
+            summaryHTML += '<h3>Calls by Status:</h3><ul>';
+            Object.entries(summary.callsByStatus).forEach(([status, count]) => {
+                summaryHTML += `<li>${status}: ${count}</li>`;
+            });
+            summaryHTML += '</ul>';
+            
+            // Calls with transcript and recording
+            summaryHTML += `<h3>Calls with Transcript: ${summary.callsWithTranscript}</h3>`;
+            summaryHTML += `<h3>Calls with Recording: ${summary.callsWithRecording}</h3>`;
+            
+            // Unique phone numbers
+            summaryHTML += `<h3>Unique Phone Numbers: ${summary.phoneNumberCount}</h3>`;
+            
+            // Update the summary element
+            summaryElement.innerHTML = summaryHTML;
+        }
+        
+        // Function to download results
+        function downloadResults() {
+            // Create a summary of the calls
+            const summary = {
+                totalCalls: allCalls.length,
+                callsByType: {},
+                callsByStatus: {},
+                callsWithTranscript: 0,
+                callsWithRecording: 0,
+                phoneNumbers: {}
+            };
+            
+            // Count calls by type and status
+            allCalls.forEach(call => {
+                // Count by type
+                const type = call.type || 'unknown';
+                summary.callsByType[type] = (summary.callsByType[type] || 0) + 1;
+                
+                // Count by status
+                const status = call.status || 'unknown';
+                summary.callsByStatus[status] = (summary.callsByStatus[status] || 0) + 1;
+                
+                // Count calls with transcript
+                if (call.artifact && call.artifact.transcript) {
+                    summary.callsWithTranscript++;
+                }
+                
+                // Count calls with recording
+                if (call.artifact && (call.artifact.recordingUrl || call.artifact.stereoRecordingUrl)) {
+                    summary.callsWithRecording++;
+                }
+                
+                // Count calls by phone number
+                if (call.customer && call.customer.number) {
+                    const phoneNumber = call.customer.number;
+                    if (!summary.phoneNumbers[phoneNumber]) {
+                        summary.phoneNumbers[phoneNumber] = 0;
+                    }
+                    summary.phoneNumbers[phoneNumber]++;
+                }
+            });
+            
+            const data = {
+                summary: summary,
+                calls: allCalls,
+                timestamp: new Date().toISOString()
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `vapi-all-calls-${new Date().toISOString().replace(/[^0-9]/g, '')}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>

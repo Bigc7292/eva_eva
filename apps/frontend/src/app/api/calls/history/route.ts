@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { supabase } from '@/lib/services/supabase'
+import { normalizePhoneNumbersInArray } from '@/lib/utils/api-utils'
 
 /**
  * GET /api/calls/history
@@ -81,8 +82,11 @@ export async function GET(request: NextRequest) {
       metadata: call.metadata || {}
     })) || []
 
+    // Normalize phone numbers in the transformed data
+    const normalizedCalls = normalizePhoneNumbersInArray(transformedCalls)
+
     return NextResponse.json({
-      calls: transformedCalls,
+      calls: normalizedCalls,
       page,
       pageSize,
       totalPages,

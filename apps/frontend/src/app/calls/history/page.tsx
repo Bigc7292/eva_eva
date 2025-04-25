@@ -34,6 +34,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { format } from 'date-fns'
 import { useToast } from '@/components/ui/use-toast'
+import { formatPhoneNumberForDisplay } from '@/lib/utils/phone-utils'
 
 interface Call {
   id: string;
@@ -388,7 +389,7 @@ export default function CallHistoryPage() {
                               </div>
                             </TableCell>
                             <TableCell>
-                              <div className="font-medium">{call.phone_number}</div>
+                              <div className="font-medium">{formatPhoneNumberForDisplay(call.phone_number)}</div>
                             </TableCell>
                             <TableCell>
                               {getStatusBadge(call.call_status)}
@@ -458,7 +459,7 @@ export default function CallHistoryPage() {
                 <div className="space-y-6">
                   <div className="flex justify-between items-start">
                     <div>
-                      <h3 className="text-lg font-medium">{selectedCall.phone_number}</h3>
+                      <h3 className="text-lg font-medium">{formatPhoneNumberForDisplay(selectedCall.phone_number)}</h3>
                       <p className="text-sm text-muted-foreground">
                         Call ID: {selectedCall.call_id}
                       </p>

@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { vapiService } from '@/lib/services/vapi'
 import { supabase } from '@/lib/services/supabase'
+import { normalizePhoneNumber } from '@/lib/utils/phone-utils'
+import { normalizePhoneNumbersInArray } from '@/lib/utils/api-utils'
 
 /**
  * GET /api/calls
@@ -35,7 +37,10 @@ export async function GET(request: NextRequest) {
       metadata: call.metadata || {}
     })) || []
 
-    return NextResponse.json(transformedData)
+    // Normalize phone numbers in the transformed data
+    const normalizedData = normalizePhoneNumbersInArray(transformedData)
+
+    return NextResponse.json(normalizedData)
   } catch (error) {
     console.error('Failed to fetch calls:', error)
     return NextResponse.json(
@@ -52,11 +57,21 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { phoneNumber, metadata } = body
+    const { phoneNumber: rawPhoneNumber, metadata } = body
+
+    if (!rawPhoneNumber) {
+      return NextResponse.json(
+        { error: 'Phone number is required' },
+        { status: 400 }
+      )
+    }
+
+    // Normalize the phone number
+    const phoneNumber = normalizePhoneNumber(rawPhoneNumber)
 
     if (!phoneNumber) {
       return NextResponse.json(
-        { error: 'Phone number is required' },
+        { error: 'Invalid phone number format' },
         { status: 400 }
       )
     }
