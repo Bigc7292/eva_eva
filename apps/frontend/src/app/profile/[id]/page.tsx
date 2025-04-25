@@ -9,7 +9,23 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Phone, Mail, MapPin, Calendar, Clock, User /*, FileText as FileIcon, Headphones as HeadphonesIcon, ChatBubble as MessageSquareIcon, Download as DownloadIcon, ArrowDown as ChevronDownIcon, ArrowUp as ChevronUpIcon, Brain as BrainCircuit */ } from 'lucide-react'
+import {
+  Phone,
+  Mail,
+  MapPin,
+  Calendar,
+  Clock,
+  User,
+  FileText,
+  Headphones,
+  MessageSquare,
+  Download,
+  ChevronDown,
+  ChevronUp,
+  Brain,
+  Star
+} from 'lucide-react'
+import { formatPhoneNumberForDisplay } from '@/lib/utils/phone-utils'
 
 interface Lead {
   id: string
@@ -24,6 +40,16 @@ interface Lead {
   notes: string
   created_at: string
   updated_at: string
+  transcripts?: Array<{call_id: string, timestamp: string, text: string}>
+  summaries?: Array<{call_id: string, timestamp: string, text: string}>
+  audio_files?: Array<{call_id: string, timestamp: string, url: string}>
+  ai_ratings?: Array<{call_id: string, timestamp: string, rating: number}>
+  call_stats?: {
+    total_calls: number
+    answered_calls: number
+    missed_calls: number
+    avg_duration: number
+  }
 }
 
 interface LeadProfile {
@@ -41,6 +67,7 @@ interface LeadProfile {
   interest_level: string
   created_at: string
   updated_at: string
+  avg_call_duration?: number
 }
 
 interface Call {
@@ -64,6 +91,7 @@ interface Call {
   created_at: string
   updated_at: string
   metadata?: Record<string, unknown>
+  ai_rating?: number
 }
 
 interface Meeting {
@@ -167,7 +195,17 @@ export default function LeadProfilePage() {
           nationality: String(leadData.nationality || ''),
           notes: String(leadData.notes || ''),
           created_at: String(leadData.created_at || new Date().toISOString()),
-          updated_at: String(leadData.updated_at || new Date().toISOString())
+          updated_at: String(leadData.updated_at || new Date().toISOString()),
+          transcripts: Array.isArray(leadData.transcripts) ? leadData.transcripts : [],
+          summaries: Array.isArray(leadData.summaries) ? leadData.summaries : [],
+          audio_files: Array.isArray(leadData.audio_files) ? leadData.audio_files : [],
+          ai_ratings: Array.isArray(leadData.ai_ratings) ? leadData.ai_ratings : [],
+          call_stats: leadData.call_stats ? {
+            total_calls: Number(leadData.call_stats.total_calls || 0),
+            answered_calls: Number(leadData.call_stats.answered_calls || 0),
+            missed_calls: Number(leadData.call_stats.missed_calls || 0),
+            avg_duration: Number(leadData.call_stats.avg_duration || 0)
+          } : undefined
         }
 
         setLead(processedLead)
@@ -211,17 +249,45 @@ export default function LeadProfilePage() {
           callsError = error;
         }
 
-        // Calculate call statistics
-        const totalCalls = callsData?.length || 0;
-        const answeredCalls = callsData?.filter(call => {
-          const status = String(call.status || call.call_status || '').toLowerCase();
-          return status === 'completed' || status === 'answered';
-        }).length || 0;
+        // Get call statistics from contact data if available, otherwise calculate from calls
+        let totalCalls = 0;
+        let answeredCalls = 0;
+        let missedCalls = 0;
+        let avgDuration = 0;
 
-        const missedCalls = callsData?.filter(call => {
-          const status = String(call.status || call.call_status || '').toLowerCase();
-          return status === 'missed' || status === 'no answer' || status === 'failed';
-        }).length || 0;
+        // Check if we have call_stats in the contact data
+        if (leadData.call_stats && typeof leadData.call_stats === 'object') {
+          console.log('Using call_stats from contact data:', leadData.call_stats);
+          totalCalls = Number(leadData.call_stats.total_calls || 0);
+          answeredCalls = Number(leadData.call_stats.answered_calls || 0);
+          missedCalls = Number(leadData.call_stats.missed_calls || 0);
+          avgDuration = Number(leadData.call_stats.avg_duration || 0);
+        } else {
+          // Calculate call statistics from calls data
+          console.log('Calculating call statistics from calls data');
+          totalCalls = callsData?.length || 0;
+          answeredCalls = callsData?.filter(call => {
+            const status = String(call.status || call.call_status || '').toLowerCase();
+            return status === 'completed' || status === 'answered';
+          }).length || 0;
+
+          missedCalls = callsData?.filter(call => {
+            const status = String(call.status || call.call_status || '').toLowerCase();
+            return status === 'missed' || status === 'no answer' || status === 'failed';
+          }).length || 0;
+
+          // Calculate average duration
+          if (answeredCalls > 0) {
+            const totalDuration = callsData
+              ?.filter(call => {
+                const status = String(call.status || call.call_status || '').toLowerCase();
+                return status === 'completed' || status === 'answered';
+              })
+              .reduce((sum, call) => sum + (call.duration || call.call_duration || 0), 0) || 0;
+
+            avgDuration = Math.round(totalDuration / answeredCalls);
+          }
+        }
 
         // Get last call date and status
         let lastCallDate = null;
@@ -236,7 +302,7 @@ export default function LeadProfilePage() {
         const profileData: LeadProfile = {
           id: String(leadData.id || ''),
           lead_id: String(leadData.id || ''),
-          phone: String(leadData.phone || ''),
+          phone: String(leadData.phone || leadData.phone_number || ''),
           first_contact_date: String(leadData.created_at || new Date().toISOString()),
           successful_meetings: 0, // Will be calculated from meetings table if available
           total_calls: totalCalls,
@@ -246,7 +312,8 @@ export default function LeadProfilePage() {
           last_call_status: lastCallStatus || '',
           interest_level: String(leadData.interest_level || 'Unknown'),
           created_at: String(leadData.created_at || new Date().toISOString()),
-          updated_at: String(leadData.updated_at || new Date().toISOString())
+          updated_at: String(leadData.updated_at || new Date().toISOString()),
+          avg_call_duration: avgDuration
         }
 
         setProfile(profileData)
@@ -273,7 +340,8 @@ export default function LeadProfilePage() {
           callback_time: call.callback_time || '',
           created_at: call.created_at || '',
           updated_at: call.updated_at || '',
-          metadata: call.metadata || null
+          metadata: call.metadata || null,
+          ai_rating: call.ai_rating || null
         })) || []
 
         setCalls(processedCalls)
@@ -464,7 +532,7 @@ export default function LeadProfilePage() {
           <CardContent className="space-y-3">
             <div className="flex items-center">
               <Phone className="mr-2 h-4 w-4 text-muted-foreground" />
-              <span>{lead.phone || 'No phone number'}</span>
+              <span>{lead.phone ? formatPhoneNumberForDisplay(lead.phone) : 'No phone number'}</span>
             </div>
             <div className="flex items-center">
               <Mail className="mr-2 h-4 w-4 text-muted-foreground" />
@@ -519,6 +587,10 @@ export default function LeadProfilePage() {
               <span>{profile?.missed_calls || 0}</span>
             </div>
             <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Avg Duration:</span>
+              <span>{profile?.avg_call_duration ? formatDuration(profile.avg_call_duration) : 'N/A'}</span>
+            </div>
+            <div className="flex items-center justify-between">
               <span className="text-muted-foreground">Last Contact:</span>
               <span>{profile?.last_call_date ? formatDate(profile.last_call_date) : 'Never'}</span>
             </div>
@@ -557,6 +629,7 @@ export default function LeadProfilePage() {
                       <CardTitle className="text-base">{call.call_type} Call</CardTitle>
                       <Badge variant="outline">{call.call_status}</Badge>
                       {call.call_outcome && <Badge>{call.call_outcome}</Badge>}
+                      <span className="text-xs text-muted-foreground ml-2">{formatPhoneNumberForDisplay(call.phone_number)}</span>
                     </div>
                     <span className="text-sm text-muted-foreground">{formatDate(call.timestamp)}</span>
                   </div>
@@ -579,11 +652,17 @@ export default function LeadProfilePage() {
                         <span>Callback: {call.callback_time ? formatDate(call.callback_time) : 'Scheduled'}</span>
                       </div>
                     )}
+                    {call.ai_rating && (
+                      <div className="flex items-center">
+                        <Star className="mr-1 h-4 w-4 text-muted-foreground" />
+                        <span>Rating: {typeof call.ai_rating === 'number' ? call.ai_rating.toFixed(1) : call.ai_rating}</span>
+                      </div>
+                    )}
                   </div>
                   {call.summary && (
                     <div className="pt-2 border-t">
                       <div className="flex items-center mb-1">
-                        {/* <BrainCircuit className="mr-2 h-4 w-4 text-muted-foreground" /> */}
+                        <Brain className="mr-2 h-4 w-4 text-muted-foreground" />
                         <span className="font-medium">AI Summary</span>
                       </div>
                       <p className="text-sm text-muted-foreground">{call.summary}</p>
@@ -594,7 +673,7 @@ export default function LeadProfilePage() {
                     <div className="pt-2 border-t">
                       <div className="flex items-center justify-between mb-1">
                         <div className="flex items-center">
-                          {/* <FileIcon className="mr-2 h-4 w-4 text-muted-foreground" /> */}
+                          <FileText className="mr-2 h-4 w-4 text-muted-foreground" />
                           <span className="font-medium">Transcript</span>
                         </div>
                         <Button
@@ -605,12 +684,12 @@ export default function LeadProfilePage() {
                         >
                           {expandedTranscript === call.id ? (
                             <>
-                              {/* <ChevronUpIcon className="h-4 w-4 mr-1" /> */}
+                              <ChevronUp className="h-4 w-4 mr-1" />
                               Hide
                             </>
                           ) : (
                             <>
-                              {/* <ChevronDownIcon className="h-4 w-4 mr-1" /> */}
+                              <ChevronDown className="h-4 w-4 mr-1" />
                               Show
                             </>
                           )}
@@ -628,7 +707,7 @@ export default function LeadProfilePage() {
                   <CardFooter className="flex flex-col border-t pt-4 pb-2 space-y-2">
                     <div className="flex items-center justify-between w-full">
                       <div className="flex items-center">
-                        {/* <HeadphonesIcon className="mr-2 h-4 w-4 text-muted-foreground" /> */}
+                        <Headphones className="mr-2 h-4 w-4 text-muted-foreground" />
                         <span className="text-sm font-medium">Call Recording</span>
                       </div>
                       <a
@@ -638,7 +717,7 @@ export default function LeadProfilePage() {
                         rel="noopener noreferrer"
                         className="flex items-center text-xs text-primary hover:underline"
                       >
-                        {/* <DownloadIcon className="h-3 w-3 mr-1" /> */}
+                        <Download className="h-3 w-3 mr-1" />
                         Download
                       </a>
                     </div>
