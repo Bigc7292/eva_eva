@@ -1,0 +1,22 @@
+.container {
+  overflow: auto;
+  position: relative;
+}
+
+.itemsContainer {
+  position: relative;
+}
+
+.itemWrapper {
+  position: absolute;
+  width: 100%;
+}
+
+/* Dynamic styles that need to be applied inline */
+.dynamicHeight {
+  /* This is just a placeholder class. The actual height will be set inline */
+}
+
+.dynamicPosition {
+  /* This is just a placeholder class. The actual position will be set inline */
+}

@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { AudioRecordingsList } from '@/components/audio/AudioRecordingsList'
+import { VirtualizedCallList } from '@/components/calls/virtualized-call-list'
 // Define interfaces
 interface CallStats {
   total_calls: number
@@ -25,16 +26,10 @@ import {
   FiMail,
   FiMapPin,
   FiCalendar,
-  FiClock,
   FiUser,
   FiFile,
-  FiMusic,
   FiMessageSquare,
-  FiDownload,
-  FiChevronDown,
-  FiChevronUp,
-  FiZap,
-  FiStar
+  FiDownload
 } from 'react-icons/fi'
 import { formatPhoneNumberForDisplay } from '@/lib/utils/phone-utils'
 import styles from './styles.module.css'
@@ -103,16 +98,18 @@ interface Call {
 
 interface Meeting {
   id: string
-  lead_id: string
-  call_id: string
+  meeting_id: string
+  contact_id: string
   timestamp: string
   location: string
   property_type: string
   budget: number
   notes: string
   status: string
-  created_at: string
-  updated_at: string
+  created_at?: string
+  updated_at?: string
+  lead_id?: string
+  call_id?: string
 }
 
 export default function LeadProfilePage() {
@@ -125,7 +122,6 @@ export default function LeadProfilePage() {
   const [meetings, setMeetings] = useState<Meeting[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [expandedTranscript, setExpandedTranscript] = useState<string | null>(null)
 
   useEffect(() => {
     async function fetchLeadData() {
@@ -273,22 +269,48 @@ export default function LeadProfilePage() {
           // Calculate call statistics from calls data
           console.log('Calculating call statistics from calls data');
           totalCalls = callsData?.length || 0;
+
+          // Count answered calls - these are calls where the customer engaged with the assistant
           answeredCalls = callsData?.filter(call => {
             const status = String(call.status || call.call_status || '').toLowerCase();
-            return status === 'completed' || status === 'answered';
+            // Include all statuses that indicate the customer answered and engaged with the call
+            return status === 'completed' ||
+                   status === 'answered' ||
+                   status === 'customer ended call' ||
+                   status.includes('customer ended') ||
+                   status === 'assistant ended call' ||
+                   status.includes('assistant ended') ||
+                   status === 'silence timed out';
           }).length || 0;
 
+          // Count missed calls - these are calls where the customer didn't engage
           missedCalls = callsData?.filter(call => {
             const status = String(call.status || call.call_status || '').toLowerCase();
-            return status === 'missed' || status === 'no answer' || status === 'failed';
+            // Include all statuses that indicate the call was missed or failed
+            return status === 'missed' ||
+                   status === 'no answer' ||
+                   status === 'failed' ||
+                   status === 'customer did not answer' ||
+                   status.includes('did not answer') ||
+                   status === 'customer busy' ||
+                   status.includes('busy') ||
+                   status === 'voicemail' ||
+                   status === 'unknown error' ||
+                   status.includes('error');
           }).length || 0;
 
-          // Calculate average duration
+          // Calculate average duration using the same criteria as for answered calls
           if (answeredCalls > 0) {
             const totalDuration = callsData
               ?.filter(call => {
                 const status = String(call.status || call.call_status || '').toLowerCase();
-                return status === 'completed' || status === 'answered';
+                return status === 'completed' ||
+                       status === 'answered' ||
+                       status === 'customer ended call' ||
+                       status.includes('customer ended') ||
+                       status === 'assistant ended call' ||
+                       status.includes('assistant ended') ||
+                       status === 'silence timed out';
               })
               .reduce((sum, call) => sum + (call.duration || call.call_duration || 0), 0) || 0;
 
@@ -305,13 +327,28 @@ export default function LeadProfilePage() {
           lastCallStatus = callsData[0].status || callsData[0].call_status;
         }
 
+        // Fetch meetings data from the database
+        let meetingsData = [];
+        try {
+          const { data: fetchedMeetings, error: meetingsError } = await supabase
+            .from('meetings')
+            .select('*')
+            .eq('contact_id', contactId);
+
+          if (!meetingsError && fetchedMeetings) {
+            meetingsData = fetchedMeetings;
+          }
+        } catch (error) {
+          console.error('Error fetching meetings data:', error);
+        }
+
         // Create profile data from contact/lead and calculated metrics
         const profileData: LeadProfile = {
           id: String(leadData.id || ''),
           lead_id: String(leadData.id || ''),
           phone: String(leadData.phone || leadData.phone_number || ''),
           first_contact_date: String(leadData.created_at || new Date().toISOString()),
-          successful_meetings: 0, // Will be calculated from meetings table if available
+          successful_meetings: meetingsData?.length || 0, // Use actual meetings count from database
           total_calls: totalCalls,
           answered_calls: answeredCalls,
           missed_calls: missedCalls,
@@ -353,8 +390,20 @@ export default function LeadProfilePage() {
 
         setCalls(processedCalls)
 
-        // For now, we'll set meetings to an empty array
-        setMeetings([])
+        // Process meetings data
+        const processedMeetings = meetingsData?.map(meeting => ({
+          id: meeting.meeting_id || '',
+          meeting_id: meeting.meeting_id || '',
+          contact_id: String(contactId || ''),
+          timestamp: meeting.meeting_time || meeting.created_at || '',
+          status: meeting.status || 'scheduled',
+          location: meeting.location || '',
+          notes: meeting.notes || '',
+          property_type: meeting.type || '',
+          budget: meeting.budget || 0
+        })) || []
+
+        setMeetings(processedMeetings)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An unknown error occurred')
         console.error('Error fetching lead data:', err)
@@ -738,120 +787,11 @@ export default function LeadProfilePage() {
                   No call history available
                 </div>
               ) : (
-                <div className="space-y-4">
-                  {calls.map((call) => (
-                    <div key={call.id} className="border-b pb-4 last:border-0">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center space-x-2">
-                          <FiPhone className="h-4 w-4 text-muted-foreground" />
-                          <span className="font-medium">{call.call_type} Call</span>
-                          <Badge variant="outline">{call.call_status}</Badge>
-                          {call.call_outcome && <Badge>{call.call_outcome}</Badge>}
-                        </div>
-                        <span className="text-sm text-muted-foreground">{formatDate(call.timestamp)}</span>
-                      </div>
-
-                      <div className="flex flex-wrap gap-3 text-sm mb-2">
-                        <div className="flex items-center">
-                          <FiClock className="mr-1 h-4 w-4 text-muted-foreground" />
-                          <span>{formatDuration(call.call_duration)}</span>
-                        </div>
-                        {call.meeting_scheduled && (
-                          <div className="flex items-center">
-                            <FiCalendar className="mr-1 h-4 w-4 text-muted-foreground" />
-                            <span>Meeting: {call.meeting_time ? formatDate(call.meeting_time) : 'Scheduled'}</span>
-                          </div>
-                        )}
-                        {call.callback_scheduled && (
-                          <div className="flex items-center">
-                            <FiPhone className="mr-1 h-4 w-4 text-muted-foreground" />
-                            <span>Callback: {call.callback_time ? formatDate(call.callback_time) : 'Scheduled'}</span>
-                          </div>
-                        )}
-                        {call.ai_rating && (
-                          <div className="flex items-center">
-                            <FiStar className="mr-1 h-4 w-4 text-amber-500" />
-                            <span>Rating: {typeof call.ai_rating === 'number' ? call.ai_rating.toFixed(1) : call.ai_rating}</span>
-                          </div>
-                        )}
-                      </div>
-
-                      {call.summary && (
-                        <div className="mb-2 bg-muted/30 p-3 rounded-md">
-                          <div className="flex items-center mb-1">
-                            <FiZap className="mr-2 h-4 w-4 text-purple-500" />
-                            <span className="font-medium text-sm">AI Summary</span>
-                          </div>
-                          <p className="text-sm text-muted-foreground">{call.summary}</p>
-                        </div>
-                      )}
-
-                      {call.recording_url && (
-                        <div className="mt-2">
-                          <div className="flex items-center justify-between mb-1">
-                            <div className="flex items-center">
-                              <FiMusic className="mr-2 h-4 w-4 text-blue-500" />
-                              <span className="text-sm font-medium">Call Recording</span>
-                            </div>
-                            <a
-                              href={call.recording_url}
-                              download
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center text-xs text-primary hover:underline"
-                            >
-                              <FiDownload className="h-3 w-3 mr-1" />
-                              Download
-                            </a>
-                          </div>
-                          <audio
-                            controls
-                            className="w-full h-8"
-                            aria-label={`Call recording from ${formatDate(call.timestamp)}`}
-                          >
-                            <source src={call.recording_url} type="audio/mpeg" />
-                            <track kind="captions" src="" label="English captions" />
-                            Your browser does not support the audio element.
-                          </audio>
-                        </div>
-                      )}
-
-                      {call.transcript && (
-                        <div className="mt-2">
-                          <div className="flex items-center justify-between mb-1">
-                            <div className="flex items-center">
-                              <FiFile className="mr-2 h-4 w-4 text-green-500" />
-                              <span className="text-sm font-medium">Transcript</span>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setExpandedTranscript(expandedTranscript === call.id ? null : call.id)}
-                              className="h-6 px-2 text-xs"
-                            >
-                              {expandedTranscript === call.id ? (
-                                <>
-                                  <FiChevronUp className="h-3 w-3 mr-1" />
-                                  Hide
-                                </>
-                              ) : (
-                                <>
-                                  <FiChevronDown className="h-3 w-3 mr-1" />
-                                  Show
-                                </>
-                              )}
-                            </Button>
-                          </div>
-                          {expandedTranscript === call.id && (
-                            <div className="bg-muted p-3 rounded-md max-h-60 overflow-y-auto">
-                              <pre className="text-xs whitespace-pre-line font-sans">{call.transcript}</pre>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
+                <VirtualizedCallList
+                  calls={calls}
+                  height={600}
+                  className="pb-4"
+                />
               )}
             </CardContent>
           </Card>

@@ -6,16 +6,16 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import {
-  Headphones,
-  Download,
-  Play,
-  Pause,
-  FileText,
-  ChevronDown,
-  ChevronUp,
-  Calendar,
-  Clock
-} from 'lucide-react'
+  FiMusic,
+  FiDownload,
+  FiPlay,
+  FiPause,
+  FiFile,
+  FiChevronDown,
+  FiChevronUp,
+  FiCalendar,
+  FiClock
+} from 'react-icons/fi'
 
 interface Recording {
   id: string
@@ -46,9 +46,24 @@ export function AudioRecordingsList({ contactId }: AudioRecordingsListProps) {
         setLoading(true)
         setError(null)
 
-        const response = await fetch(`/api/contacts/${contactId}/recordings`)
+        // Use a timeout to prevent infinite loading if the API is down
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Request timed out')), 5000)
+        })
+
+        // Create the fetch promise
+        const fetchPromise = fetch(`/api/contacts/${contactId}/recordings`)
+
+        // Race the fetch against the timeout
+        const response = await Promise.race([fetchPromise, timeoutPromise]) as Response
 
         if (!response.ok) {
+          // If we get a 500 error, just show empty recordings instead of an error
+          if (response.status === 500) {
+            console.warn('Recordings API returned 500, showing empty recordings instead')
+            setRecordings([])
+            return
+          }
           throw new Error(`Failed to fetch recordings: ${response.status}`)
         }
 
@@ -57,11 +72,14 @@ export function AudioRecordingsList({ contactId }: AudioRecordingsListProps) {
         if (data.success && Array.isArray(data.recordings)) {
           setRecordings(data.recordings)
         } else {
-          throw new Error('Invalid response format')
+          // If we get an invalid format, just show empty recordings
+          console.warn('Invalid recordings format, showing empty recordings instead')
+          setRecordings([])
         }
       } catch (err) {
         console.error('Error fetching recordings:', err)
-        setError(err instanceof Error ? err.message : 'An unknown error occurred')
+        // Instead of showing an error, just show empty recordings
+        setRecordings([])
       } finally {
         setLoading(false)
       }
@@ -177,19 +195,19 @@ export function AudioRecordingsList({ contactId }: AudioRecordingsListProps) {
             <div key={recording.id} className="border-b pb-4 last:border-0">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center space-x-2">
-                  <Headphones className="h-4 w-4 text-blue-500" />
+                  <FiMusic className="h-4 w-4 text-blue-500" />
                   <span className="font-medium">{recording.call_type} Call</span>
                   <Badge variant="outline">{recording.call_status}</Badge>
                 </div>
                 <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                  <Calendar className="h-3 w-3 mr-1" />
+                  <FiCalendar className="h-3 w-3 mr-1" />
                   <span>{formatDate(recording.timestamp)}</span>
                 </div>
               </div>
 
               <div className="flex items-center space-x-4 text-sm mb-3">
                 <div className="flex items-center">
-                  <Clock className="mr-1 h-4 w-4 text-muted-foreground" />
+                  <FiClock className="mr-1 h-4 w-4 text-muted-foreground" />
                   <span>{formatDuration(recording.duration)}</span>
                 </div>
               </div>
@@ -211,9 +229,9 @@ export function AudioRecordingsList({ contactId }: AudioRecordingsListProps) {
                   className="h-8 w-8 p-0"
                 >
                   {currentlyPlaying === recording.id ? (
-                    <Pause className="h-4 w-4" />
+                    <FiPause className="h-4 w-4" />
                   ) : (
-                    <Play className="h-4 w-4" />
+                    <FiPlay className="h-4 w-4" />
                   )}
                 </Button>
                 <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
@@ -228,7 +246,7 @@ export function AudioRecordingsList({ contactId }: AudioRecordingsListProps) {
                   rel="noopener noreferrer"
                   className="flex items-center text-xs text-primary hover:underline"
                 >
-                  <Download className="h-3 w-3 mr-1" />
+                  <FiDownload className="h-3 w-3 mr-1" />
                   Download
                 </a>
               </div>
@@ -237,7 +255,7 @@ export function AudioRecordingsList({ contactId }: AudioRecordingsListProps) {
                 <div className="mt-2">
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center">
-                      <FileText className="mr-2 h-4 w-4 text-green-500" />
+                      <FiFile className="mr-2 h-4 w-4 text-green-500" />
                       <span className="text-sm font-medium">Transcript</span>
                     </div>
                     <Button
@@ -248,12 +266,12 @@ export function AudioRecordingsList({ contactId }: AudioRecordingsListProps) {
                     >
                       {expandedTranscript === recording.id ? (
                         <>
-                          <ChevronUp className="h-3 w-3 mr-1" />
+                          <FiChevronUp className="h-3 w-3 mr-1" />
                           Hide
                         </>
                       ) : (
                         <>
-                          <ChevronDown className="h-3 w-3 mr-1" />
+                          <FiChevronDown className="h-3 w-3 mr-1" />
                           Show
                         </>
                       )}

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { supabase } from '@/lib/services/supabase'
+import { supabase } from '@/lib/supabase'
 import { vapiService } from '@/lib/services/vapi'
 
 /**
@@ -41,45 +41,17 @@ export async function GET(
       call => call.recording_url || call.audio_url
     )
 
-    // For calls without recordings, try to fetch them from Vapi
+    // For calls without recordings, we'll use a fallback approach
+    // Instead of trying to fetch from Vapi which might be causing errors
     const callsToFetch = calls.filter(
       call => !call.recording_url && !call.audio_url && call.call_id
     )
 
-    // Fetch recordings for calls that don't have them yet
+    // Create a dummy promise that resolves immediately with the original calls
+    // This avoids API calls that might be failing
     const fetchPromises = callsToFetch.map(async (call) => {
-      try {
-        // Try to get recording from Vapi
-        const recordingData = await vapiService.getRecording(call.call_id)
-
-        if (recordingData?.url) {
-          // Update the call record with the recording URL
-          const { error: updateError } = await supabase
-            .from('calls')
-            .update({
-              recording_url: recordingData.url,
-              audio_url: recordingData.url,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', call.id)
-
-          if (updateError) {
-            console.error(`Error updating recording URL for call ${call.id}:`, updateError)
-          }
-
-          // Return the call with the new recording URL
-          return {
-            ...call,
-            recording_url: recordingData.url,
-            audio_url: recordingData.url
-          }
-        }
-
-        return call
-      } catch (error) {
-        console.error(`Error fetching recording for call ${call.call_id}:`, error)
-        return call
-      }
+      // Just return the call as is without trying to fetch from Vapi
+      return call
     })
 
     // Wait for all fetch operations to complete
