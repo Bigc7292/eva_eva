@@ -75,7 +75,7 @@ interface LeadProfile {
 interface Call {
   id: string
   call_id: string
-  lead_id: string
+  contact_id: string
   phone_number: string
   call_type: string
   call_status: string
@@ -234,18 +234,9 @@ export default function LeadProfilePage() {
 
           console.log(`Found ${callsData.length} calls with contact_id=${contactId}`);
 
-          // If no calls found, try with lead_id field
+          // No need to try with lead_id as it doesn't exist in the schema
           if (callsError || callsData.length === 0) {
-            const leadIdResult = await supabase
-              .from('calls')
-              .select('*')
-              .eq('lead_id', contactId)
-              .order('created_at', { ascending: false });
-
-            callsData = leadIdResult.data || [];
-            callsError = leadIdResult.error;
-
-            console.log(`Found ${callsData.length} calls with lead_id=${contactId}`);
+            console.log(`No calls found with contact_id=${contactId}`);
           }
         } catch (error) {
           console.error('Error fetching calls:', error);
@@ -367,7 +358,7 @@ export default function LeadProfilePage() {
         const processedCalls = callsData?.map(call => ({
           id: call.id || call.call_id || '',
           call_id: call.call_id || call.id || '',
-          lead_id: leadId,
+          contact_id: String(contactId || ''),
           phone_number: call.phone_number || call.phone || '',
           call_type: call.call_type || call.type || 'Unknown',
           call_status: call.call_status || call.status || 'Unknown',

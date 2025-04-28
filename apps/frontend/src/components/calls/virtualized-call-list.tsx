@@ -10,7 +10,7 @@ import { FiPhone, FiClock, FiCalendar, FiZap, FiMusic, FiFile, FiChevronDown, Fi
 interface Call {
   id: string
   call_id: string
-  lead_id: string
+  contact_id: string
   phone_number: string
   call_type: string
   call_status: string
@@ -39,7 +39,7 @@ interface VirtualizedCallListProps {
 
 export function VirtualizedCallList({ calls, height = 600, className = '' }: VirtualizedCallListProps) {
   const [expandedTranscript, setExpandedTranscript] = useState<string | null>(null)
-  
+
   const formatDate = (dateString: string) => {
     if (!dateString) return 'N/A'
     const date = new Date(dateString)
@@ -51,14 +51,14 @@ export function VirtualizedCallList({ calls, height = 600, className = '' }: Vir
       minute: '2-digit'
     })
   }
-  
+
   const formatDuration = (seconds?: number) => {
     if (!seconds) return 'N/A'
     const minutes = Math.floor(seconds / 60)
     const remainingSeconds = seconds % 60
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
   }
-  
+
   const renderCall = (call: Call) => (
     <Card className="border-b pb-4 mb-4 last:border-0 last:mb-0 last:pb-0">
       <CardContent className="p-4">
@@ -157,7 +157,7 @@ export function VirtualizedCallList({ calls, height = 600, className = '' }: Vir
       </CardContent>
     </Card>
   )
-  
+
   return (
     <VirtualizedList
       items={calls}

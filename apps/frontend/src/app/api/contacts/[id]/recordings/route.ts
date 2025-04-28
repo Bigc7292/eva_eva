@@ -25,7 +25,7 @@ export async function GET(
     const { data: calls, error: callsError } = await supabase
       .from('calls')
       .select('*')
-      .or(`contact_id.eq.${contactId},lead_id.eq.${contactId}`)
+      .eq('contact_id', contactId)
       .order('start_time', { ascending: false })
 
     if (callsError) {
