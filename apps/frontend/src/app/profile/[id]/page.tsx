@@ -20,17 +20,17 @@ interface CallStats {
   successful_meetings?: number
 }
 
-// Import icons from React Icons
+// Import icons from Lucide React
 import {
-  FiPhone,
-  FiMail,
-  FiMapPin,
-  FiCalendar,
-  FiUser,
-  FiFile,
-  FiMessageSquare,
-  FiDownload
-} from 'react-icons/fi'
+  Phone,
+  Mail,
+  MapPin,
+  Calendar,
+  User,
+  FileText,
+  MessageSquare,
+  Download
+} from 'lucide-react'
 import { formatPhoneNumberForDisplay } from '@/lib/utils/phone-utils'
 import styles from './styles.module.css'
 
@@ -588,24 +588,24 @@ export default function LeadProfilePage() {
                   </span>
                 </div>
                 <div className="flex items-center mt-2 text-sm text-muted-foreground">
-                  <FiPhone className="mr-1 h-3 w-3" />
+                  <Phone className="mr-1 h-3 w-3" />
                   <span className="mr-3">{lead.phone ? formatPhoneNumberForDisplay(lead.phone) : 'No phone'}</span>
-                  <FiMail className="mr-1 h-3 w-3" />
+                  <Mail className="mr-1 h-3 w-3" />
                   <span>{lead.email || 'No email'}</span>
                 </div>
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
               <Button variant="default" size="sm">
-                <FiPhone className="mr-2 h-4 w-4" />
+                <Phone className="mr-2 h-4 w-4" />
                 Call Now
               </Button>
               <Button variant="outline" size="sm">
-                <FiCalendar className="mr-2 h-4 w-4" />
+                <Calendar className="mr-2 h-4 w-4" />
                 Schedule
               </Button>
               <Button variant="outline" size="sm">
-                <FiMessageSquare className="mr-2 h-4 w-4" />
+                <MessageSquare className="mr-2 h-4 w-4" />
                 Message
               </Button>
             </div>
@@ -699,15 +699,15 @@ export default function LeadProfilePage() {
                   <h4 className="text-sm font-medium mb-1">Personal</h4>
                   <div className="space-y-2">
                     <div className="flex items-center text-sm">
-                      <FiPhone className="mr-2 h-4 w-4 text-muted-foreground" />
+                      <Phone className="mr-2 h-4 w-4 text-muted-foreground" />
                       <span>{lead.phone ? formatPhoneNumberForDisplay(lead.phone) : 'No phone number'}</span>
                     </div>
                     <div className="flex items-center text-sm">
-                      <FiMail className="mr-2 h-4 w-4 text-muted-foreground" />
+                      <Mail className="mr-2 h-4 w-4 text-muted-foreground" />
                       <span>{lead.email || 'No email'}</span>
                     </div>
                     <div className="flex items-center text-sm">
-                      <FiUser className="mr-2 h-4 w-4 text-muted-foreground" />
+                      <User className="mr-2 h-4 w-4 text-muted-foreground" />
                       <span>{lead.nationality || 'No nationality'}</span>
                     </div>
                   </div>
@@ -724,7 +724,7 @@ export default function LeadProfilePage() {
                       <span>{lead.budget ? `$${lead.budget.toLocaleString()}` : 'Not specified'}</span>
                     </div>
                     <div className="flex items-center text-sm">
-                      <FiMapPin className="mr-2 h-4 w-4 text-muted-foreground" />
+                      <MapPin className="mr-2 h-4 w-4 text-muted-foreground" />
                       <span>{lead.location || 'No location'}</span>
                     </div>
                   </div>
@@ -742,7 +742,7 @@ export default function LeadProfilePage() {
                     {calls.slice(0, 3).map((call) => (
                       <div key={call.id} className="flex items-start border-b pb-2 last:border-0 last:pb-0">
                         <div className="bg-muted rounded-full p-1 mr-3">
-                          <FiPhone className="h-3 w-3 text-muted-foreground" />
+                          <Phone className="h-3 w-3 text-muted-foreground" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex justify-between items-center">
@@ -780,7 +780,7 @@ export default function LeadProfilePage() {
               <div className="flex justify-between items-center">
                 <CardTitle className="text-base">Call History</CardTitle>
                 <Button variant="outline" size="sm">
-                  <FiDownload className="mr-2 h-4 w-4" />
+                  <Download className="mr-2 h-4 w-4" />
                   Export
                 </Button>
               </div>
@@ -813,7 +813,7 @@ export default function LeadProfilePage() {
               <div className="flex justify-between items-center">
                 <CardTitle className="text-base">Scheduled Meetings</CardTitle>
                 <Button variant="outline" size="sm">
-                  <FiCalendar className="mr-2 h-4 w-4" />
+                  <Calendar className="mr-2 h-4 w-4" />
                   Add Meeting
                 </Button>
               </div>
@@ -829,7 +829,7 @@ export default function LeadProfilePage() {
                     <div key={meeting.id} className="border-b pb-4 last:border-0">
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center space-x-2">
-                          <FiCalendar className="h-4 w-4 text-blue-500" />
+                          <Calendar className="h-4 w-4 text-blue-500" />
                           <span className="font-medium">Meeting</span>
                           <Badge variant={meeting.status === 'completed' ? 'success' : meeting.status === 'cancelled' ? 'destructive' : 'outline'}>
                             {meeting.status.charAt(0).toUpperCase() + meeting.status.slice(1)}
@@ -840,7 +840,7 @@ export default function LeadProfilePage() {
 
                       <div className="flex flex-wrap gap-3 text-sm">
                         <div className="flex items-center">
-                          <FiMapPin className="mr-1 h-4 w-4 text-muted-foreground" />
+                          <MapPin className="mr-1 h-4 w-4 text-muted-foreground" />
                           <span>{meeting.location || 'No location'}</span>
                         </div>
                         {meeting.property_type && (
@@ -875,7 +875,7 @@ export default function LeadProfilePage() {
               <div className="flex justify-between items-center">
                 <CardTitle className="text-base">Contact Notes</CardTitle>
                 <Button variant="outline" size="sm">
-                  <FiFile className="mr-2 h-4 w-4" />
+                  <FileText className="mr-2 h-4 w-4" />
                   Add Note
                 </Button>
               </div>
