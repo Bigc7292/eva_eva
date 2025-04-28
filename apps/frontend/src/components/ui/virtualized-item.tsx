@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import type React from 'react'
 import styles from './virtualized-list.module.css'
 
 interface VirtualizedItemProps {
