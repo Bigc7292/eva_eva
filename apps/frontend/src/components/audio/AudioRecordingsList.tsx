@@ -6,16 +6,16 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import {
-  FiMusic,
-  FiDownload,
-  FiPlay,
-  FiPause,
-  FiFile,
-  FiChevronDown,
-  FiChevronUp,
-  FiCalendar,
-  FiClock
-} from 'react-icons/fi'
+  Music,
+  Download,
+  Play,
+  Pause,
+  FileText,
+  ChevronDown,
+  ChevronUp,
+  Calendar,
+  Clock
+} from 'lucide-react'
 
 interface Recording {
   id: string
@@ -195,19 +195,19 @@ export function AudioRecordingsList({ contactId }: AudioRecordingsListProps) {
             <div key={recording.id} className="border-b pb-4 last:border-0">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center space-x-2">
-                  <FiMusic className="h-4 w-4 text-blue-500" />
+                  <Music className="h-4 w-4 text-blue-500" />
                   <span className="font-medium">{recording.call_type} Call</span>
                   <Badge variant="outline">{recording.call_status}</Badge>
                 </div>
                 <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                  <FiCalendar className="h-3 w-3 mr-1" />
+                  <Calendar className="h-3 w-3 mr-1" />
                   <span>{formatDate(recording.timestamp)}</span>
                 </div>
               </div>
 
               <div className="flex items-center space-x-4 text-sm mb-3">
                 <div className="flex items-center">
-                  <FiClock className="mr-1 h-4 w-4 text-muted-foreground" />
+                  <Clock className="mr-1 h-4 w-4 text-muted-foreground" />
                   <span>{formatDuration(recording.duration)}</span>
                 </div>
               </div>
@@ -229,9 +229,9 @@ export function AudioRecordingsList({ contactId }: AudioRecordingsListProps) {
                   className="h-8 w-8 p-0"
                 >
                   {currentlyPlaying === recording.id ? (
-                    <FiPause className="h-4 w-4" />
+                    <Pause className="h-4 w-4" />
                   ) : (
-                    <FiPlay className="h-4 w-4" />
+                    <Play className="h-4 w-4" />
                   )}
                 </Button>
                 <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
@@ -246,7 +246,7 @@ export function AudioRecordingsList({ contactId }: AudioRecordingsListProps) {
                   rel="noopener noreferrer"
                   className="flex items-center text-xs text-primary hover:underline"
                 >
-                  <FiDownload className="h-3 w-3 mr-1" />
+                  <Download className="h-3 w-3 mr-1" />
                   Download
                 </a>
               </div>
@@ -255,7 +255,7 @@ export function AudioRecordingsList({ contactId }: AudioRecordingsListProps) {
                 <div className="mt-2">
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center">
-                      <FiFile className="mr-2 h-4 w-4 text-green-500" />
+                      <FileText className="mr-2 h-4 w-4 text-green-500" />
                       <span className="text-sm font-medium">Transcript</span>
                     </div>
                     <Button
@@ -266,12 +266,12 @@ export function AudioRecordingsList({ contactId }: AudioRecordingsListProps) {
                     >
                       {expandedTranscript === recording.id ? (
                         <>
-                          <FiChevronUp className="h-3 w-3 mr-1" />
+                          <ChevronUp className="h-3 w-3 mr-1" />
                           Hide
                         </>
                       ) : (
                         <>
-                          <FiChevronDown className="h-3 w-3 mr-1" />
+                          <ChevronDown className="h-3 w-3 mr-1" />
                           Show
                         </>
                       )}

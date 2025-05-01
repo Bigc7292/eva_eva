@@ -5,7 +5,7 @@ import { VirtualizedList } from '@/components/ui/virtualized-list'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { FiPhone, FiClock, FiCalendar, FiZap, FiMusic, FiFile, FiChevronDown, FiChevronUp, FiStar } from 'react-icons/fi'
+import { Phone, Clock, Calendar, Zap, Music, FileText, ChevronDown, ChevronUp, Star } from 'lucide-react'
 
 interface Call {
   id: string
@@ -64,7 +64,7 @@ export function VirtualizedCallList({ calls, height = 600, className = '' }: Vir
       <CardContent className="p-4">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center space-x-2">
-            <FiPhone className="h-4 w-4 text-muted-foreground" />
+            <Phone className="h-4 w-4 text-muted-foreground" />
             <span className="font-medium">{call.call_type} Call</span>
             <Badge variant="outline">{call.call_status}</Badge>
             {call.call_outcome && <Badge>{call.call_outcome}</Badge>}
@@ -74,18 +74,18 @@ export function VirtualizedCallList({ calls, height = 600, className = '' }: Vir
 
         <div className="flex flex-wrap gap-3 text-sm mb-2">
           <div className="flex items-center">
-            <FiClock className="mr-1 h-4 w-4 text-muted-foreground" />
+            <Clock className="mr-1 h-4 w-4 text-muted-foreground" />
             <span>{formatDuration(call.call_duration)}</span>
           </div>
           {call.meeting_scheduled && (
             <div className="flex items-center">
-              <FiCalendar className="mr-1 h-4 w-4 text-muted-foreground" />
+              <Calendar className="mr-1 h-4 w-4 text-muted-foreground" />
               <span>Meeting: {call.meeting_time ? formatDate(call.meeting_time) : 'Scheduled'}</span>
             </div>
           )}
           {call.ai_rating && (
             <div className="flex items-center">
-              <FiStar className="mr-1 h-4 w-4 text-amber-500" />
+              <Star className="mr-1 h-4 w-4 text-amber-500" />
               <span>Rating: {typeof call.ai_rating === 'number' ? call.ai_rating.toFixed(1) : call.ai_rating}</span>
             </div>
           )}
@@ -94,7 +94,7 @@ export function VirtualizedCallList({ calls, height = 600, className = '' }: Vir
         {call.summary && (
           <div className="mb-2 bg-muted/30 p-3 rounded-md">
             <div className="flex items-center mb-1">
-              <FiZap className="mr-2 h-4 w-4 text-purple-500" />
+              <Zap className="mr-2 h-4 w-4 text-purple-500" />
               <span className="font-medium text-sm">AI Summary</span>
             </div>
             <p className="text-sm text-muted-foreground">{call.summary}</p>
@@ -105,7 +105,7 @@ export function VirtualizedCallList({ calls, height = 600, className = '' }: Vir
           <div className="mt-2">
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center">
-                <FiMusic className="mr-2 h-4 w-4 text-blue-500" />
+                <Music className="mr-2 h-4 w-4 text-blue-500" />
                 <span className="text-sm font-medium">Call Recording</span>
               </div>
             </div>
@@ -125,7 +125,7 @@ export function VirtualizedCallList({ calls, height = 600, className = '' }: Vir
           <div className="mt-2">
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center">
-                <FiFile className="mr-2 h-4 w-4 text-green-500" />
+                <FileText className="mr-2 h-4 w-4 text-green-500" />
                 <span className="text-sm font-medium">Transcript</span>
               </div>
               <Button
@@ -136,12 +136,12 @@ export function VirtualizedCallList({ calls, height = 600, className = '' }: Vir
               >
                 {expandedTranscript === call.id ? (
                   <>
-                    <FiChevronUp className="h-3 w-3 mr-1" />
+                    <ChevronUp className="h-3 w-3 mr-1" />
                     Hide
                   </>
                 ) : (
                   <>
-                    <FiChevronDown className="h-3 w-3 mr-1" />
+                    <ChevronDown className="h-3 w-3 mr-1" />
                     Show
                   </>
                 )}
