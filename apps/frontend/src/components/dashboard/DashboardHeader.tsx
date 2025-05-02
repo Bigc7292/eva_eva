@@ -27,32 +27,46 @@ interface DashboardStats {
 }
 
 const MetricCard = ({ title, value, change, icon, trend = 'neutral' }: MetricCardProps) => {
+  // Define gradient classes based on trend
+  const gradientClass =
+    trend === 'up' ? 'bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-950 dark:to-emerald-900 border-green-200 dark:border-green-800' :
+    trend === 'down' ? 'bg-gradient-to-br from-red-50 to-rose-100 dark:from-red-950 dark:to-rose-900 border-red-200 dark:border-red-800' :
+    'bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-950 dark:to-indigo-900 border-blue-200 dark:border-blue-800';
+
+  // Define icon background classes based on trend
+  const iconBgClass =
+    trend === 'up' ? 'bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400' :
+    trend === 'down' ? 'bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400' :
+    'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400';
+
+  // Define text color classes based on trend
+  const textColorClass =
+    trend === 'up' ? 'text-green-600 dark:text-green-400' :
+    trend === 'down' ? 'text-red-600 dark:text-red-400' :
+    'text-blue-600 dark:text-blue-400';
+
   return (
-    <Card className="p-4">
+    <Card className={`p-4 shadow-sm hover:shadow-md transition-all duration-300 ${gradientClass}`}>
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm text-muted-foreground">{title}</p>
+          <p className="text-sm text-muted-foreground font-medium">{title}</p>
           <h3 className="text-2xl font-bold mt-1">{value}</h3>
         </div>
-        <div className={`p-3 rounded-full ${
-          trend === 'up' ? 'bg-green-100 text-green-600' :
-          trend === 'down' ? 'bg-red-100 text-red-600' :
-          'bg-blue-100 text-blue-600'
-        }`}>
+        <div className={`w-12 h-12 rounded-full ${iconBgClass} flex items-center justify-center shadow-sm`}>
           {icon}
         </div>
       </div>
-      <div className="mt-2 flex items-center">
-        {trend === 'up' ? (
-          <ArrowUp className="h-4 w-4 text-green-600 mr-1" />
-        ) : trend === 'down' ? (
-          <ArrowDown className="h-4 w-4 text-red-600 mr-1" />
-        ) : null}
-        <span className={`text-sm ${
-          trend === 'up' ? 'text-green-600' :
-          trend === 'down' ? 'text-red-600' :
-          'text-muted-foreground'
-        }`}>
+      <div className="mt-3 flex items-center">
+        <div className={`flex items-center justify-center w-6 h-6 rounded-full ${iconBgClass} mr-2`}>
+          {trend === 'up' ? (
+            <ArrowUp className="h-3 w-3" />
+          ) : trend === 'down' ? (
+            <ArrowDown className="h-3 w-3" />
+          ) : (
+            <div className="w-2 h-2 rounded-full bg-current" />
+          )}
+        </div>
+        <span className={`text-sm font-medium ${textColorClass}`}>
           {change > 0 ? '+' : ''}{change}% from last period
         </span>
       </div>

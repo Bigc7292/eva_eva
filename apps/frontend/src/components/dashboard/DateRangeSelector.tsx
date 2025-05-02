@@ -16,6 +16,7 @@ export function DateRangeSelector({ onChange }: DateRangeSelectorProps) {
   const [customRange, setCustomRange] = useState<DateRange | null>(null)
 
   const timeframes: Record<TimeFrame, string> = {
+    '1d': 'Today',
     '7d': 'Last 7 Days',
     '30d': 'Last 30 Days',
     '90d': 'Last 90 Days',
@@ -27,7 +28,16 @@ export function DateRangeSelector({ onChange }: DateRangeSelectorProps) {
     if (tf !== 'custom') {
       const end = new Date()
       const start = new Date()
-      start.setDate(end.getDate() - parseInt(tf))
+
+      // Special case for '1d' - set to today only
+      if (tf === '1d') {
+        // Set start to beginning of today
+        start.setHours(0, 0, 0, 0)
+      } else {
+        // For other timeframes, subtract the number of days
+        start.setDate(end.getDate() - Number.parseInt(tf, 10))
+      }
+
       onChange({ start, end })
     }
   }
@@ -69,4 +79,4 @@ export function DateRangeSelector({ onChange }: DateRangeSelectorProps) {
       )}
     </div>
   )
-} 
+}

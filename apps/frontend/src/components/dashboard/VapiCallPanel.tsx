@@ -56,12 +56,12 @@ export function VapiCallPanel() {
       }
 
       const data = await response.json();
-      
+
       toast({
         title: 'Call Initiated',
         description: `Call to ${phoneNumber} has been queued`,
       });
-      
+
       setCallResults([data]);
     } catch (error) {
       console.error('Error making call:', error);
@@ -81,30 +81,55 @@ export function VapiCallPanel() {
 
     setCsvLoading(true);
     const reader = new FileReader();
-    
+
     reader.onload = (e) => {
       try {
         const data = new Uint8Array(e.target?.result as ArrayBuffer);
         const workbook = XLSX.read(data, { type: 'array' });
         const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
         const jsonData = XLSX.utils.sheet_to_json(firstSheet);
-        
+
         // Extract phone numbers from CSV
-        const phoneNumbers = jsonData.map((row: any) => {
+        const phoneNumbers = jsonData.map((row: Record<string, unknown>) => {
           // Try to find a column that contains phone numbers
-          const phoneKey = Object.keys(row).find(key => 
-            key.toLowerCase().includes('phone') || 
-            key.toLowerCase().includes('mobile') || 
-            key.toLowerCase().includes('number')
+          const phoneKey = Object.keys(row).find(key =>
+            key.toLowerCase().includes('phone') ||
+            key.toLowerCase().includes('mobile') ||
+            key.toLowerCase().includes('number') ||
+            key.toLowerCase().includes('tel')
           );
-          
-          return { 
-            phoneNumber: phoneKey ? row[phoneKey].toString() : null 
+
+          let phoneNumber = null;
+          if (phoneKey) {
+            // Convert to string and clean up the phone number
+            phoneNumber = row[phoneKey]?.toString().trim();
+
+            // Ensure it has a country code
+            if (phoneNumber && !phoneNumber.startsWith('+')) {
+              // If it starts with 00, replace with +
+              if (phoneNumber.startsWith('00')) {
+                phoneNumber = `+${phoneNumber.substring(2)}`;
+              }
+              // If it's a UAE number without country code
+              else if (phoneNumber.startsWith('0') && phoneNumber.length <= 10) {
+                phoneNumber = `+971${phoneNumber.substring(1)}`;
+              }
+              // Otherwise just add + at the beginning
+              else {
+                phoneNumber = `+${phoneNumber.replace(/\D/g, '')}`;
+              }
+            }
+          }
+
+          return {
+            phoneNumber,
+            name: row.name?.toString() || row.Name?.toString() || null,
+            email: row.email?.toString() || row.Email?.toString() || null
           };
         }).filter(item => item.phoneNumber);
-        
+
         setCsvData(phoneNumbers);
-        
+
         toast({
           title: 'CSV Loaded',
           description: `Loaded ${phoneNumbers.length} phone numbers from CSV`,
@@ -120,7 +145,7 @@ export function VapiCallPanel() {
         setCsvLoading(false);
       }
     };
-    
+
     reader.readAsArrayBuffer(file);
   };
 
@@ -134,8 +159,21 @@ export function VapiCallPanel() {
       return;
     }
 
+    // Confirm with user if there are many numbers
+    if (csvData.length > 10) {
+      const confirmed = window.confirm(`You are about to initiate ${csvData.length} calls. This may take some time and could incur costs. Do you want to continue?`);
+      if (!confirmed) {
+        return;
+      }
+    }
+
     setCsvLoading(true);
     try {
+      toast({
+        title: 'Processing',
+        description: `Starting ${csvData.length} calls. This may take a while...`,
+      });
+
       const response = await fetch('/api/vapi/bulk-call', {
         method: 'POST',
         headers: {
@@ -151,12 +189,12 @@ export function VapiCallPanel() {
       }
 
       const data = await response.json();
-      
+
       toast({
         title: 'Bulk Calls Initiated',
-        description: `${data.length} calls have been queued`,
+        description: `${data.length} calls have been queued successfully`,
       });
-      
+
       setCallResults(data);
     } catch (error) {
       console.error('Error making bulk calls:', error);
@@ -184,7 +222,7 @@ export function VapiCallPanel() {
             <TabsTrigger value="single">Single Call</TabsTrigger>
             <TabsTrigger value="bulk">Bulk Calls</TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="single" className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="phone-number">Phone Number</Label>
@@ -214,7 +252,7 @@ export function VapiCallPanel() {
               </p>
             </div>
           </TabsContent>
-          
+
           <TabsContent value="bulk" className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="csv-upload">Upload CSV File</Label>
@@ -243,16 +281,16 @@ export function VapiCallPanel() {
               <p className="text-sm text-muted-foreground">
                 Upload a CSV file with phone numbers. The file should have a column with phone numbers.
               </p>
-              
+
               {csvData.length > 0 && (
                 <div className="mt-4">
                   <p className="text-sm font-medium">Loaded {csvData.length} phone numbers:</p>
                   <div className="mt-2 p-2 bg-muted rounded-md max-h-32 overflow-y-auto">
                     <ul className="text-sm">
-                      {csvData.slice(0, 5).map((item, index) => (
-                        <li key={index}>{item.phoneNumber}</li>
+                      {csvData.slice(0, 5).map((item) => (
+                        <li key={`phone-${item.phoneNumber}`}>{item.phoneNumber}</li>
                       ))}
-                      {csvData.length > 5 && <li>...and {csvData.length - 5} more</li>}
+                      {csvData.length > 5 && <li key="more-numbers">...and {csvData.length - 5} more</li>}
                     </ul>
                   </div>
                 </div>
@@ -260,7 +298,7 @@ export function VapiCallPanel() {
             </div>
           </TabsContent>
         </Tabs>
-        
+
         {callResults.length > 0 && (
           <div className="mt-6">
             <h3 className="text-lg font-medium mb-2">Call Results</h3>

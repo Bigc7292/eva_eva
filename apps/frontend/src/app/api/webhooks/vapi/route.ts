@@ -3,6 +3,9 @@ import { supabase } from '@/lib/services/supabase'
 import { vapiService } from '@/lib/services/vapi'
 import crypto from 'node:crypto'
 
+// Import the call poller service (dynamically to avoid circular dependencies)
+import { callPollerService } from '@/lib/services/call-poller'
+
 /**
  * VAPI Webhook Handler
  * Processes webhook events from VAPI.ai
@@ -160,11 +163,13 @@ async function handleCallStarted(call_id: string, data: any) {
       .from('calls')
       .upsert({
         call_id,
-        phone_number: phoneNumber,
         call_type: callType,
         call_status: 'started',
         start_time: new Date().toISOString(),
-        metadata: data || {}
+        metadata: {
+          ...(data || {}),
+          customer_number: phoneNumber
+        }
       }, { onConflict: 'call_id' })
 
     if (error) {
@@ -188,11 +193,13 @@ async function handleCallEnded(call_id: string, data: any) {
       .update({
         call_status: 'Completed',
         end_time: new Date().toISOString(),
-        call_duration: data?.duration,
+        duration: data?.duration,
         recording_url: data?.recording_url,
         updated_at: new Date().toISOString()
       })
       .eq('call_id', call_id)
+
+    console.log(`Updated call ${call_id} with status Completed`)
 
     if (error) {
       console.error('Error storing call end data:', error)
@@ -847,10 +854,19 @@ async function handleNewFormatWebhook(body: any) {
     switch (message.type) {
       case 'status-update':
         await handleNewFormatStatusUpdate(callId, message);
+
+        // Start polling for call data if status is in-progress
+        if (message.status === 'in-progress') {
+          console.log(`Starting polling for call ${callId} due to in-progress status`);
+          callPollerService.startPolling(callId, 3000, 20); // Poll every 3 seconds, max 20 attempts (1 minute)
+        }
         break;
 
       case 'end-of-call-report':
         await handleNewFormatEndOfCallReport(callId, message);
+
+        // Stop polling if it's running
+        callPollerService.stopPolling(callId);
         break;
 
       default:
@@ -880,32 +896,128 @@ async function handleNewFormatStatusUpdate(callId: string, message: any) {
       .eq('call_id', callId)
       .single();
 
+    let contactId: string | null = null;
+
     if (fetchError) {
       // Call doesn't exist yet, create it
       if (fetchError.code === 'PGRST116') {
+        // Check if contact exists for this phone number
+        if (customerNumber) {
+          const { data: contactData, error: contactError } = await supabase
+            .from('contacts')
+            .select('contact_id')
+            .eq('phone_number', customerNumber)
+            .maybeSingle();
+
+          if (contactError) {
+            console.error(`Error fetching contact for ${customerNumber}:`, contactError);
+          } else if (contactData) {
+            contactId = contactData.contact_id;
+          } else {
+            // Create a new contact if one doesn't exist
+            const { data: newContact, error: createContactError } = await supabase
+              .from('contacts')
+              .insert({
+                phone_number: customerNumber,
+                name: `Contact ${customerNumber}`,
+                status: 'new',
+                call_stats: {
+                  total_calls: 1,
+                  answered_calls: 0,
+                  missed_calls: 0,
+                  last_call_date: new Date().toISOString(),
+                  last_call_status: status
+                },
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              })
+              .select()
+              .single();
+
+            if (createContactError) {
+              console.error(`Error creating contact for ${customerNumber}:`, createContactError);
+            } else if (newContact) {
+              contactId = newContact.contact_id;
+              console.log(`Created new contact for ${customerNumber} with ID ${contactId}`);
+            }
+          }
+        }
+
+        // Insert the call with contact_id if available
         const { error: insertError } = await supabase
           .from('calls')
           .insert({
             call_id: callId,
-            phone_number: customerNumber || 'Unknown',
+            contact_id: contactId,
             call_type: callData.type === 'outboundPhoneCall' ? 'Outbound' : 'Inbound',
             call_status: status,
             start_time: new Date().toISOString(),
-            metadata: message
+            metadata: {
+              ...message,
+              customer_number: customerNumber || 'Unknown'
+            }
           });
 
         if (insertError) {
           console.error('Error creating call record:', insertError);
+        } else {
+          console.log(`Created new call record for ${callId} with contact_id ${contactId || 'null'}`);
         }
       } else {
         console.error(`Error fetching existing call data for ${callId}:`, fetchError);
       }
     } else {
       // Update existing call
+      contactId = existingCall.contact_id;
+
+      // If we have a phone number but no contact_id, try to find or create a contact
+      if (!contactId && customerNumber) {
+        const { data: contactData, error: contactError } = await supabase
+          .from('contacts')
+          .select('contact_id')
+          .eq('phone_number', customerNumber)
+          .maybeSingle();
+
+        if (contactError) {
+          console.error(`Error fetching contact for ${customerNumber}:`, contactError);
+        } else if (contactData) {
+          contactId = contactData.contact_id;
+        } else {
+          // Create a new contact if one doesn't exist
+          const { data: newContact, error: createContactError } = await supabase
+            .from('contacts')
+            .insert({
+              phone_number: customerNumber,
+              name: `Contact ${customerNumber}`,
+              status: 'new',
+              call_stats: {
+                total_calls: 1,
+                answered_calls: 0,
+                missed_calls: 0,
+                last_call_date: new Date().toISOString(),
+                last_call_status: status
+              },
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            })
+            .select()
+            .single();
+
+          if (createContactError) {
+            console.error(`Error creating contact for ${customerNumber}:`, createContactError);
+          } else if (newContact) {
+            contactId = newContact.contact_id;
+            console.log(`Created new contact for ${customerNumber} with ID ${contactId}`);
+          }
+        }
+      }
+
+      // Update the call with the latest status and contact_id if available
       const { error: updateError } = await supabase
         .from('calls')
         .update({
           call_status: status,
+          contact_id: contactId || existingCall.contact_id,
           metadata: {
             ...existingCall.metadata,
             ...message,
@@ -917,6 +1029,43 @@ async function handleNewFormatStatusUpdate(callId: string, message: any) {
 
       if (updateError) {
         console.error('Error updating call status:', updateError);
+      } else {
+        console.log(`Updated call ${callId} with status ${status} and contact_id ${contactId || 'null'}`);
+      }
+    }
+
+    // If we have a contact_id, update the contact's call_stats
+    if (contactId) {
+      const { data: contactData, error: getContactError } = await supabase
+        .from('contacts')
+        .select('call_stats')
+        .eq('contact_id', contactId)
+        .single();
+
+      if (getContactError) {
+        console.error(`Error fetching contact data for ${contactId}:`, getContactError);
+      } else if (contactData) {
+        const callStats = contactData.call_stats || {};
+
+        // Update call stats based on status
+        const { error: updateContactError } = await supabase
+          .from('contacts')
+          .update({
+            status: status,
+            call_stats: {
+              ...callStats,
+              last_call_date: new Date().toISOString(),
+              last_call_status: status
+            },
+            updated_at: new Date().toISOString()
+          })
+          .eq('contact_id', contactId);
+
+        if (updateContactError) {
+          console.error(`Error updating contact ${contactId}:`, updateContactError);
+        } else {
+          console.log(`Updated contact ${contactId} with latest call status ${status}`);
+        }
       }
     }
 
@@ -931,6 +1080,7 @@ async function handleNewFormatStatusUpdate(callId: string, message: any) {
  */
 async function handleNewFormatEndOfCallReport(callId: string, message: any) {
   try {
+    console.log(`Processing end-of-call report for ${callId}`);
     const callData = message.call;
     const customerNumber = message.customer?.number;
     const transcript = message.artifact?.transcript || '';
@@ -939,154 +1089,258 @@ async function handleNewFormatEndOfCallReport(callId: string, message: any) {
     const durationSeconds = message.durationSeconds ? Math.round(Number(message.durationSeconds)) : 0;
     const cost = message.cost || 0;
 
-    // Check if call exists
-    const { data: existingCall, error: fetchError } = await supabase
-      .from('calls')
-      .select('*')
-      .eq('call_id', callId)
-      .single();
+    // Process the call data immediately
+    const updatePromise = processCallData();
 
-    if (fetchError && fetchError.code === 'PGRST116') {
-      // Call doesn't exist yet, create it
-      const { error: insertError } = await supabase
+    // Start a background task to fetch any missing data
+    fetchMissingDataInBackground();
+
+    // Return the update promise to ensure the webhook handler waits for the basic update
+    return updatePromise;
+
+    // Function to process the call data we already have
+    async function processCallData() {
+      // Check if call exists
+      const { data: existingCall, error: fetchError } = await supabase
         .from('calls')
-        .insert({
-          call_id: callId,
-          phone_number: customerNumber || 'Unknown',
-          call_type: callData.type === 'outboundPhoneCall' ? 'Outbound' : 'Inbound',
-          call_status: 'Completed',
-          start_time: message.startedAt || new Date().toISOString(),
-          end_time: message.endedAt || new Date().toISOString(),
-          call_duration: durationSeconds,
-          recording_url: recordingUrl,
-          transcript: transcript,
-          summary: summary,
-          metadata: message
-        });
+        .select('*')
+        .eq('call_id', callId)
+        .single();
 
-      if (insertError) {
-        console.error('Error creating call record:', insertError);
-      }
-    } else {
-      // Update existing call
-      const { error: updateError } = await supabase
-        .from('calls')
-        .update({
-          call_status: 'Completed',
-          end_time: message.endedAt || new Date().toISOString(),
-          call_duration: durationSeconds,
-          recording_url: recordingUrl,
-          transcript: transcript,
-          summary: summary,
-          metadata: {
-            ...existingCall?.metadata || {},
-            ...message
-          },
-          updated_at: new Date().toISOString()
-        })
-        .eq('call_id', callId);
+      if (fetchError && fetchError.code === 'PGRST116') {
+        // Call doesn't exist yet, create it
+        const { error: insertError } = await supabase
+          .from('calls')
+          .insert({
+            call_id: callId,
+            call_type: callData.type === 'outboundPhoneCall' ? 'Outbound' : 'Inbound',
+            call_status: 'Completed',
+            start_time: message.startedAt || new Date().toISOString(),
+            end_time: message.endedAt || new Date().toISOString(),
+            duration: durationSeconds,
+            recording_url: recordingUrl,
+            transcript: transcript,
+            summary: summary,
+            metadata: {
+              ...message,
+              customer_number: customerNumber || 'Unknown'
+            }
+          });
 
-      if (updateError) {
-        console.error('Error updating call with end-of-call report:', updateError);
+        if (insertError) {
+          console.error('Error creating call record:', insertError);
+        } else {
+          console.log(`Created new call record for ${callId}`);
+        }
+      } else {
+        // Update existing call
+        const { error: updateError } = await supabase
+          .from('calls')
+          .update({
+            call_status: 'Completed',
+            end_time: message.endedAt || new Date().toISOString(),
+            duration: durationSeconds,
+            recording_url: recordingUrl,
+            transcript: transcript,
+            summary: summary,
+            metadata: {
+              ...existingCall?.metadata || {},
+              ...message
+            },
+            updated_at: new Date().toISOString()
+          })
+          .eq('call_id', callId);
+
+        console.log(`Updated call ${callId} with end-of-call report, duration: ${durationSeconds}s`);
+
+        if (updateError) {
+          console.error('Error updating call with end-of-call report:', updateError);
+        }
       }
     }
 
-    // Check if a lead exists for this phone number
-    if (customerNumber) {
-      // Check if lead exists in enhanced_leads
-      const { data: leadData, error: leadError } = await supabase
-        .from('enhanced_leads')
+    // Function to fetch any missing data in the background
+    async function fetchMissingDataInBackground() {
+      try {
+        // Use the call poller service to fetch and process any missing data
+        callPollerService.processCompletedCall(callId, {
+          ...message,
+          status: 'completed',
+          transcript,
+          recording_url: recordingUrl,
+          summary
+        });
+
+        console.log(`Background data fetching initiated for call ${callId}`);
+      } catch (error) {
+        console.error(`Error initiating background data fetching for call ${callId}:`, error);
+      }
+    }
+  } catch (error) {
+    console.error(`Error in handleNewFormatEndOfCallReport for ${callId}:`, error);
+  }
+
+  // Process contact data in the background
+  processContactData().catch(error => {
+    console.error(`Error processing contact data for ${callId}:`, error);
+  });
+
+  // Function to process contact data in the background
+  async function processContactData() {
+    try {
+      if (!customerNumber) {
+        console.log('No customer number provided, skipping contact processing');
+        return;
+      }
+
+      const { data: contactData, error: contactError } = await supabase
+        .from('contacts')
         .select('*')
         .eq('phone_number', customerNumber)
-        .maybeSingle()
+        .maybeSingle();
 
-      if (leadError) {
-        console.error(`Error fetching lead data for ${customerNumber}:`, leadError)
+      if (contactError) {
+        console.error(`Error fetching contact data for ${customerNumber}:`, contactError);
+        return;
       }
 
       // Extract structured data from the message
-      const structuredData = message.analysis?.structuredData || {}
+      const structuredData = message.analysis?.structuredData || {};
 
       // Determine call outcome
-      const meetingBooked = structuredData.meetingBooked === true
-      const meetingTime = structuredData.meetingTime
+      const meetingBooked = structuredData.meetingBooked === true;
+      const meetingTime = structuredData.meetingTime;
       const callOutcome = meetingBooked ? 'successful' :
                          (structuredData.callBackLater ? 'call_back_later' :
-                         (structuredData.notInterested ? 'not_interested' : 'answered'))
+                         (structuredData.notInterested ? 'not_interested' : 'answered'));
 
-      // Prepare lead data for update or insert
-      const leadUpdateData: any = {
-        last_call_outcome: callOutcome,
-        updated_at: new Date().toISOString()
-      }
+      // Create contact ID if it doesn't exist
+      let contactId = contactData?.contact_id;
 
-      // Update lead status based on call outcome
-      if (meetingBooked) {
-        leadUpdateData.status = 'booked'
-      } else if (structuredData.callBackLater) {
-        leadUpdateData.status = 'call_back_later'
-      } else if (structuredData.notInterested) {
-        leadUpdateData.status = 'not_interested'
-      }
+      // Prepare transcript, summary, and audio data for the contact
+      const transcriptEntry = transcript ? {
+        call_id: callId,
+        timestamp: message.startedAt || new Date().toISOString(),
+        text: transcript
+      } : null;
 
-      // Extract additional lead information if available
-      if (structuredData.name) leadUpdateData.name = structuredData.name
-      if (structuredData.email) leadUpdateData.email = structuredData.email
-      if (structuredData.budget) leadUpdateData.budget = structuredData.budget
-      if (structuredData.propertyInterest) leadUpdateData.property_interest = structuredData.propertyInterest
-      if (structuredData.nationality) leadUpdateData.notes = `${leadData?.notes || ''} Nationality: ${structuredData.nationality}`.trim()
-      if (structuredData.investmentType) leadUpdateData.notes = `${leadUpdateData.notes || leadData?.notes || ''} Investment Type: ${structuredData.investmentType}`.trim()
-      if (structuredData.timeframe) leadUpdateData.notes = `${leadUpdateData.notes || leadData?.notes || ''} Timeframe: ${structuredData.timeframe}`.trim()
-      if (structuredData.location) leadUpdateData.notes = `${leadUpdateData.notes || leadData?.notes || ''} Preferred Location: ${structuredData.location}`.trim()
-      if (structuredData.size) leadUpdateData.notes = `${leadUpdateData.notes || leadData?.notes || ''} Size: ${structuredData.size}`.trim()
+      const summaryEntry = summary ? {
+        call_id: callId,
+        timestamp: message.startedAt || new Date().toISOString(),
+        text: summary
+      } : null;
 
-      // Determine lead quality based on outcome and budget
-      if (meetingBooked && structuredData.budget && Number.parseFloat(structuredData.budget) > 1000000) {
-        leadUpdateData.lead_quality = 'Hot'
-      } else if (meetingBooked || (structuredData.callBackLater && structuredData.budget)) {
-        leadUpdateData.lead_quality = 'Warm'
-      } else if (structuredData.notInterested) {
-        leadUpdateData.lead_quality = 'Cold'
-      }
+      const audioEntry = recordingUrl ? {
+        call_id: callId,
+        timestamp: message.startedAt || new Date().toISOString(),
+        url: recordingUrl
+      } : null;
 
-      // Increment total calls
-      leadUpdateData.total_calls = (leadData?.total_calls || 0) + 1
+      if (contactData) {
+        // Update existing contact
+        // Get existing arrays or initialize empty ones
+        const existingTranscripts = contactData.transcripts || [];
+        const existingSummaries = contactData.summaries || [];
+        const existingAudioFiles = contactData.audio_files || [];
 
-      if (leadData) {
-        // Update existing lead
-        const { error: updateLeadError } = await supabase
-          .from('enhanced_leads')
-          .update(leadUpdateData)
-          .eq('lead_id', leadData.lead_id)
+        // Add new entries if they exist
+        const updatedTranscripts = transcriptEntry
+          ? [...existingTranscripts, transcriptEntry]
+          : existingTranscripts;
 
-        if (updateLeadError) {
-          console.error(`Error updating lead for ${customerNumber}:`, updateLeadError)
+        const updatedSummaries = summaryEntry
+          ? [...existingSummaries, summaryEntry]
+          : existingSummaries;
+
+        const updatedAudioFiles = audioEntry
+          ? [...existingAudioFiles, audioEntry]
+          : existingAudioFiles;
+
+        // Calculate call stats
+        const totalCalls = (contactData.call_stats?.total_calls || 0) + 1;
+        const answeredCalls = (contactData.call_stats?.answered_calls || 0) +
+          (callOutcome === 'answered' || callOutcome === 'successful' ? 1 : 0);
+        const missedCalls = (contactData.call_stats?.missed_calls || 0) +
+          (callOutcome === 'not_interested' || callOutcome === 'call_back_later' ? 0 : 1);
+
+        // Update contact with new data
+        const { error: updateContactError } = await supabase
+          .from('contacts')
+          .update({
+            transcripts: updatedTranscripts,
+            summaries: updatedSummaries,
+            audio_files: updatedAudioFiles,
+            status: callOutcome,
+            call_stats: {
+              total_calls: totalCalls,
+              answered_calls: answeredCalls,
+              missed_calls: missedCalls,
+              avg_duration: durationSeconds,
+              last_call_date: new Date().toISOString(),
+              last_call_status: callOutcome
+            },
+            updated_at: new Date().toISOString()
+          })
+          .eq('contact_id', contactId);
+
+        if (updateContactError) {
+          console.error(`Error updating contact for ${customerNumber}:`, updateContactError);
         } else {
-          console.log(`Lead profile for ${customerNumber} updated successfully`)
+          console.log(`Contact profile for ${customerNumber} updated successfully`);
+
+          // Update the call with the contact_id
+          await supabase
+            .from('calls')
+            .update({ contact_id: contactId })
+            .eq('call_id', callId);
         }
       } else {
-        // Create new lead
-        leadUpdateData.phone_number = customerNumber
-        leadUpdateData.lead_id = crypto.randomUUID()
-        leadUpdateData.lead_source = 'VAPI Call'
-        leadUpdateData.created_at = new Date().toISOString()
+        // Create new contact
+        const newContact = {
+          phone_number: customerNumber,
+          name: structuredData.name || `Contact ${customerNumber}`,
+          email: structuredData.email || null,
+          status: callOutcome,
+          transcripts: transcriptEntry ? [transcriptEntry] : [],
+          summaries: summaryEntry ? [summaryEntry] : [],
+          audio_files: audioEntry ? [audioEntry] : [],
+          call_stats: {
+            total_calls: 1,
+            answered_calls: callOutcome === 'answered' || callOutcome === 'successful' ? 1 : 0,
+            missed_calls: callOutcome === 'not_interested' || callOutcome === 'call_back_later' ? 0 : 1,
+            avg_duration: durationSeconds,
+            last_call_date: new Date().toISOString(),
+            last_call_status: callOutcome
+          },
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
 
-        const { error: insertLeadError } = await supabase
-          .from('enhanced_leads')
-          .insert([leadUpdateData])
+        const { data: insertedContact, error: insertContactError } = await supabase
+          .from('contacts')
+          .insert([newContact])
+          .select()
+          .single();
 
-        if (insertLeadError) {
-          console.error(`Error creating lead for ${customerNumber}:`, insertLeadError)
+        if (insertContactError) {
+          console.error(`Error creating contact for ${customerNumber}:`, insertContactError);
         } else {
-          console.log(`New lead profile for ${customerNumber} created successfully`)
+          console.log(`New contact profile for ${customerNumber} created successfully`);
+          contactId = insertedContact.contact_id;
+
+          // Update the call with the contact_id
+          await supabase
+            .from('calls')
+            .update({ contact_id: contactId })
+            .eq('call_id', callId);
         }
       }
 
       // If a meeting was booked, create a meeting record
-      if (meetingBooked && meetingTime) {
+      if (meetingBooked && meetingTime && contactId) {
         const meetingData = {
           meeting_id: crypto.randomUUID(),
-          lead_id: leadData?.lead_id || leadUpdateData.lead_id,
+          contact_id: contactId,
           call_id: callId,
           timestamp: new Date(meetingTime).toISOString(),
           location: structuredData.meetingLocation || 'Dubai Office',
@@ -1098,22 +1352,22 @@ async function handleNewFormatEndOfCallReport(callId: string, message: any) {
           agent_name: message.agent?.name || 'Top Loader AI Agent',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
-        }
+        };
 
         const { error: meetingError } = await supabase
           .from('meetings')
-          .insert([meetingData])
+          .insert([meetingData]);
 
         if (meetingError) {
-          console.error(`Error creating meeting for lead ${leadData?.lead_id}:`, meetingError)
+          console.error(`Error creating meeting for contact ${contactId}:`, meetingError);
         } else {
-          console.log(`Meeting created successfully for lead ${leadData?.lead_id}`)
+          console.log(`Meeting created successfully for contact ${contactId}`);
         }
       }
-    }
 
-    console.log(`Call ${callId} end-of-call report processed successfully`);
-  } catch (error) {
-    console.error(`Error handling end-of-call-report for ${callId}:`, error);
+      console.log(`Contact data processing completed for call ${callId}`);
+    } catch (error) {
+      console.error(`Error processing contact data for call ${callId}:`, error);
+    }
   }
 }

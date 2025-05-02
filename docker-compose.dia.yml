@@ -1,0 +1,18 @@
+version: '3'
+
+services:
+  dia-voice:
+    image: registry.hf.space/nari-labs-dia-1-6b:latest
+    platform: linux/amd64
+    ports:
+      - "7860:7860"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    volumes:
+      - ./dia-api:/app/api
+    command: python app.py

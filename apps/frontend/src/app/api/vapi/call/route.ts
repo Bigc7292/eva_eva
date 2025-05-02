@@ -12,24 +12,27 @@ export async function POST(request: Request) {
     }
 
     // VAPI API configuration
-    const VAPI_PRIVATE_KEY = process.env.VAPI_PRIVATE_KEY || 'd1529b85-51d5-47c0-9332-a73d40f7d62b';
-    const VAPI_ASSISTANT_ID = process.env.VAPI_ASSISTANT_ID || 'cfaa163c-4a47-471b-a39e-95c12d0cb738';
-    const VAPI_PHONE_NUMBER_ID = process.env.VAPI_PHONE_NUMBER_ID || 'e65a9e6b-33b7-4711-ad21-90220048e38f';
+    const VAPI_PRIVATE_KEY = process.env.NEXT_PRIVATE_VAPI_API_KEY || 'd1529b85-51d5-47c0-9332-a73d40f7d62b';
+    const VAPI_ASSISTANT_ID = process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID || 'cfaa163c-4a47-471b-a39e-95c12d0cb738';
+    const VAPI_PHONE_NUMBER_ID = process.env.NEXT_PUBLIC_VAPI_PHONE_NUMBER_ID || 'e65a9e6b-33b7-4711-ad21-90220048e38f';
 
     // Make the call to VAPI API
-    const response = await fetch('https://api.vapi.ai/call/phone', {
+    console.log(`Initiating call to ${phoneNumber} with VAPI...`);
+    console.log('Using phone_number_id:', VAPI_PHONE_NUMBER_ID);
+
+    // Try a different API endpoint format
+    const response = await fetch('https://api.vapi.ai/v1/phone/call', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${VAPI_PRIVATE_KEY}`
       },
       body: JSON.stringify({
-        type: 'outboundPhoneCall',
-        assistantId: VAPI_ASSISTANT_ID,
-        phoneNumberId: VAPI_PHONE_NUMBER_ID,
-        customer: {
-          number: phoneNumber
-        },
+        assistant_id: VAPI_ASSISTANT_ID,
+        to: phoneNumber,
+        from: process.env.NEXT_PUBLIC_VAPI_CALLER_ID || '+971565401583',
+        phone_number_id: VAPI_PHONE_NUMBER_ID,
+        webhook_url: process.env.NEXT_PUBLIC_VAPI_WEBHOOK_URL,
         name: `Call_${Date.now()}`
       })
     });
@@ -45,23 +48,22 @@ export async function POST(request: Request) {
 
     const data = await response.json();
 
-    // Store call in database
+    // Store call in database using the internal API
     try {
-      const dbResponse = await fetch('http://localhost:3004/api/calls', {
+      // Use absolute URL for server-side API calls
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3004';
+      const dbResponse = await fetch(`${apiUrl}/api/calls`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          lead_id: null, // Will be updated by webhook
-          call_external_id: data.id,
-          duration: 0,
-          answered: false,
-          outcome: 'pending',
-          cost: 0,
-          recording_url: '',
-          transcript: '',
-          summary: ''
+          phoneNumber: phoneNumber,
+          metadata: {
+            source: 'vapi-call-panel',
+            timestamp: new Date().toISOString(),
+            call_id: data.id
+          }
         })
       });
 

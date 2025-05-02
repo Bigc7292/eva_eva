@@ -8,8 +8,15 @@ const fetcher = async (url: string) => {
   return response.json()
 }
 
-export function useCallAnalytics(dateRange?: { start: string, end: string }) {
-  const queryParams = dateRange ? `?start=${dateRange.start}&end=${dateRange.end}` : ''
+export function useCallAnalytics(dateRange?: { start: string, end: string }, timeRange?: string) {
+  let queryParams = ''
+
+  if (timeRange) {
+    queryParams = `?timeRange=${timeRange}`
+  } else if (dateRange) {
+    queryParams = `?start=${dateRange.start}&end=${dateRange.end}`
+  }
+
   return useSWR(`/api/metrics/calls${queryParams}`, fetcher, {
     revalidateOnFocus: false,
     revalidateOnReconnect: false,
@@ -58,10 +65,10 @@ export function useContactMeetings(contactId: string) {
 }
 
 export function useVapiCalls(limit = 10, cursor?: string) {
-  const queryParams = cursor 
-    ? `?limit=${limit}&cursor=${cursor}` 
+  const queryParams = cursor
+    ? `?limit=${limit}&cursor=${cursor}`
     : `?limit=${limit}`
-  
+
   return useSWR(`/api/vapi/calls${queryParams}`, fetcher, {
     revalidateOnFocus: false,
     revalidateOnReconnect: false,
@@ -76,11 +83,29 @@ export function useVapiCallDetails(callId: string) {
   })
 }
 
+export function useSystemAlerts(options?: {
+  type?: 'error' | 'warning' | 'success' | 'info',
+  read?: boolean,
+  limit?: number
+}) {
+  const { type, read, limit = 50 } = options || {}
+
+  let url = `/api/alerts?limit=${limit}`
+  if (type) url += `&type=${type}`
+  if (read !== undefined) url += `&read=${read}`
+
+  return useSWR(url, fetcher, {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+    refreshInterval: 60000, // Refresh every minute
+  })
+}
+
 export function useCalendarEvents(startDate?: string, endDate?: string) {
-  const queryParams = startDate && endDate 
-    ? `?start=${startDate}&end=${endDate}` 
+  const queryParams = startDate && endDate
+    ? `?start=${startDate}&end=${endDate}`
     : ''
-  
+
   return useSWR(`/api/calendar/events${queryParams}`, fetcher, {
     revalidateOnFocus: false,
     revalidateOnReconnect: false,

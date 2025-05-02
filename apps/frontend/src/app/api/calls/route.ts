@@ -53,12 +53,12 @@ export async function GET(request: NextRequest) {
 
 /**
  * POST /api/calls
- * Initiates a new call using VAPI
+ * Initiates a new call using VAPI with optional Dia-1.6B voice integration
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { phoneNumber: rawPhoneNumber, metadata } = body
+    const { phoneNumber: rawPhoneNumber, metadata, customScript } = body
 
     if (!rawPhoneNumber) {
       return NextResponse.json(
@@ -91,11 +91,17 @@ export async function POST(request: NextRequest) {
       from: process.env.NEXT_PUBLIC_VAPI_CALLER_ID || '+971565401583',
       phone_number_id: process.env.NEXT_PUBLIC_VAPI_PHONE_NUMBER_ID || 'e65a9e6b-33b7-4711-ad21-90220048e38f',
       assistant_id: process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID,
-      metadata: enhancedMetadata
+      metadata: enhancedMetadata,
+      useDiaVoice: process.env.NEXT_PUBLIC_USE_DIA_VOICE === 'true',
+      hasCustomScript: !!customScript
     })
 
-    // Initiate call with VAPI
-    const callData = await vapiService.initiateCall(phoneNumber, enhancedMetadata)
+    // Use the VAPI service to initiate the call with optional Dia-1.6B voice
+    const callData = await vapiService.initiateCall(
+      phoneNumber,
+      enhancedMetadata,
+      customScript
+    );
 
     // Store call in Supabase
     const { error } = await supabase

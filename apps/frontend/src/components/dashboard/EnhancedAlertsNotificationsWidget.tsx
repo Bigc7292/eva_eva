@@ -18,6 +18,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useSystemAlerts } from '@/lib/hooks/use-data-fetching';
+import { toast } from '@/components/ui/use-toast';
 
 interface Alert {
   id: string;
@@ -26,6 +28,7 @@ interface Alert {
   time: string;
   read: boolean;
   source?: string;
+  metadata?: Record<string, unknown>;
 }
 
 interface EnhancedAlertsNotificationsWidgetProps {
@@ -40,7 +43,7 @@ export function EnhancedAlertsNotificationsWidget({
   const [alertsData, setAlertsData] = useState<Alert[]>([]);
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
 
-  // Generate sample alerts data
+  // Generate sample alerts data - memoized to prevent infinite re-renders
   const generateAlertsData = useCallback(() => {
     // Use provided alerts if available
     const alertsAvailable = Array.isArray(alerts) && alerts.length > 0;
@@ -67,89 +70,91 @@ export function EnhancedAlertsNotificationsWidget({
     const data = [];
     const now = new Date();
 
-    // Create alerts with more realistic timestamps (not all random)
-    // Recent alerts (last hour)
-    for (let i = 0; i < 3; i++) {
+    // Create alerts with more realistic timestamps
+    for (let i = 0; i < 15; i++) {
       const time = new Date(now);
-      time.setMinutes(now.getMinutes() - (i * 15 + Math.floor(Math.random() * 10))); // 15, 30, 45 mins ago with some randomness
 
-      const type = i === 0 ? 'success' : (i === 1 ? 'info' : 'warning'); // More predictable types
-      const source = sources[Math.floor(Math.random() * sources.length)];
-      const message = messages[Math.floor(Math.random() * messages.length)];
-
-      data.push({
-        id: `alert-recent-${i}`,
-        type,
-        message,
-        time: time.toISOString(),
-        read: i !== 0, // Most recent is unread
-        source
-      });
-    }
-
-    // Today's alerts
-    for (let i = 0; i < 5; i++) {
-      const time = new Date(now);
-      time.setHours(now.getHours() - (i + 1 + Math.floor(Math.random() * 2))); // Spread throughout the day
+      if (i < 3) {
+        // Recent alerts (last hour)
+        time.setMinutes(now.getMinutes() - (i * 15 + Math.floor(Math.random() * 10)));
+      } else if (i < 8) {
+        // Today's alerts
+        time.setHours(now.getHours() - (i - 2));
+      } else {
+        // Older alerts
+        time.setDate(now.getDate() - (i - 7));
+      }
 
       const type = types[Math.floor(Math.random() * types.length)] as 'error' | 'warning' | 'success' | 'info';
       const source = sources[Math.floor(Math.random() * sources.length)];
       const message = messages[Math.floor(Math.random() * messages.length)];
 
       data.push({
-        id: `alert-today-${i}`,
+        id: `alert-${i}`,
         type,
         message,
         time: time.toISOString(),
-        read: Math.random() > 0.2, // 20% chance of being unread
-        source
-      });
-    }
-
-    // Yesterday and older
-    for (let i = 0; i < 7; i++) {
-      const time = new Date(now);
-      time.setDate(now.getDate() - (i + 1)); // Previous days
-      time.setHours(9 + Math.floor(Math.random() * 8)); // Business hours
-
-      const type = types[Math.floor(Math.random() * types.length)] as 'error' | 'warning' | 'success' | 'info';
-      const source = sources[Math.floor(Math.random() * sources.length)];
-      const message = messages[Math.floor(Math.random() * messages.length)];
-
-      data.push({
-        id: `alert-old-${i}`,
-        type,
-        message,
-        time: time.toISOString(),
-        read: true, // All old alerts are read
+        read: i > 2, // First 3 are unread
         source
       });
     }
 
     // Sort by time (newest first)
     return data.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
-  }, [alerts]); // Include alerts in the dependency array
+  }, [alerts]); // Include alerts in dependency array
 
-  // Initialize data on component mount
+  // Fetch alerts from API
+  const { data: alertsResponse, error: alertsError, mutate: refreshAlerts } = useSystemAlerts({
+    limit: 50
+  });
+
+  // Initialize with sample data on mount
   useEffect(() => {
-    setAlertsData(generateAlertsData());
-  }, [generateAlertsData]);
-
-  // Update data when alerts prop changes
-  useEffect(() => {
-    if (Array.isArray(alerts) && alerts.length > 0) {
-      setAlertsData([...alerts]);
-    }
-  }, [alerts]);
-
-  const handleRefresh = () => {
-    setLoading(true);
-    // Simulate API call
-    setTimeout(() => {
+    // Generate sample data on mount if no alerts are provided
+    if (!Array.isArray(alerts) || alerts.length === 0) {
       setAlertsData(generateAlertsData());
+    }
+  }, [alerts, alerts.length, generateAlertsData]);
+
+  // Handle API data loading
+  useEffect(() => {
+    if (alertsResponse) {
+      // Use real data from API
+      setAlertsData(alertsResponse.alerts);
       setLoading(false);
-    }, 800);
-  };
+    } else if (alertsError) {
+      console.error('Error fetching alerts:', alertsError);
+      toast({
+        title: 'Error fetching alerts',
+        description: 'Could not load alerts data. Using fallback data instead.',
+        variant: 'destructive'
+      });
+
+      // Fallback to provided alerts if available
+      if (Array.isArray(alerts) && alerts.length > 0) {
+        setAlertsData([...alerts]);
+      }
+      setLoading(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [alertsResponse, alertsError, alerts]);
+
+  // Handle refresh button click
+  const handleRefresh = useCallback(() => {
+    setLoading(true);
+
+    if (refreshAlerts) {
+      // Use real API refresh if available
+      refreshAlerts();
+    } else {
+      // Fallback to simulated refresh
+      setTimeout(() => {
+        setAlertsData(generateAlertsData ? generateAlertsData() : []);
+        setLoading(false);
+      }, 800);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshAlerts, generateAlertsData]);
 
   const handleExport = () => {
     // Create CSV content
@@ -327,18 +332,18 @@ export function EnhancedAlertsNotificationsWidget({
 
           <TabsContent value="all" className="mt-0">
             {loading ? (
-              <div className="flex justify-center items-center h-[200px]">
+              <div className="flex justify-center items-center h-[300px]">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600" />
               </div>
             ) : filteredAlerts.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-[200px] text-center">
+              <div className="flex flex-col items-center justify-center h-[300px] text-center">
                 <p className="text-muted-foreground mb-2">No alerts available</p>
                 <p className="text-xs text-muted-foreground">
                   {filter === 'unread' ? 'All notifications have been read' : 'You have no notifications'}
                 </p>
               </div>
             ) : (
-              <ScrollArea className="h-[200px] pr-4">
+              <ScrollArea className="h-[300px] pr-4">
                 {/* Group alerts by day */}
                 {(() => {
                   const today = new Date();
@@ -357,20 +362,21 @@ export function EnhancedAlertsNotificationsWidget({
                     'Older': []
                   };
 
-                  filteredAlerts.forEach(alert => {
+                  // Group alerts by date using for...of instead of forEach
+                  for (const alert of filteredAlerts) {
                     const alertDate = new Date(alert.time);
                     alertDate.setHours(0, 0, 0, 0);
 
                     if (alertDate.getTime() === today.getTime()) {
-                      groups['Today'].push(alert);
+                      groups.Today.push(alert);
                     } else if (alertDate.getTime() === yesterday.getTime()) {
-                      groups['Yesterday'].push(alert);
+                      groups.Yesterday.push(alert);
                     } else if (alertDate >= thisWeek) {
-                      groups['This Week'].push(alert);
+                      groups["This Week"].push(alert);
                     } else {
-                      groups['Older'].push(alert);
+                      groups.Older.push(alert);
                     }
-                  });
+                  }
 
                   return Object.entries(groups).map(([groupName, groupAlerts]) => {
                     if (groupAlerts.length === 0) return null;
@@ -384,9 +390,9 @@ export function EnhancedAlertsNotificationsWidget({
                           {groupAlerts.map((alert) => (
                             <div
                               key={alert.id}
-                              className={`flex items-start gap-3 p-2 rounded-lg transition-all duration-200 ${
+                              className={`flex items-start gap-3 p-3 rounded-lg transition-all duration-300 ${
                                 alert.read ? 'bg-transparent hover:bg-purple-50/50 dark:hover:bg-purple-900/10' : 'bg-purple-100/50 dark:bg-purple-900/20 shadow-sm'
-                              }`}
+                              } hover:shadow-md hover:translate-y-[-1px]`}
                             >
                               <div className="flex-shrink-0 mt-0.5">
                                 <div className={`p-1 rounded-full ${
@@ -467,14 +473,14 @@ export function EnhancedAlertsNotificationsWidget({
                 </p>
               </div>
             ) : (
-              <ScrollArea className="h-[200px] pr-4">
+              <ScrollArea className="h-[300px] pr-4">
                 <div className="space-y-2">
                   {filteredAlerts.map(alert => (
                     <div
                       key={alert.id}
-                      className={`flex items-start gap-3 p-2 rounded-lg ${
-                        alert.read ? 'bg-transparent' : 'bg-purple-100/50 dark:bg-purple-900/20'
-                      }`}
+                      className={`flex items-start gap-3 p-3 rounded-lg transition-all duration-300 ${
+                        alert.read ? 'bg-transparent hover:bg-purple-50/50 dark:hover:bg-purple-900/10' : 'bg-purple-100/50 dark:bg-purple-900/20 shadow-sm'
+                      } hover:shadow-md hover:translate-y-[-1px]`}
                     >
                       <div className="flex-shrink-0 mt-0.5">
                         {getAlertIcon(alert.type)}
@@ -540,14 +546,14 @@ export function EnhancedAlertsNotificationsWidget({
                 </p>
               </div>
             ) : (
-              <ScrollArea className="h-[200px] pr-4">
+              <ScrollArea className="h-[300px] pr-4">
                 <div className="space-y-2">
                   {filteredAlerts.map(alert => (
                     <div
                       key={alert.id}
-                      className={`flex items-start gap-3 p-2 rounded-lg ${
-                        alert.read ? 'bg-transparent' : 'bg-purple-100/50 dark:bg-purple-900/20'
-                      }`}
+                      className={`flex items-start gap-3 p-3 rounded-lg transition-all duration-300 ${
+                        alert.read ? 'bg-transparent hover:bg-purple-50/50 dark:hover:bg-purple-900/10' : 'bg-purple-100/50 dark:bg-purple-900/20 shadow-sm'
+                      } hover:shadow-md hover:translate-y-[-1px]`}
                     >
                       <div className="flex-shrink-0 mt-0.5">
                         {getAlertIcon(alert.type)}
@@ -612,14 +618,14 @@ export function EnhancedAlertsNotificationsWidget({
                 </p>
               </div>
             ) : (
-              <ScrollArea className="h-[200px] pr-4">
+              <ScrollArea className="h-[300px] pr-4">
                 <div className="space-y-2">
                   {filteredAlerts.map(alert => (
                     <div
                       key={alert.id}
-                      className={`flex items-start gap-3 p-2 rounded-lg ${
-                        alert.read ? 'bg-transparent' : 'bg-purple-100/50 dark:bg-purple-900/20'
-                      }`}
+                      className={`flex items-start gap-3 p-3 rounded-lg transition-all duration-300 ${
+                        alert.read ? 'bg-transparent hover:bg-purple-50/50 dark:hover:bg-purple-900/10' : 'bg-purple-100/50 dark:bg-purple-900/20 shadow-sm'
+                      } hover:shadow-md hover:translate-y-[-1px]`}
                     >
                       <div className="flex-shrink-0 mt-0.5">
                         {getAlertIcon(alert.type)}
@@ -684,14 +690,14 @@ export function EnhancedAlertsNotificationsWidget({
                 </p>
               </div>
             ) : (
-              <ScrollArea className="h-[200px] pr-4">
+              <ScrollArea className="h-[300px] pr-4">
                 <div className="space-y-2">
                   {filteredAlerts.map(alert => (
                     <div
                       key={alert.id}
-                      className={`flex items-start gap-3 p-2 rounded-lg ${
-                        alert.read ? 'bg-transparent' : 'bg-purple-100/50 dark:bg-purple-900/20'
-                      }`}
+                      className={`flex items-start gap-3 p-3 rounded-lg transition-all duration-300 ${
+                        alert.read ? 'bg-transparent hover:bg-purple-50/50 dark:hover:bg-purple-900/10' : 'bg-purple-100/50 dark:bg-purple-900/20 shadow-sm'
+                      } hover:shadow-md hover:translate-y-[-1px]`}
                     >
                       <div className="flex-shrink-0 mt-0.5">
                         {getAlertIcon(alert.type)}

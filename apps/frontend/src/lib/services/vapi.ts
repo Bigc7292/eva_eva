@@ -1,6 +1,7 @@
 /**
  * VAPI Service - Handles integration with VAPI.ai for voice calls
  * Based on VAPI documentation for full integration
+ * Enhanced with Dia-1.6B voice model integration
  */
 
 const VAPI_API_URL = process.env.NEXT_PUBLIC_VAPI_API_URL || 'https://api.vapi.ai';
@@ -10,6 +11,7 @@ const PRIVATE_VAPI_API_KEY = process.env.NEXT_PRIVATE_VAPI_API_KEY;
 const VAPI_PHONE_NUMBER_ID = process.env.NEXT_PUBLIC_VAPI_PHONE_NUMBER_ID || 'e65a9e6b-33b7-4711-ad21-90220048e38f';
 const VAPI_CALLER_ID = process.env.NEXT_PUBLIC_VAPI_CALLER_ID || '+971565401583';
 const VAPI_BASE_URL = 'https://api.vapi.ai/v1';
+const USE_DIA_VOICE = process.env.NEXT_PUBLIC_USE_DIA_VOICE === 'true';
 
 // Define interfaces for VAPI data types
 export interface VapiCall {
@@ -85,28 +87,79 @@ export const vapiService = {
    * Initiate a call using VAPI
    * @param phoneNumber - The phone number to call
    * @param metadata - Optional metadata for the call
+   * @param customScript - Optional custom script for Dia-1.6B voice generation
    */
-  async initiateCall(phoneNumber: string, metadata: Record<string, unknown> = {}) {
+  async initiateCall(
+    phoneNumber: string,
+    metadata: Record<string, unknown> = {},
+    customScript?: string
+  ) {
     try {
       console.log(`Initiating VAPI call to ${phoneNumber}`);
       console.log('VAPI configuration:', {
         apiUrl: VAPI_API_URL,
         assistantId: VAPI_ASSISTANT_ID,
         publicKeyPresent: !!VAPI_API_KEY,
-        publicKeyValue: VAPI_API_KEY.substring(0, 5) + '...'
+        publicKeyValue: VAPI_API_KEY.substring(0, 5) + '...',
+        useDiaVoice: USE_DIA_VOICE
       });
+
+      // If using Dia-1.6B voice and a custom script is provided, generate the audio first
+      let customAudioUrl: string | undefined;
+
+      if (USE_DIA_VOICE && customScript) {
+        try {
+          console.log('Generating custom voice with Dia-1.6B...');
+
+          // Format the script for Dia-1.6B
+          const formattedScript = customScript.startsWith('[S1]')
+            ? customScript
+            : `[S1] ${customScript}`;
+
+          // Generate the audio
+          const response = await fetch('/api/dia-voice', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              text: formattedScript,
+              seed: 42 // Use a consistent seed for voice stability
+            })
+          });
+
+          if (!response.ok) {
+            throw new Error(`Failed to generate Dia voice: ${response.status}`);
+          }
+
+          const data = await response.json();
+          customAudioUrl = data.file_url;
+          console.log('Dia-1.6B voice generated successfully:', customAudioUrl);
+
+          // Add the custom audio URL to the metadata
+          metadata = {
+            ...metadata,
+            customAudioUrl,
+            useDiaVoice: true
+          };
+        } catch (voiceError) {
+          console.error('Error generating Dia-1.6B voice:', voiceError);
+          // Continue with regular VAPI call if voice generation fails
+        }
+      }
 
       const response = await fetch(`${VAPI_API_URL}/call`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${VAPI_API_KEY}`
+          'Authorization': `Bearer ${PRIVATE_VAPI_API_KEY}`
         },
         body: JSON.stringify({
-          assistant_id: VAPI_ASSISTANT_ID,
-          to: phoneNumber,
-          from: VAPI_CALLER_ID, // Use the Twilio number
-          phone_number_id: VAPI_PHONE_NUMBER_ID, // Use the phone number ID
+          customer: {
+            number: phoneNumber
+          },
+          assistantId: VAPI_ASSISTANT_ID,
+          phoneNumberId: VAPI_PHONE_NUMBER_ID,
           metadata
         })
       });
@@ -123,6 +176,15 @@ export const vapiService = {
 
       const data = await response.json();
       console.log('VAPI call initiated successfully:', data);
+
+      // If we generated a custom audio, include it in the response
+      if (customAudioUrl) {
+        return {
+          ...data,
+          customAudioUrl
+        };
+      }
+
       return data;
     } catch (error) {
       console.error('Error initiating VAPI call:', error);
@@ -445,7 +507,7 @@ export const vapiService = {
       const response = await fetch(`${VAPI_API_URL}/call/${callId}`, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${VAPI_API_KEY}`
+          'Authorization': `Bearer ${PRIVATE_VAPI_API_KEY}`
         }
       });
 
@@ -484,7 +546,7 @@ export const vapiService = {
       const response = await fetch(url, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${VAPI_API_KEY}`
+          'Authorization': `Bearer ${PRIVATE_VAPI_API_KEY}`
         }
       });
 
@@ -537,7 +599,7 @@ export const vapiService = {
       const response = await fetch(`${VAPI_API_URL}/call/${callId}/transcript`, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${VAPI_API_KEY}`
+          'Authorization': `Bearer ${PRIVATE_VAPI_API_KEY}`
         }
       });
 
@@ -579,7 +641,7 @@ export const vapiService = {
       const response = await fetch(`${VAPI_API_URL}/call/${callId}/recording`, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${VAPI_API_KEY}`
+          'Authorization': `Bearer ${PRIVATE_VAPI_API_KEY}`
         }
       });
 
@@ -604,19 +666,36 @@ export const vapiService = {
    */
   async getSummary(callId: string) {
     try {
+      console.log(`Getting summary for call ${callId}`);
+
+      // First try to get the call details which might include the summary
+      try {
+        const callDetails = await this.getCallDetails(callId);
+        if (callDetails?.summary || callDetails?.analysis?.summary) {
+          const summary = callDetails?.summary || callDetails?.analysis?.summary;
+          console.log(`Found summary in call details: ${summary?.substring(0, 50)}...`);
+          return { summary };
+        }
+      } catch (detailsError) {
+        console.warn(`Could not get call details, trying summary endpoint: ${detailsError}`);
+      }
+
+      // If no summary in call details, try the summary endpoint
       const response = await fetch(`${VAPI_API_URL}/call/${callId}/summary`, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${VAPI_API_KEY}`
+          'Authorization': `Bearer ${PRIVATE_VAPI_API_KEY}`
         }
       });
 
       if (!response.ok) {
         const errorText = await response.text();
+        console.error(`Failed to get summary: ${response.status} - ${errorText}`);
         throw new Error(`Failed to get summary: ${response.status} - ${errorText}`);
       }
 
       const data = await response.json();
+      console.log('Summary retrieved successfully:', data);
       return data;
     } catch (error) {
       console.error('Error getting summary:', error);

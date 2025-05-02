@@ -10,9 +10,9 @@ require('dotenv').config();
 
 // VAPI configuration
 const VAPI_API_URL = process.env.NEXT_PUBLIC_VAPI_API_URL || 'https://api.vapi.ai';
-const PRIVATE_API_KEY = process.env.NEXT_PRIVATE_VAPI_API_KEY;
+const PRIVATE_API_KEY = process.env.NEXT_PRIVATE_VAPI_API_KEY || 'd1529b85-51d5-47c0-9332-a73d40f7d62b';
 const ASSISTANT_ID = 'cfaa163c-4a47-471b-a39e-95c12d0cb738'; // Correct assistant ID
-const PHONE_NUMBER_ID = process.env.NEXT_PUBLIC_VAPI_PHONE_NUMBER_ID || 'e65a9e6b-33b7-4711-ad21-90220048e38f';
+const PHONE_NUMBER_ID = process.env.NEXT_PUBLIC_VAPI_PHONE_NUMBER_ID || '53cb46fd-5e37-4860-8668-7594005f872a'; // Updated phone number ID from logs
 
 // Check if required environment variables are set
 if (!PRIVATE_API_KEY) {
@@ -40,11 +40,11 @@ async function makeCall() {
     // Log the request payload
     const payload = {
       type: 'outboundPhoneCall',
-      assistant_id: ASSISTANT_ID,
+      assistantId: ASSISTANT_ID,
       customer: {
         number: PHONE_NUMBER
       },
-      phone_number_id: PHONE_NUMBER_ID,
+      phoneNumberId: PHONE_NUMBER_ID,
       metadata: {
         source: 'test-call',
         timestamp: new Date().toISOString()
@@ -52,7 +52,7 @@ async function makeCall() {
     };
     console.log('Request payload:', JSON.stringify(payload, null, 2));
 
-    const response = await fetch(`${VAPI_API_URL}/call`, {
+    const response = await fetch(`${VAPI_API_URL}/call/phone`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -60,11 +60,11 @@ async function makeCall() {
       },
       body: JSON.stringify({
         type: 'outboundPhoneCall',
-        assistant_id: ASSISTANT_ID,
+        assistantId: ASSISTANT_ID,
         customer: {
           number: PHONE_NUMBER
         },
-        phone_number_id: PHONE_NUMBER_ID,
+        phoneNumberId: PHONE_NUMBER_ID,
         metadata: {
           source: 'test-call',
           timestamp: new Date().toISOString()

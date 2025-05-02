@@ -94,6 +94,7 @@ export function RealTimeCallMonitoring() {
 
     // Clean up interval on component unmount
     return () => clearInterval(interval)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Function to get badge variant based on call status
@@ -101,17 +102,20 @@ export function RealTimeCallMonitoring() {
     const statusLower = status.toLowerCase()
     if (statusLower.includes('progress') || statusLower.includes('active')) {
       return 'default'
-    } else if (statusLower.includes('ringing')) {
-      return 'secondary'
-    } else if (statusLower.includes('completed') || statusLower.includes('answered')) {
-      return 'success'
-    } else if (statusLower.includes('missed') || statusLower.includes('no answer')) {
-      return 'destructive'
-    } else if (statusLower.includes('failed')) {
-      return 'destructive'
-    } else {
-      return 'outline'
     }
+    if (statusLower.includes('ringing')) {
+      return 'secondary'
+    }
+    if (statusLower.includes('completed') || statusLower.includes('answered')) {
+      return 'success'
+    }
+    if (statusLower.includes('missed') || statusLower.includes('no answer')) {
+      return 'destructive'
+    }
+    if (statusLower.includes('failed')) {
+      return 'destructive'
+    }
+    return 'outline'
   }
 
   // Function to format duration
@@ -130,18 +134,37 @@ export function RealTimeCallMonitoring() {
             Last updated: {formatDistanceToNow(lastUpdated, { addSuffix: true })}
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={refreshData} disabled={loading}>
-          <RefreshCw className="mr-2 h-4 w-4" />
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={refreshData}
+          disabled={loading}
+          className="transition-all duration-300 hover:bg-primary/10"
+        >
+          <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           Refresh
         </Button>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Card className="p-4">
-          <h3 className="text-lg font-semibold mb-4">Active Calls</h3>
+        <Card className="p-4 card-gradient-primary shadow-sm hover:shadow-md transition-all duration-300">
+          <h3 className="text-lg font-semibold mb-4 flex items-center">
+            <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center mr-2">
+              <Phone className="h-3 w-3 text-blue-600 dark:text-blue-400" />
+            </div>
+            Active Calls
+          </h3>
           {loading ? (
             <div className="flex flex-col items-center justify-center py-8">
-              <p className="text-muted-foreground text-center">Loading active calls...</p>
+              <div className="animate-pulse flex space-x-4">
+                <div className="flex-1 space-y-4 py-1">
+                  <div className="h-4 bg-blue-100 dark:bg-blue-900 rounded w-3/4" />
+                  <div className="space-y-2">
+                    <div className="h-4 bg-blue-100 dark:bg-blue-900 rounded" />
+                    <div className="h-4 bg-blue-100 dark:bg-blue-900 rounded w-5/6" />
+                  </div>
+                </div>
+              </div>
             </div>
           ) : error ? (
             <div className="flex flex-col items-center justify-center py-8">
@@ -149,18 +172,20 @@ export function RealTimeCallMonitoring() {
             </div>
           ) : activeCalls.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8">
-              <Phone className="h-8 w-8 text-muted-foreground mb-2" />
+              <div className="w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center mb-4">
+                <Phone className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+              </div>
               <p className="text-muted-foreground text-center mb-2">
-                No active calls at the moment.
+                No active calls at the moment
               </p>
               <p className="text-sm text-muted-foreground text-center">
-                Start a call to see real-time metrics.
+                Start a call to see real-time metrics
               </p>
             </div>
           ) : (
             <div className="space-y-4">
               {activeCalls.map((call) => (
-                <div key={call.id} className="border rounded-md p-3">
+                <div key={call.id} className="border border-blue-200 dark:border-blue-800 rounded-md p-3 bg-white/50 dark:bg-blue-950/50 backdrop-blur-sm hover:bg-white/80 dark:hover:bg-blue-950/80 transition-all duration-300">
                   <div className="flex justify-between items-start mb-2">
                     <div>
                       <div className="font-medium">{call.phone_number}</div>
@@ -168,20 +193,23 @@ export function RealTimeCallMonitoring() {
                         Started {formatDistanceToNow(new Date(call.startTime), { addSuffix: true })}
                       </div>
                     </div>
-                    <Badge variant={getStatusBadgeVariant(call.status)}>
+                    <Badge variant={getStatusBadgeVariant(call.status)} className="animate-pulse">
                       {call.status}
                     </Badge>
                   </div>
                   <div className="flex items-center text-sm text-muted-foreground mb-2">
-                    <Clock className="mr-1 h-4 w-4" />
+                    <Clock className="mr-1 h-4 w-4 text-blue-600 dark:text-blue-400" />
                     <span>Duration: {formatDuration(call.duration)}</span>
                   </div>
                   {call.transcript && call.transcript.length > 0 && (
                     <div className="mt-2 text-sm">
-                      <div className="font-medium mb-1">Live Transcript:</div>
-                      <div className="bg-muted p-2 rounded-md max-h-24 overflow-y-auto">
+                      <div className="font-medium mb-1 flex items-center">
+                        <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-1 animate-pulse" />
+                        Live Transcript:
+                      </div>
+                      <div className="bg-blue-50 dark:bg-blue-900/50 p-2 rounded-md max-h-24 overflow-y-auto border border-blue-100 dark:border-blue-800">
                         {call.transcript.map((line, index) => (
-                          <p key={index} className="mb-1">{line}</p>
+                          <p key={`${call.id}-line-${index}`} className="mb-1">{line}</p>
                         ))}
                       </div>
                     </div>
@@ -192,11 +220,24 @@ export function RealTimeCallMonitoring() {
           )}
         </Card>
 
-        <Card className="p-4">
-          <h3 className="text-lg font-semibold mb-4">Recent Calls</h3>
+        <Card className="p-4 card-gradient-secondary shadow-sm hover:shadow-md transition-all duration-300">
+          <h3 className="text-lg font-semibold mb-4 flex items-center">
+            <div className="w-6 h-6 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center mr-2">
+              <PhoneOff className="h-3 w-3 text-purple-600 dark:text-purple-400" />
+            </div>
+            Recent Calls
+          </h3>
           {loading ? (
             <div className="flex flex-col items-center justify-center py-8">
-              <p className="text-muted-foreground text-center">Loading recent calls...</p>
+              <div className="animate-pulse flex space-x-4">
+                <div className="flex-1 space-y-4 py-1">
+                  <div className="h-4 bg-purple-100 dark:bg-purple-900 rounded w-3/4" />
+                  <div className="space-y-2">
+                    <div className="h-4 bg-purple-100 dark:bg-purple-900 rounded" />
+                    <div className="h-4 bg-purple-100 dark:bg-purple-900 rounded w-5/6" />
+                  </div>
+                </div>
+              </div>
             </div>
           ) : error ? (
             <div className="flex flex-col items-center justify-center py-8">
@@ -204,21 +245,23 @@ export function RealTimeCallMonitoring() {
             </div>
           ) : recentCalls.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8">
-              <PhoneOff className="h-8 w-8 text-muted-foreground mb-2" />
+              <div className="w-16 h-16 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center mb-4">
+                <PhoneOff className="h-8 w-8 text-purple-600 dark:text-purple-400" />
+              </div>
               <p className="text-muted-foreground text-center mb-2">
-                No recent calls found.
+                No recent calls found
               </p>
               <p className="text-sm text-muted-foreground text-center">
-                Recent calls will appear here when available.
+                Recent calls will appear here when available
               </p>
             </div>
           ) : (
             <div className="space-y-2">
               {recentCalls.map((call) => (
-                <div key={call.id} className="flex items-center justify-between py-2 border-b last:border-0">
+                <div key={call.id} className="flex items-center justify-between py-2 border-b border-purple-100 dark:border-purple-800 last:border-0 hover:bg-purple-50/50 dark:hover:bg-purple-900/50 rounded-md px-2 transition-all duration-300">
                   <div className="flex items-center">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center mr-3">
-                      <Phone className="h-4 w-4 text-primary" />
+                    <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center mr-3">
+                      <Phone className="h-4 w-4 text-purple-600 dark:text-purple-400" />
                     </div>
                     <div>
                       <p className="font-medium">{call.phone_number}</p>

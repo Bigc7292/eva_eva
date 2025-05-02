@@ -33,4 +33,4 @@ export interface DateRange {
   end: Date
 }
 
-export type TimeFrame = '7d' | '30d' | '90d' | 'custom' 
+export type TimeFrame = '1d' | '7d' | '30d' | '90d' | 'custom'

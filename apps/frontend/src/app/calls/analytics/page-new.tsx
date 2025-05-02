@@ -23,14 +23,14 @@ export default function CallAnalyticsPage() {
   const [loading, setLoading] = useState(false)
   const [timeRange, setTimeRange] = useState('7d')
   const { toast } = useToast()
-  
+
   // Format duration in seconds to minutes:seconds
   const formatDuration = (seconds) => {
     const minutes = Math.floor(seconds / 60)
     const remainingSeconds = Math.round(seconds % 60)
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
   }
-  
+
   // Fetch analytics data
   const fetchAnalytics = async () => {
     setLoading(true)
@@ -49,17 +49,17 @@ export default function CallAnalyticsPage() {
       setLoading(false)
     }
   }
-  
+
   // Effect to fetch analytics when time range changes
   useEffect(() => {
     fetchAnalytics()
   }, [timeRange])
-  
+
   return (
     <div className="container mx-auto py-8">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">Call Analytics</h1>
-        
+
         <div className="flex items-center space-x-4">
           <Select value={timeRange} onValueChange={setTimeRange}>
             <SelectTrigger className="w-[180px]">
@@ -67,15 +67,16 @@ export default function CallAnalyticsPage() {
               <SelectValue placeholder="Select time range" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="1d">Today</SelectItem>
               <SelectItem value="7d">Last 7 days</SelectItem>
               <SelectItem value="30d">Last 30 days</SelectItem>
               <SelectItem value="90d">Last 90 days</SelectItem>
               <SelectItem value="all">All time</SelectItem>
             </SelectContent>
           </Select>
-          
-          <Button 
-            variant="outline" 
+
+          <Button
+            variant="outline"
             onClick={fetchAnalytics}
             disabled={loading}
           >
@@ -84,7 +85,7 @@ export default function CallAnalyticsPage() {
           </Button>
         </div>
       </div>
-      
+
       {loading ? (
         <div className="flex items-center justify-center py-20">
           <LoaderIcon className="h-8 w-8 animate-spin text-primary" />
@@ -107,7 +108,7 @@ export default function CallAnalyticsPage() {
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -121,7 +122,7 @@ export default function CallAnalyticsPage() {
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -135,7 +136,7 @@ export default function CallAnalyticsPage() {
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -152,7 +153,7 @@ export default function CallAnalyticsPage() {
               </CardContent>
             </Card>
           </div>
-          
+
           {/* Charts */}
           <Tabs defaultValue="daily">
             <TabsList className="grid w-full grid-cols-3">
@@ -169,7 +170,7 @@ export default function CallAnalyticsPage() {
                 Call Types
               </TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="daily">
               <Card>
                 <CardHeader>
@@ -189,7 +190,7 @@ export default function CallAnalyticsPage() {
                 </CardContent>
               </Card>
             </TabsContent>
-            
+
             <TabsContent value="status">
               <Card>
                 <CardHeader>
@@ -209,7 +210,7 @@ export default function CallAnalyticsPage() {
                 </CardContent>
               </Card>
             </TabsContent>
-            
+
             <TabsContent value="type">
               <Card>
                 <CardHeader>
@@ -230,7 +231,7 @@ export default function CallAnalyticsPage() {
               </Card>
             </TabsContent>
           </Tabs>
-          
+
           {/* Duration Stats */}
           <Card>
             <CardHeader>
@@ -249,7 +250,7 @@ export default function CallAnalyticsPage() {
                     0:00
                   </div>
                 </div>
-                
+
                 <div className="flex flex-col items-center">
                   <div className="text-sm font-medium text-muted-foreground mb-2">
                     Average Duration
@@ -258,7 +259,7 @@ export default function CallAnalyticsPage() {
                     0:00
                   </div>
                 </div>
-                
+
                 <div className="flex flex-col items-center">
                   <div className="text-sm font-medium text-muted-foreground mb-2">
                     Maximum Duration

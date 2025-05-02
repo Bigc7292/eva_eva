@@ -31,14 +31,10 @@ const VAPI_API_KEY = 'd1529b85-51d5-47c0-9332-a73d40f7d62b'; // Private key for 
 const VAPI_ASSISTANT_ID = 'cfaa163c-4a47-471b-a39e-95c12d0cb738';
 const PHONE_NUMBER_ID = 'e65a9e6b-33b7-4711-ad21-90220048e38f';
 
-// Get the ngrok URL from command line arguments
-const ngrokUrl = process.argv[2];
+// Set the ngrok URL directly
+const ngrokUrl = 'https://03d5-80-227-84-38.ngrok-free.app';
 
-if (!ngrokUrl) {
-  console.error('Please provide the ngrok URL as a command line argument');
-  console.error('Usage: node update-ngrok-webhook.js https://your-ngrok-url.ngrok.io');
-  process.exit(1);
-}
+console.log('Using ngrok URL:', ngrokUrl);
 
 // Update VAPI server URLs
 async function updateServerUrls() {

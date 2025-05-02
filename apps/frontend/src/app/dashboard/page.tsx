@@ -113,8 +113,21 @@ export default function DashboardPage() {
     end: dateRange.end.toISOString().split('T')[0]
   }
 
+  // Determine timeRange based on date difference
+  const getTimeRange = () => {
+    const diffTime = Math.abs(dateRange.end.getTime() - dateRange.start.getTime())
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+
+    if (diffDays <= 1) return '1day'
+    if (diffDays <= 7) return '7days'
+    if (diffDays <= 30) return '30days'
+    return 'all'
+  }
+
+  const timeRange = getTimeRange()
+
   // Use SWR hooks for data fetching
-  const { data: callAnalytics, error: callError, isLoading: callLoading } = useCallAnalytics(apiDateRange)
+  const { data: callAnalytics, error: callError, isLoading: callLoading } = useCallAnalytics(apiDateRange, timeRange)
   const { data: leadAnalytics, error: leadError, isLoading: leadLoading } = useLeadAnalytics()
   const { data: meetingAnalytics, error: meetingError, isLoading: meetingLoading } = useMeetingAnalytics()
 
@@ -295,13 +308,13 @@ export default function DashboardPage() {
   return (
     <div className="page-container animate-fade-in">
       <div className="page-header">
-        <div>
-          <h1 className="page-title">Dashboard</h1>
-          <p className="page-subtitle">Real-time analytics for your call center operations</p>
+        <div className="stagger-animations">
+          <h1 className="page-title animate-slide-in">Dashboard</h1>
+          <p className="page-subtitle animate-slide-in">Real-time analytics for your call center operations</p>
         </div>
-        <div className="page-actions">
+        <div className="page-actions animate-slide-in">
           <DateRangeSelector onChange={handleDateRangeChange} />
-          <Button variant="outline" size="sm" className="ml-2">
+          <Button variant="outline" size="sm" className="ml-2 animate-pulse-subtle">
             <Calendar className="mr-2 h-4 w-4" />
             Export
           </Button>
@@ -318,18 +331,21 @@ export default function DashboardPage() {
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
-          <div className="dashboard-stats-grid">
-            <Card className="kpi-card card-gradient-primary animate-slide-up" style={{animationDelay: '0ms'}}>
+          <div className="dashboard-stats-grid stagger-animations">
+            <Card className="kpi-card card-gradient-primary animate-slide-up shadow-sm hover:shadow-md transition-all duration-300">
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
                   <CardTitle className="kpi-card-title">Total Calls</CardTitle>
-                  <Phone className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+                    <Phone className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="kpi-card-value">{callMetrics.total}</div>
                 {callMetrics.total > 0 ? (
-                  <div className="text-xs text-muted-foreground mt-1">
+                  <div className="text-xs text-muted-foreground mt-1 flex items-center">
+                    <span className="inline-block w-2 h-2 bg-blue-500 rounded-full mr-1" />
                     <span>Total calls tracked in system</span>
                   </div>
                 ) : (
@@ -337,21 +353,24 @@ export default function DashboardPage() {
                     <span>No calls tracked yet</span>
                   </div>
                 )}
-                <Progress className="mt-2" value={callMetrics.total > 0 ? 100 : 0} />
+                <Progress className="mt-2 h-1.5 bg-blue-100 dark:bg-blue-900" value={100} />
               </CardContent>
             </Card>
 
-            <Card className="kpi-card card-gradient-success animate-slide-up" style={{animationDelay: '100ms'}}>
+            <Card className="kpi-card card-gradient-success animate-slide-up shadow-sm hover:shadow-md transition-all duration-300">
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
                   <CardTitle className="kpi-card-title">Answered Calls</CardTitle>
-                  <Phone className="h-4 w-4 text-green-600 dark:text-green-400" />
+                  <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
+                    <Phone className="h-4 w-4 text-green-600 dark:text-green-400" />
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="kpi-card-value">{callMetrics.answered}</div>
                 {callMetrics.answered > 0 ? (
-                  <div className="text-xs text-muted-foreground mt-1">
+                  <div className="text-xs text-muted-foreground mt-1 flex items-center">
+                    <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-1" />
                     <span>Answer rate: {((callMetrics.answerRate).toFixed(1))}%</span>
                   </div>
                 ) : (
@@ -359,21 +378,24 @@ export default function DashboardPage() {
                     <span>No answered calls yet</span>
                   </div>
                 )}
-                <Progress className="mt-2" value={callMetrics.answerRate} />
+                <Progress className="mt-2 h-1.5 bg-green-100 dark:bg-green-900" value={callMetrics.answerRate} />
               </CardContent>
             </Card>
 
-            <Card className="kpi-card card-gradient-danger animate-slide-up" style={{animationDelay: '200ms'}}>
+            <Card className="kpi-card card-gradient-danger animate-slide-up shadow-sm hover:shadow-md transition-all duration-300">
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
                   <CardTitle className="kpi-card-title">Missed Calls</CardTitle>
-                  <Phone className="h-4 w-4 text-red-600 dark:text-red-400" />
+                  <div className="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center">
+                    <Phone className="h-4 w-4 text-red-600 dark:text-red-400" />
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="kpi-card-value">{callMetrics.missed}</div>
                 {callMetrics.missed > 0 ? (
-                  <div className="text-xs text-muted-foreground mt-1">
+                  <div className="text-xs text-muted-foreground mt-1 flex items-center">
+                    <span className="inline-block w-2 h-2 bg-red-500 rounded-full mr-1" />
                     <span>Missed call rate: {callMetrics.total > 0 ? ((callMetrics.missed / callMetrics.total) * 100).toFixed(1) : 0}%</span>
                   </div>
                 ) : (
@@ -381,15 +403,17 @@ export default function DashboardPage() {
                     <span>No missed calls</span>
                   </div>
                 )}
-                <Progress className="mt-2" value={callMetrics.total > 0 ? (callMetrics.missed / callMetrics.total) * 100 : 0} />
+                <Progress className="mt-2 h-1.5 bg-red-100 dark:bg-red-900" value={callMetrics.total > 0 ? (callMetrics.missed / callMetrics.total) * 100 : 0} />
               </CardContent>
             </Card>
 
-            <Card className="kpi-card card-gradient-secondary animate-slide-up" style={{animationDelay: '300ms'}}>
+            <Card className="kpi-card card-gradient-secondary animate-slide-up shadow-sm hover:shadow-md transition-all duration-300">
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
                   <CardTitle className="kpi-card-title">Avg Duration</CardTitle>
-                  <Clock className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                  <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
+                    <Clock className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -397,7 +421,8 @@ export default function DashboardPage() {
                   {callMetrics.avgDuration ? `${Math.round(callMetrics.avgDuration)}s` : 'N/A'}
                 </div>
                 {callMetrics.avgDuration > 0 ? (
-                  <div className="text-xs text-muted-foreground mt-1">
+                  <div className="text-xs text-muted-foreground mt-1 flex items-center">
+                    <span className="inline-block w-2 h-2 bg-purple-500 rounded-full mr-1" />
                     <span>Average for answered calls</span>
                   </div>
                 ) : (
@@ -405,37 +430,44 @@ export default function DashboardPage() {
                     <span>No duration data available</span>
                   </div>
                 )}
-                <Progress className="mt-2" value={callMetrics.avgDuration > 0 ? 100 : 0} />
+                <Progress className="mt-2 h-1.5 bg-purple-100 dark:bg-purple-900" value={callMetrics.avgDuration > 0 ? Math.min(callMetrics.avgDuration / 300 * 100, 100) : 0} />
               </CardContent>
             </Card>
 
-            <Card className="kpi-card card-gradient-primary animate-slide-up" style={{animationDelay: '400ms'}}>
+            <Card className="kpi-card card-gradient-primary animate-slide-up shadow-sm hover:shadow-md transition-all duration-300">
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
                   <CardTitle className="kpi-card-title">Meetings Booked</CardTitle>
-                  <Calendar className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                  <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center">
+                    <Calendar className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="kpi-card-value">{callMetrics.meetingsScheduled}</div>
-                <div className="text-xs text-muted-foreground mt-1">
+                <div className="kpi-card-value">{callMetrics.meetingsScheduled || 0}</div>
+                <div className="text-xs text-muted-foreground mt-1 flex items-center">
+                  <span className="inline-block w-2 h-2 bg-indigo-500 rounded-full mr-1" />
                   <span>Total scheduled meetings</span>
                 </div>
-                <Progress className="mt-2" value={callMetrics.meetingsScheduled ? 100 : 0} />
+                <Progress className="mt-2 h-1.5 bg-indigo-100 dark:bg-indigo-900" value={callMetrics.meetingsScheduled ? Math.min(callMetrics.meetingsScheduled / Math.max(callMetrics.total, 1) * 100, 100) : 0} />
               </CardContent>
             </Card>
           </div>
 
-          <div className="dashboard-charts-grid">
+          <div className="dashboard-charts-grid stagger-animations">
             <Suspense fallback={<Card className="p-6"><Skeleton className="h-[300px] w-full" /></Card>}>
-              <EnhancedAnalyticsWidget />
+              <div className="animate-scale">
+                <EnhancedAnalyticsWidget />
+              </div>
             </Suspense>
             <Suspense fallback={<Card className="p-6"><Skeleton className="h-[300px] w-full" /></Card>}>
-              <EnhancedCallQualityWidget quality={callQuality} />
+              <div className="animate-scale">
+                <EnhancedCallQualityWidget quality={callQuality} />
+              </div>
             </Suspense>
           </div>
 
-          <div className="dashboard-charts-grid">
+          <div className="dashboard-charts-grid stagger-animations">
             <Suspense fallback={<Card className="p-6"><Skeleton className="h-[300px] w-full" /></Card>}>
               <EnhancedCallTrendsWidget data={callTrendsData} />
             </Suspense>
