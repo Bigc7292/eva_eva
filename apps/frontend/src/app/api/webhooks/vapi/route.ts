@@ -45,6 +45,23 @@ export async function POST(req: Request) {
 
     console.log('Received VAPI webhook:', body)
 
+    // Log the webhook event to our call logs system
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3004'}/api/calls/logs`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          message: `Received webhook: ${body.event || body.message?.type || 'unknown'} for call ${body.call_id || body.message?.call?.id || 'unknown'}`,
+          level: 'info',
+          timestamp: new Date().toISOString()
+        })
+      })
+    } catch (logError) {
+      console.error('Error logging webhook event:', logError)
+    }
+
     // Check for new format (2025)
     if (body.message && (body.message.type === 'status-update' || body.message.type === 'end-of-call-report')) {
       return handleNewFormatWebhook(body)

@@ -1,12 +1,14 @@
+'use client'
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { 
-  Bell, 
-  RefreshCw, 
-  Download, 
-  AlertTriangle, 
-  CheckCircle, 
+import {
+  Bell,
+  RefreshCw,
+  Download,
+  AlertTriangle,
+  CheckCircle,
   Info,
   Filter,
   Clock,
@@ -30,7 +32,7 @@ interface EnhancedAlertsNotificationsWidgetProps {
   alerts?: Alert[];
 }
 
-export function EnhancedAlertsNotificationsWidget({ 
+export function EnhancedAlertsNotificationsWidget({
   alerts = []
 }: EnhancedAlertsNotificationsWidgetProps) {
   const [loading, setLoading] = useState<boolean>(false);
@@ -40,10 +42,13 @@ export function EnhancedAlertsNotificationsWidget({
 
   // Generate sample alerts data
   const generateAlertsData = useCallback(() => {
-    if (alerts && alerts.length > 0) {
-      return alerts;
+    // Use provided alerts if available
+    const alertsAvailable = Array.isArray(alerts) && alerts.length > 0;
+    if (alertsAvailable) {
+      return [...alerts]; // Return a copy to avoid reference issues
     }
-    
+
+    // Otherwise generate sample data with more realistic timestamps
     const types = ['error', 'warning', 'success', 'info'];
     const sources = ['System', 'API', 'Database', 'User', 'Network'];
     const messages = [
@@ -58,36 +63,84 @@ export function EnhancedAlertsNotificationsWidget({
       'API rate limit reached',
       'New user registered'
     ];
-    
+
     const data = [];
     const now = new Date();
-    
-    for (let i = 0; i < 15; i++) {
+
+    // Create alerts with more realistic timestamps (not all random)
+    // Recent alerts (last hour)
+    for (let i = 0; i < 3; i++) {
       const time = new Date(now);
-      time.setMinutes(now.getMinutes() - Math.floor(Math.random() * 60 * 24)); // Random time in last 24 hours
-      
-      const type = types[Math.floor(Math.random() * types.length)] as 'error' | 'warning' | 'success' | 'info';
+      time.setMinutes(now.getMinutes() - (i * 15 + Math.floor(Math.random() * 10))); // 15, 30, 45 mins ago with some randomness
+
+      const type = i === 0 ? 'success' : (i === 1 ? 'info' : 'warning'); // More predictable types
       const source = sources[Math.floor(Math.random() * sources.length)];
       const message = messages[Math.floor(Math.random() * messages.length)];
-      
+
       data.push({
-        id: `alert-${i}`,
+        id: `alert-recent-${i}`,
         type,
         message,
         time: time.toISOString(),
-        read: Math.random() > 0.3, // 30% chance of being unread
+        read: i !== 0, // Most recent is unread
         source
       });
     }
-    
+
+    // Today's alerts
+    for (let i = 0; i < 5; i++) {
+      const time = new Date(now);
+      time.setHours(now.getHours() - (i + 1 + Math.floor(Math.random() * 2))); // Spread throughout the day
+
+      const type = types[Math.floor(Math.random() * types.length)] as 'error' | 'warning' | 'success' | 'info';
+      const source = sources[Math.floor(Math.random() * sources.length)];
+      const message = messages[Math.floor(Math.random() * messages.length)];
+
+      data.push({
+        id: `alert-today-${i}`,
+        type,
+        message,
+        time: time.toISOString(),
+        read: Math.random() > 0.2, // 20% chance of being unread
+        source
+      });
+    }
+
+    // Yesterday and older
+    for (let i = 0; i < 7; i++) {
+      const time = new Date(now);
+      time.setDate(now.getDate() - (i + 1)); // Previous days
+      time.setHours(9 + Math.floor(Math.random() * 8)); // Business hours
+
+      const type = types[Math.floor(Math.random() * types.length)] as 'error' | 'warning' | 'success' | 'info';
+      const source = sources[Math.floor(Math.random() * sources.length)];
+      const message = messages[Math.floor(Math.random() * messages.length)];
+
+      data.push({
+        id: `alert-old-${i}`,
+        type,
+        message,
+        time: time.toISOString(),
+        read: true, // All old alerts are read
+        source
+      });
+    }
+
     // Sort by time (newest first)
     return data.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
-  }, [alerts]);
+  }, [alerts]); // Include alerts in the dependency array
 
+  // Initialize data on component mount
   useEffect(() => {
-    // Generate data on component mount
     setAlertsData(generateAlertsData());
   }, [generateAlertsData]);
+
+  // Update data when alerts prop changes
+  useEffect(() => {
+    if (Array.isArray(alerts) && alerts.length > 0) {
+      setAlertsData([...alerts]);
+    }
+  }, [alerts]);
 
   const handleRefresh = () => {
     setLoading(true);
@@ -103,7 +156,7 @@ export function EnhancedAlertsNotificationsWidget({
     const headers = ['ID', 'Type', 'Message', 'Time', 'Read', 'Source'];
     const csvContent = [
       headers.join(','),
-      ...alertsData.map(alert => 
+      ...alertsData.map(alert =>
         [
           alert.id,
           alert.type,
@@ -114,9 +167,9 @@ export function EnhancedAlertsNotificationsWidget({
         ].join(',')
       )
     ].join('\n');
-    
+
     const filename = `alerts_notifications_${new Date().toISOString().split('T')[0]}.csv`;
-    
+
     // Create and trigger download
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -130,21 +183,21 @@ export function EnhancedAlertsNotificationsWidget({
   };
 
   const handleMarkAsRead = (id: string) => {
-    setAlertsData(prevAlerts => 
-      prevAlerts.map(alert => 
+    setAlertsData(prevAlerts =>
+      prevAlerts.map(alert =>
         alert.id === id ? { ...alert, read: true } : alert
       )
     );
   };
 
   const handleMarkAllAsRead = () => {
-    setAlertsData(prevAlerts => 
+    setAlertsData(prevAlerts =>
       prevAlerts.map(alert => ({ ...alert, read: true }))
     );
   };
 
   const handleDismiss = (id: string) => {
-    setAlertsData(prevAlerts => 
+    setAlertsData(prevAlerts =>
       prevAlerts.filter(alert => alert.id !== id)
     );
   };
@@ -154,11 +207,11 @@ export function EnhancedAlertsNotificationsWidget({
     if (activeTab !== 'all' && alert.type !== activeTab) {
       return false;
     }
-    
+
     if (filter === 'unread' && alert.read) {
       return false;
     }
-    
+
     return true;
   });
 
@@ -187,16 +240,20 @@ export function EnhancedAlertsNotificationsWidget({
     const now = new Date();
     const diffMs = now.getTime() - time.getTime();
     const diffMins = Math.floor(diffMs / (1000 * 60));
-    
+
     if (diffMins < 1) {
       return 'Just now';
-    } else if (diffMins < 60) {
-      return `${diffMins}m ago`;
-    } else if (diffMins < 24 * 60) {
-      return `${Math.floor(diffMins / 60)}h ago`;
-    } else {
-      return `${Math.floor(diffMins / (60 * 24))}d ago`;
     }
+
+    if (diffMins < 60) {
+      return `${diffMins}m ago`;
+    }
+
+    if (diffMins < 24 * 60) {
+      return `${Math.floor(diffMins / 60)}h ago`;
+    }
+
+    return `${Math.floor(diffMins / (60 * 24))}d ago`;
   };
 
   return (
@@ -205,17 +262,17 @@ export function EnhancedAlertsNotificationsWidget({
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-medium">Alerts & Notifications</CardTitle>
           <div className="flex items-center gap-2">
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={handleRefresh}
               disabled={loading}
             >
               <RefreshCw className={`h-4 w-4 text-purple-600 dark:text-purple-400 ${loading ? 'animate-spin' : ''}`} />
             </Button>
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={handleExport}
             >
               <Download className="h-4 w-4 text-purple-600 dark:text-purple-400" />
@@ -224,8 +281,8 @@ export function EnhancedAlertsNotificationsWidget({
               <Bell className="h-4 w-4 text-purple-600 dark:text-purple-400" />
               {unreadCount > 0 && (
                 <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-purple-500"></span>
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-purple-500" />
                 </span>
               )}
             </div>
@@ -242,22 +299,22 @@ export function EnhancedAlertsNotificationsWidget({
               <TabsTrigger value="success" className="text-xs">Success</TabsTrigger>
               <TabsTrigger value="info" className="text-xs">Info</TabsTrigger>
             </TabsList>
-            
+
             <div className="flex items-center gap-2">
-              <Button 
-                variant="ghost" 
-                size="sm" 
+              <Button
+                variant="ghost"
+                size="sm"
                 className="h-7 text-xs"
                 onClick={() => setFilter(filter === 'all' ? 'unread' : 'all')}
               >
                 <Filter className="h-3 w-3 mr-1" />
                 {filter === 'all' ? 'All' : 'Unread'}
               </Button>
-              
+
               {unreadCount > 0 && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
+                <Button
+                  variant="ghost"
+                  size="sm"
                   className="h-7 text-xs"
                   onClick={handleMarkAllAsRead}
                 >
@@ -267,7 +324,7 @@ export function EnhancedAlertsNotificationsWidget({
               )}
             </div>
           </div>
-          
+
           <TabsContent value="all" className="mt-0">
             {loading ? (
               <div className="flex justify-center items-center h-[200px]">
@@ -282,63 +339,120 @@ export function EnhancedAlertsNotificationsWidget({
               </div>
             ) : (
               <ScrollArea className="h-[200px] pr-4">
-                <div className="space-y-2">
-                  {filteredAlerts.map(alert => (
-                    <div 
-                      key={alert.id} 
-                      className={`flex items-start gap-3 p-2 rounded-lg ${
-                        alert.read ? 'bg-transparent' : 'bg-purple-100/50 dark:bg-purple-900/20'
-                      }`}
-                    >
-                      <div className="flex-shrink-0 mt-0.5">
-                        {getAlertIcon(alert.type)}
-                      </div>
-                      
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-start">
-                          <p className={`text-sm font-medium ${!alert.read ? 'font-semibold' : ''}`}>
-                            {alert.message}
-                          </p>
-                          <div className="flex items-center gap-1 ml-2">
-                            {!alert.read && (
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-5 w-5" 
-                                onClick={() => handleMarkAsRead(alert.id)}
-                              >
-                                <CheckCircle className="h-3 w-3 text-green-500" />
-                              </Button>
-                            )}
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-5 w-5" 
-                              onClick={() => handleDismiss(alert.id)}
+                {/* Group alerts by day */}
+                {(() => {
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+
+                  const yesterday = new Date(today);
+                  yesterday.setDate(yesterday.getDate() - 1);
+
+                  const thisWeek = new Date(today);
+                  thisWeek.setDate(thisWeek.getDate() - 7);
+
+                  const groups: {[key: string]: Alert[]} = {
+                    'Today': [],
+                    'Yesterday': [],
+                    'This Week': [],
+                    'Older': []
+                  };
+
+                  filteredAlerts.forEach(alert => {
+                    const alertDate = new Date(alert.time);
+                    alertDate.setHours(0, 0, 0, 0);
+
+                    if (alertDate.getTime() === today.getTime()) {
+                      groups['Today'].push(alert);
+                    } else if (alertDate.getTime() === yesterday.getTime()) {
+                      groups['Yesterday'].push(alert);
+                    } else if (alertDate >= thisWeek) {
+                      groups['This Week'].push(alert);
+                    } else {
+                      groups['Older'].push(alert);
+                    }
+                  });
+
+                  return Object.entries(groups).map(([groupName, groupAlerts]) => {
+                    if (groupAlerts.length === 0) return null;
+
+                    return (
+                      <div key={groupName} className="mb-4">
+                        <div className="text-xs font-medium text-purple-600 dark:text-purple-400 uppercase tracking-wider mb-2 px-1">
+                          {groupName}
+                        </div>
+                        <div className="space-y-2">
+                          {groupAlerts.map((alert) => (
+                            <div
+                              key={alert.id}
+                              className={`flex items-start gap-3 p-2 rounded-lg transition-all duration-200 ${
+                                alert.read ? 'bg-transparent hover:bg-purple-50/50 dark:hover:bg-purple-900/10' : 'bg-purple-100/50 dark:bg-purple-900/20 shadow-sm'
+                              }`}
                             >
-                              <X className="h-3 w-3 text-muted-foreground" />
-                            </Button>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center text-xs text-muted-foreground mt-1">
-                          <Clock className="h-3 w-3 mr-1" />
-                          <span>{formatRelativeTime(alert.time)}</span>
-                          {alert.source && (
-                            <>
-                              <span className="mx-1">•</span>
-                              <span>{alert.source}</span>
-                            </>
-                          )}
+                              <div className="flex-shrink-0 mt-0.5">
+                                <div className={`p-1 rounded-full ${
+                                  alert.type === 'error' ? 'bg-red-100 dark:bg-red-900/20' :
+                                  alert.type === 'warning' ? 'bg-yellow-100 dark:bg-yellow-900/20' :
+                                  alert.type === 'success' ? 'bg-green-100 dark:bg-green-900/20' :
+                                  'bg-blue-100 dark:bg-blue-900/20'
+                                }`}>
+                                  {getAlertIcon(alert.type)}
+                                </div>
+                              </div>
+
+                              <div className="flex-1 min-w-0">
+                                <div className="flex justify-between items-start">
+                                  <p className={`text-sm ${!alert.read ? 'font-medium text-foreground' : 'text-foreground/90'}`}>
+                                    {alert.message}
+                                  </p>
+                                  <div className="flex items-center gap-1 ml-2">
+                                    {!alert.read && (
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-5 w-5 hover:bg-green-100 dark:hover:bg-green-900/20"
+                                        onClick={() => handleMarkAsRead(alert.id)}
+                                      >
+                                        <CheckCircle className="h-3 w-3 text-green-500" />
+                                      </Button>
+                                    )}
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-5 w-5 hover:bg-red-100 dark:hover:bg-red-900/20"
+                                      onClick={() => handleDismiss(alert.id)}
+                                    >
+                                      <X className="h-3 w-3 text-muted-foreground" />
+                                    </Button>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center text-xs text-muted-foreground mt-1">
+                                  <Clock className="h-3 w-3 mr-1" />
+                                  <span>{formatRelativeTime(alert.time)}</span>
+                                  {alert.source && (
+                                    <>
+                                      <span className="mx-1">•</span>
+                                      <span>{alert.source}</span>
+                                    </>
+                                  )}
+                                  {!alert.read && (
+                                    <span className="ml-2 inline-flex items-center rounded-full bg-purple-100 dark:bg-purple-900/30 px-2 py-0.5 text-xs font-medium text-purple-600 dark:text-purple-400">
+                                      New
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    );
+                  });
+                })()}
               </ScrollArea>
             )}
           </TabsContent>
-          
+
           <TabsContent value="error" className="mt-0">
             {/* Same content structure as "all" tab but filtered for errors */}
             {loading ? (
@@ -356,8 +470,8 @@ export function EnhancedAlertsNotificationsWidget({
               <ScrollArea className="h-[200px] pr-4">
                 <div className="space-y-2">
                   {filteredAlerts.map(alert => (
-                    <div 
-                      key={alert.id} 
+                    <div
+                      key={alert.id}
                       className={`flex items-start gap-3 p-2 rounded-lg ${
                         alert.read ? 'bg-transparent' : 'bg-purple-100/50 dark:bg-purple-900/20'
                       }`}
@@ -365,7 +479,7 @@ export function EnhancedAlertsNotificationsWidget({
                       <div className="flex-shrink-0 mt-0.5">
                         {getAlertIcon(alert.type)}
                       </div>
-                      
+
                       <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-start">
                           <p className={`text-sm font-medium ${!alert.read ? 'font-semibold' : ''}`}>
@@ -373,26 +487,26 @@ export function EnhancedAlertsNotificationsWidget({
                           </p>
                           <div className="flex items-center gap-1 ml-2">
                             {!alert.read && (
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-5 w-5" 
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-5 w-5"
                                 onClick={() => handleMarkAsRead(alert.id)}
                               >
                                 <CheckCircle className="h-3 w-3 text-green-500" />
                               </Button>
                             )}
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-5 w-5" 
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-5 w-5"
                               onClick={() => handleDismiss(alert.id)}
                             >
                               <X className="h-3 w-3 text-muted-foreground" />
                             </Button>
                           </div>
                         </div>
-                        
+
                         <div className="flex items-center text-xs text-muted-foreground mt-1">
                           <Clock className="h-3 w-3 mr-1" />
                           <span>{formatRelativeTime(alert.time)}</span>
@@ -410,7 +524,7 @@ export function EnhancedAlertsNotificationsWidget({
               </ScrollArea>
             )}
           </TabsContent>
-          
+
           {/* Similar content for warning, success, and info tabs */}
           <TabsContent value="warning" className="mt-0">
             {/* Same structure as above */}
@@ -429,8 +543,8 @@ export function EnhancedAlertsNotificationsWidget({
               <ScrollArea className="h-[200px] pr-4">
                 <div className="space-y-2">
                   {filteredAlerts.map(alert => (
-                    <div 
-                      key={alert.id} 
+                    <div
+                      key={alert.id}
                       className={`flex items-start gap-3 p-2 rounded-lg ${
                         alert.read ? 'bg-transparent' : 'bg-purple-100/50 dark:bg-purple-900/20'
                       }`}
@@ -438,7 +552,7 @@ export function EnhancedAlertsNotificationsWidget({
                       <div className="flex-shrink-0 mt-0.5">
                         {getAlertIcon(alert.type)}
                       </div>
-                      
+
                       <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-start">
                           <p className={`text-sm font-medium ${!alert.read ? 'font-semibold' : ''}`}>
@@ -446,26 +560,26 @@ export function EnhancedAlertsNotificationsWidget({
                           </p>
                           <div className="flex items-center gap-1 ml-2">
                             {!alert.read && (
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-5 w-5" 
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-5 w-5"
                                 onClick={() => handleMarkAsRead(alert.id)}
                               >
                                 <CheckCircle className="h-3 w-3 text-green-500" />
                               </Button>
                             )}
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-5 w-5" 
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-5 w-5"
                               onClick={() => handleDismiss(alert.id)}
                             >
                               <X className="h-3 w-3 text-muted-foreground" />
                             </Button>
                           </div>
                         </div>
-                        
+
                         <div className="flex items-center text-xs text-muted-foreground mt-1">
                           <Clock className="h-3 w-3 mr-1" />
                           <span>{formatRelativeTime(alert.time)}</span>
@@ -483,7 +597,7 @@ export function EnhancedAlertsNotificationsWidget({
               </ScrollArea>
             )}
           </TabsContent>
-          
+
           <TabsContent value="success" className="mt-0">
             {/* Same structure as above */}
             {loading ? (
@@ -501,8 +615,8 @@ export function EnhancedAlertsNotificationsWidget({
               <ScrollArea className="h-[200px] pr-4">
                 <div className="space-y-2">
                   {filteredAlerts.map(alert => (
-                    <div 
-                      key={alert.id} 
+                    <div
+                      key={alert.id}
                       className={`flex items-start gap-3 p-2 rounded-lg ${
                         alert.read ? 'bg-transparent' : 'bg-purple-100/50 dark:bg-purple-900/20'
                       }`}
@@ -510,7 +624,7 @@ export function EnhancedAlertsNotificationsWidget({
                       <div className="flex-shrink-0 mt-0.5">
                         {getAlertIcon(alert.type)}
                       </div>
-                      
+
                       <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-start">
                           <p className={`text-sm font-medium ${!alert.read ? 'font-semibold' : ''}`}>
@@ -518,26 +632,26 @@ export function EnhancedAlertsNotificationsWidget({
                           </p>
                           <div className="flex items-center gap-1 ml-2">
                             {!alert.read && (
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-5 w-5" 
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-5 w-5"
                                 onClick={() => handleMarkAsRead(alert.id)}
                               >
                                 <CheckCircle className="h-3 w-3 text-green-500" />
                               </Button>
                             )}
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-5 w-5" 
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-5 w-5"
                               onClick={() => handleDismiss(alert.id)}
                             >
                               <X className="h-3 w-3 text-muted-foreground" />
                             </Button>
                           </div>
                         </div>
-                        
+
                         <div className="flex items-center text-xs text-muted-foreground mt-1">
                           <Clock className="h-3 w-3 mr-1" />
                           <span>{formatRelativeTime(alert.time)}</span>
@@ -555,7 +669,7 @@ export function EnhancedAlertsNotificationsWidget({
               </ScrollArea>
             )}
           </TabsContent>
-          
+
           <TabsContent value="info" className="mt-0">
             {/* Same structure as above */}
             {loading ? (
@@ -573,8 +687,8 @@ export function EnhancedAlertsNotificationsWidget({
               <ScrollArea className="h-[200px] pr-4">
                 <div className="space-y-2">
                   {filteredAlerts.map(alert => (
-                    <div 
-                      key={alert.id} 
+                    <div
+                      key={alert.id}
                       className={`flex items-start gap-3 p-2 rounded-lg ${
                         alert.read ? 'bg-transparent' : 'bg-purple-100/50 dark:bg-purple-900/20'
                       }`}
@@ -582,7 +696,7 @@ export function EnhancedAlertsNotificationsWidget({
                       <div className="flex-shrink-0 mt-0.5">
                         {getAlertIcon(alert.type)}
                       </div>
-                      
+
                       <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-start">
                           <p className={`text-sm font-medium ${!alert.read ? 'font-semibold' : ''}`}>
@@ -590,26 +704,26 @@ export function EnhancedAlertsNotificationsWidget({
                           </p>
                           <div className="flex items-center gap-1 ml-2">
                             {!alert.read && (
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-5 w-5" 
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-5 w-5"
                                 onClick={() => handleMarkAsRead(alert.id)}
                               >
                                 <CheckCircle className="h-3 w-3 text-green-500" />
                               </Button>
                             )}
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-5 w-5" 
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-5 w-5"
                               onClick={() => handleDismiss(alert.id)}
                             >
                               <X className="h-3 w-3 text-muted-foreground" />
                             </Button>
                           </div>
                         </div>
-                        
+
                         <div className="flex items-center text-xs text-muted-foreground mt-1">
                           <Clock className="h-3 w-3 mr-1" />
                           <span>{formatRelativeTime(alert.time)}</span>

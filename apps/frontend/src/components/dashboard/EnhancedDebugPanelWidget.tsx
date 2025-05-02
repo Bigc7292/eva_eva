@@ -1,11 +1,13 @@
+'use client'
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { 
-  Bug, 
-  RefreshCw, 
-  Download, 
-  Terminal, 
+import {
+  Bug,
+  RefreshCw,
+  Download,
+  Terminal,
   AlertCircle,
   CheckCircle,
   Info,
@@ -38,7 +40,7 @@ interface EnhancedDebugPanelWidgetProps {
   metrics?: SystemMetric[];
 }
 
-export function EnhancedDebugPanelWidget({ 
+export function EnhancedDebugPanelWidget({
   logs = [],
   metrics = []
 }: EnhancedDebugPanelWidgetProps) {
@@ -50,10 +52,13 @@ export function EnhancedDebugPanelWidget({
 
   // Generate sample log entries
   const generateLogEntries = useCallback(() => {
-    if (logs && logs.length > 0) {
-      return logs;
+    // Use provided logs if available
+    const logsAvailable = Array.isArray(logs) && logs.length > 0;
+    if (logsAvailable) {
+      return [...logs]; // Return a copy to avoid reference issues
     }
-    
+
+    // Otherwise generate sample data
     const levels = ['error', 'warning', 'info', 'debug'];
     const sources = ['API', 'Database', 'Frontend', 'Authentication', 'Network'];
     const messages = [
@@ -68,18 +73,18 @@ export function EnhancedDebugPanelWidget({
       'Data fetched successfully',
       'Configuration loaded'
     ];
-    
+
     const data = [];
     const now = new Date();
-    
+
     for (let i = 0; i < 20; i++) {
       const time = new Date(now);
       time.setMinutes(now.getMinutes() - Math.floor(Math.random() * 60)); // Random time in last hour
-      
+
       const level = levels[Math.floor(Math.random() * levels.length)] as 'error' | 'warning' | 'info' | 'debug';
       const source = sources[Math.floor(Math.random() * sources.length)];
       const message = messages[Math.floor(Math.random() * messages.length)];
-      
+
       data.push({
         id: `log-${i}`,
         timestamp: time.toISOString(),
@@ -89,17 +94,20 @@ export function EnhancedDebugPanelWidget({
         details: level === 'error' ? 'Stack trace: Error at line 42 in component.tsx' : undefined
       });
     }
-    
+
     // Sort by time (newest first)
     return data.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-  }, [logs]);
+  }, []); // Empty dependency array - this function only needs to be created once
 
   // Generate sample system metrics
   const generateSystemMetrics = useCallback(() => {
-    if (metrics && metrics.length > 0) {
-      return metrics;
+    // Use provided metrics if available
+    const metricsAvailable = Array.isArray(metrics) && metrics.length > 0;
+    if (metricsAvailable) {
+      return [...metrics]; // Return a copy to avoid reference issues
     }
-    
+
+    // Otherwise generate sample data
     return [
       {
         name: 'CPU Usage',
@@ -138,15 +146,26 @@ export function EnhancedDebugPanelWidget({
         status: 'critical'
       }
     ];
-  }, [metrics]);
+  }, []); // Empty dependency array - this function only needs to be created once
+
+  // Initialize data on component mount
+  useEffect(() => {
+    setLogEntries(generateLogEntries());
+    setSystemMetrics(generateSystemMetrics());
+  }, [generateLogEntries, generateSystemMetrics]);
+
+  // Update data when props change
+  useEffect(() => {
+    if (Array.isArray(logs) && logs.length > 0) {
+      setLogEntries([...logs]);
+    }
+  }, [logs]);
 
   useEffect(() => {
-    // Generate data on component mount only if not already generated
-    if (logEntries.length === 0) {
-      setLogEntries(generateLogEntries());
-      setSystemMetrics(generateSystemMetrics());
+    if (Array.isArray(metrics) && metrics.length > 0) {
+      setSystemMetrics([...metrics]);
     }
-  }, [generateLogEntries, generateSystemMetrics, logEntries.length]);
+  }, [metrics]);
 
   const handleRefresh = () => {
     setLoading(true);
@@ -162,12 +181,12 @@ export function EnhancedDebugPanelWidget({
     // Create CSV content based on active tab
     let csvContent = '';
     let filename = '';
-    
+
     if (activeTab === 'logs') {
       const headers = ['Timestamp', 'Level', 'Source', 'Message', 'Details'];
       csvContent = [
         headers.join(','),
-        ...filteredLogs.map(log => 
+        ...filteredLogs.map(log =>
           [
             log.timestamp,
             log.level,
@@ -182,7 +201,7 @@ export function EnhancedDebugPanelWidget({
       const headers = ['Metric', 'Value', 'Unit', 'Status'];
       csvContent = [
         headers.join(','),
-        ...systemMetrics.map(metric => 
+        ...systemMetrics.map(metric =>
           [
             metric.name,
             metric.value,
@@ -193,7 +212,7 @@ export function EnhancedDebugPanelWidget({
       ].join('\n');
       filename = `system_metrics_${new Date().toISOString().split('T')[0]}.csv`;
     }
-    
+
     // Create and trigger download
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -234,16 +253,20 @@ export function EnhancedDebugPanelWidget({
     const now = new Date();
     const diffMs = now.getTime() - time.getTime();
     const diffMins = Math.floor(diffMs / (1000 * 60));
-    
+
     if (diffMins < 1) {
       return 'Just now';
-    } else if (diffMins < 60) {
-      return `${diffMins}m ago`;
-    } else if (diffMins < 24 * 60) {
-      return `${Math.floor(diffMins / 60)}h ago`;
-    } else {
-      return `${Math.floor(diffMins / (60 * 24))}d ago`;
     }
+
+    if (diffMins < 60) {
+      return `${diffMins}m ago`;
+    }
+
+    if (diffMins < 24 * 60) {
+      return `${Math.floor(diffMins / 60)}h ago`;
+    }
+
+    return `${Math.floor(diffMins / (60 * 24))}d ago`;
   };
 
   // Get status color for metrics
@@ -266,17 +289,17 @@ export function EnhancedDebugPanelWidget({
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-medium">Debug Panel</CardTitle>
           <div className="flex items-center gap-2">
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={handleRefresh}
               disabled={loading}
             >
               <RefreshCw className={`h-4 w-4 text-slate-600 dark:text-slate-400 ${loading ? 'animate-spin' : ''}`} />
             </Button>
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={handleExport}
             >
               <Download className="h-4 w-4 text-slate-600 dark:text-slate-400" />
@@ -297,49 +320,49 @@ export function EnhancedDebugPanelWidget({
               System Metrics
             </TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="logs">
             <div className="flex justify-between items-center mb-2">
               <div className="flex space-x-1">
-                <Button 
-                  variant={filter === 'all' ? "default" : "outline"} 
-                  size="sm" 
+                <Button
+                  variant={filter === 'all' ? "default" : "outline"}
+                  size="sm"
                   className="h-7 text-xs"
                   onClick={() => setFilter('all')}
                 >
                   All
                 </Button>
-                <Button 
-                  variant={filter === 'error' ? "default" : "outline"} 
-                  size="sm" 
+                <Button
+                  variant={filter === 'error' ? "default" : "outline"}
+                  size="sm"
                   className="h-7 text-xs"
                   onClick={() => setFilter('error')}
                 >
                   Errors
                 </Button>
-                <Button 
-                  variant={filter === 'warning' ? "default" : "outline"} 
-                  size="sm" 
+                <Button
+                  variant={filter === 'warning' ? "default" : "outline"}
+                  size="sm"
                   className="h-7 text-xs"
                   onClick={() => setFilter('warning')}
                 >
                   Warnings
                 </Button>
-                <Button 
-                  variant={filter === 'info' ? "default" : "outline"} 
-                  size="sm" 
+                <Button
+                  variant={filter === 'info' ? "default" : "outline"}
+                  size="sm"
                   className="h-7 text-xs"
                   onClick={() => setFilter('info')}
                 >
                   Info
                 </Button>
               </div>
-              
+
               <div className="text-xs text-muted-foreground">
                 {filteredLogs.length} entries
               </div>
             </div>
-            
+
             {loading ? (
               <div className="flex justify-center items-center h-[200px]">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-600" />
@@ -355,14 +378,14 @@ export function EnhancedDebugPanelWidget({
               <ScrollArea className="h-[200px] pr-4">
                 <div className="space-y-2">
                   {filteredLogs.map(log => (
-                    <div 
-                      key={log.id} 
+                    <div
+                      key={log.id}
                       className="flex items-start gap-3 p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
                     >
                       <div className="flex-shrink-0 mt-0.5">
                         {getLogIcon(log.level)}
                       </div>
-                      
+
                       <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-start">
                           <p className="text-sm font-medium">
@@ -372,13 +395,13 @@ export function EnhancedDebugPanelWidget({
                             {log.source}
                           </Badge>
                         </div>
-                        
+
                         {log.details && (
                           <p className="text-xs text-muted-foreground mt-1 font-mono">
                             {log.details}
                           </p>
                         )}
-                        
+
                         <div className="text-xs text-muted-foreground mt-1">
                           {formatRelativeTime(log.timestamp)}
                         </div>
@@ -389,7 +412,7 @@ export function EnhancedDebugPanelWidget({
               </ScrollArea>
             )}
           </TabsContent>
-          
+
           <TabsContent value="metrics">
             <div className="flex justify-between items-center mb-4">
               <div>
@@ -405,7 +428,7 @@ export function EnhancedDebugPanelWidget({
                 <span className="font-medium">System health</span>
               </div>
             </div>
-            
+
             {loading ? (
               <div className="flex justify-center items-center h-[200px]">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-600" />
@@ -423,19 +446,19 @@ export function EnhancedDebugPanelWidget({
                   <div key={metric.name} className="space-y-1">
                     <div className="flex justify-between items-center">
                       <div className="flex items-center">
-                        <div className={`w-2 h-2 rounded-full ${getStatusColor(metric.status)} mr-2`}></div>
+                        <div className={`w-2 h-2 rounded-full ${getStatusColor(metric.status)} mr-2`} />
                         <span className="text-sm font-medium">{metric.name}</span>
                       </div>
                       <span className="text-sm font-medium">
                         {metric.value}{metric.unit}
                       </span>
                     </div>
-                    <Progress 
-                      value={metric.name.includes('Usage') || metric.name.includes('Space') ? metric.value : (metric.value / 100) * 100} 
-                      className="h-1.5" 
+                    <Progress
+                      value={metric.name.includes('Usage') || metric.name.includes('Space') ? metric.value : (metric.value / 100) * 100}
+                      className="h-1.5"
                       indicatorClassName={
-                        metric.status === 'critical' ? "bg-red-500" : 
-                        metric.status === 'warning' ? "bg-yellow-500" : 
+                        metric.status === 'critical' ? "bg-red-500" :
+                        metric.status === 'warning' ? "bg-yellow-500" :
                         "bg-green-500"
                       }
                     />

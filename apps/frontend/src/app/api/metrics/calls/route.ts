@@ -8,10 +8,11 @@ import { supabase } from '@/lib/services/supabase'
  */
 export async function GET(request: NextRequest) {
   try {
-    // Get call metrics directly from the calls table
+    // Get call data directly from the calls table
     const { data: callsData, error: callsDataError } = await supabase
-      .from('calls')
+      .from('call_metrics')
       .select('*')
+      .single()
 
     if (callsDataError) {
       console.error('Error fetching calls data:', callsDataError)

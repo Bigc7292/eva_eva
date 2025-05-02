@@ -1,0 +1,10 @@
+{
+  "name": "update-vapi-assistant-config",
+  "version": "1.0.0",
+  "description": "Script to update Vapi assistant configuration",
+  "main": "update-vapi-assistant-config.js",
+  "type": "module",
+  "scripts": {
+    "start": "node update-vapi-assistant-config.js"
+  }
+}

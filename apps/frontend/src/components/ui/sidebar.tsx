@@ -76,62 +76,81 @@ const Sidebar = React.forwardRef<HTMLDivElement, React.ComponentProps<"div">>(
       <div
         ref={ref}
         className={cn(
-          "group fixed left-0 top-0 z-30 flex h-screen flex-col bg-sidebar transition-all duration-300",
-          expanded ? "w-64" : "w-14",
+          "group fixed left-0 top-0 z-30 flex h-screen flex-col bg-sidebar transition-all duration-300 shadow-md",
+          expanded ? "w-72" : "w-20",
           className
         )}
         {...props}
       >
-        <div className="flex h-16 items-center justify-between border-b px-4">
+        <div className="flex h-16 items-center justify-between border-b px-4 bg-sidebar-accent/10">
           {expanded ? (
             <>
-              <Link href="/dashboard">
-                <div className="font-bold text-xl text-primary">
-                  Top Loader Agent AI
+              <Link href="/dashboard" className="flex items-center">
+                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center mr-3">
+                  <span className="text-primary font-bold text-lg">T</span>
+                </div>
+                <div className="font-bold text-lg text-primary">
+                  Top Loader AI
                 </div>
               </Link>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 ml-2"
+                className="h-8 w-8 ml-2 hover:bg-sidebar-accent/50"
                 onClick={() => setExpanded(false)}
               >
                 <Menu className="h-5 w-5" />
               </Button>
             </>
           ) : (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 mx-auto"
-              onClick={() => setExpanded(true)}
-            >
-              <Menu className="h-5 w-5" />
-            </Button>
+            <div className="flex flex-col items-center w-full">
+              <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center mb-1">
+                <span className="text-primary font-bold text-lg">T</span>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 hover:bg-sidebar-accent/50"
+                onClick={() => setExpanded(true)}
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+            </div>
           )}
         </div>
 
-        <nav className="flex-1 space-y-1 p-2">
-          {routes.map((route) => (
-            <Link
-              key={route.href}
-              href={route.href}
-              className={cn(
-                "flex items-center rounded-lg px-3 py-2 text-sm transition-colors",
-                "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                pathname === route.href
-                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                  : "text-sidebar-foreground/70",
-                !expanded && "justify-center"
-              )}
-            >
-              <route.icon className="h-5 w-5" />
-              {expanded && (
-                <span className="ml-3">{route.label}</span>
-              )}
-            </Link>
-          ))}
-        </nav>
+        <div className="px-3 py-4">
+          <div className="text-xs uppercase text-sidebar-foreground/50 font-semibold mb-2 ml-2">
+            {expanded ? 'Main Navigation' : ''}
+          </div>
+          <nav className="flex-1 space-y-2">
+            {routes.map((route) => (
+              <Link
+                key={route.href}
+                href={route.href}
+                className={cn(
+                  "flex items-center rounded-lg px-3 py-3 text-sm transition-all duration-200",
+                  "hover:bg-sidebar-accent/20 hover:text-sidebar-accent-foreground hover:translate-x-1",
+                  pathname === route.href
+                    ? "bg-sidebar-accent/30 text-sidebar-accent-foreground font-medium border-l-4 border-primary"
+                    : "text-sidebar-foreground/70",
+                  !expanded && "justify-center"
+                )}
+              >
+                <route.icon className={cn(
+                  "h-5 w-5",
+                  pathname === route.href ? "text-primary" : ""
+                )} />
+                {expanded && (
+                  <span className="ml-3">{route.label}</span>
+                )}
+                {!expanded && pathname === route.href && (
+                  <div className="absolute left-0 w-1 h-5 bg-primary rounded-r-full" />
+                )}
+              </Link>
+            ))}
+          </nav>
+        </div>
       </div>
     )
   }

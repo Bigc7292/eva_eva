@@ -563,6 +563,19 @@ export const vapiService = {
   async getRecording(callId: string) {
     try {
       console.log(`Getting recording for call ${callId}`);
+
+      // First try to get the call details which might include the recording URL
+      try {
+        const callDetails = await this.getCallDetails(callId);
+        if (callDetails?.recording_url) {
+          console.log(`Found recording URL in call details: ${callDetails.recording_url}`);
+          return { url: callDetails.recording_url };
+        }
+      } catch (detailsError) {
+        console.warn(`Could not get call details, trying recording endpoint: ${detailsError}`);
+      }
+
+      // If no recording URL in call details, try the recording endpoint
       const response = await fetch(`${VAPI_API_URL}/call/${callId}/recording`, {
         method: 'GET',
         headers: {

@@ -1,5 +1,6 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { calendarService } from '@/lib/services/calendar-service';
 import { googleAuthService } from '@/lib/services/google-auth-service';
 
@@ -78,6 +79,15 @@ export async function GET(request: NextRequest) {
 
     // Also store in the calendar service
     await calendarService.storeTokens(tokens);
+
+    // Store tokens in cookies for server-side access
+    const cookieStore = cookies();
+    cookieStore.set('google_calendar_tokens', JSON.stringify(tokens), {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 60 * 60 * 24 * 30, // 30 days
+      path: '/',
+    });
 
     // Log success
     console.log('Successfully authenticated with Google Calendar');

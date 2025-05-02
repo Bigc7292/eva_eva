@@ -1,5 +1,9 @@
+'use client'
+
 import { Card } from '@/components/ui/card'
 import { Phone, TrendingUp, Clock, Star, PhoneCall, PhoneOff, Calendar, DollarSign } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { supabase } from '@/lib/services/supabase'
 
 interface CallMetricsProps {
   metrics: {
@@ -18,17 +22,78 @@ interface CallMetricsProps {
   }
 }
 
-export function CallMetrics({ metrics }: CallMetricsProps) {
+export function CallMetrics({ metrics: initialMetrics }: CallMetricsProps) {
+  const [metrics, setMetrics] = useState(initialMetrics)
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    fetchCallMetrics()
+  }, [])
+
+  const fetchCallMetrics = async () => {
+    try {
+      setLoading(true)
+      
+      // Fetch call metrics from the optimized view
+      const { data: metrics, error } = await supabase
+        .from('call_metrics')
+        .select('*')
+        .single()
+
+      if (error) throw error
+
+      // Fetch call metrics by day for trends
+      const { data: metricsByDay, error: dayError } = await supabase
+        .from('call_metrics_by_day')
+        .select('*')
+        .order('day', { ascending: false })
+        .limit(7)
+
+      if (dayError) console.error('Error fetching call metrics by day:', dayError)
+
+      // Calculate answer rate
+      const answerRate = metrics.total_calls > 0 ? (metrics.answered_calls / metrics.total_calls) * 100 : 0
+      
+      // Calculate conversion rate (placeholder)
+      const conversionRate = metrics.answered_calls > 0 ? 25 : 0 // Placeholder value
+      
+      // Calculate meetings scheduled (placeholder)
+      const meetingsScheduled = Math.round(metrics.answered_calls * 0.2) // Placeholder value
+      
+      // Calculate callbacks scheduled (placeholder)
+      const callbacksScheduled = Math.round(metrics.answered_calls * 0.3) // Placeholder value
+      
+      setMetrics({
+        total: metrics.total_calls,
+        outbound: metrics.outbound_calls,
+        inbound: metrics.inbound_calls,
+        answered: metrics.answered_calls,
+        missed: metrics.missed_calls,
+        voicemail: 0, // Not tracked in the view
+        failed: 0, // Not tracked in the view
+        avgDuration: metrics.avg_duration,
+        answerRate,
+        conversionRate,
+        meetingsScheduled,
+        callbacksScheduled
+      })
+    } catch (error) {
+      console.error('Error fetching call metrics:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   // Safely format numbers with fallbacks
   const formatDuration = (seconds: number) => {
-    if (!seconds || isNaN(seconds)) return '0m 0s';
+    if (!seconds || Number.isNaN(seconds)) return '0m 0s';
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = Math.floor(seconds % 60);
     return `${minutes}m ${remainingSeconds}s`;
   };
 
   const formatPercentage = (value?: number) => {
-    if (value === undefined || isNaN(value)) return '0.0%';
+    if (value === undefined || Number.isNaN(value)) return '0.0%';
     return `${value.toFixed(1)}%`;
   };
 

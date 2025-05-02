@@ -26,10 +26,7 @@ import {
   Mail,
   MapPin,
   Calendar,
-  User,
-  FileText,
-  MessageSquare,
-  Download
+  User
 } from 'lucide-react'
 import { formatPhoneNumberForDisplay } from '@/lib/utils/phone-utils'
 import styles from './styles.module.css'
@@ -129,9 +126,9 @@ export default function LeadProfilePage() {
         setLoading(true)
         setError(null)
 
-        // Try to fetch lead data from contacts table first
-        let leadData: Record<string, unknown> = {};
-        let leadError: Error | null = null;
+        // Fetch contact data
+        let contactData: Record<string, unknown> = {};
+        let contactError: Error | null = null;
 
         try {
           // First try with contact_id field
@@ -141,45 +138,41 @@ export default function LeadProfilePage() {
             .eq('contact_id', leadId)
             .single();
 
-          leadData = contactResult.data;
-          leadError = contactResult.error;
-
-          // If not found, try with id field
-          if (leadError) {
+          if (contactResult.error) {
+            // If not found with contact_id, try with id field
             const contactResult2 = await supabase
               .from('contacts')
               .select('*')
               .eq('id', leadId)
               .single();
 
-            leadData = contactResult2.data;
-            leadError = contactResult2.error;
-          }
-        } catch (contactError: unknown) {
-          console.log(`Contact not found with ID ${leadId}, trying leads table`);
-          leadError = contactError as Error;
-        }
+            if (contactResult2.error) {
+              // If still not found, try with phone_number field
+              const contactResult3 = await supabase
+                .from('contacts')
+                .select('*')
+                .eq('phone_number', leadId)
+                .single();
 
-        // If contact not found, try leads table
-        if (leadError) {
-          try {
-            const leadResult = await supabase
-              .from('leads')
-              .select('*')
-              .eq('id', leadId)
-              .single();
+              if (contactResult3.error) {
+                throw new Error(`Contact not found with ID: ${leadId}`);
+              }
 
-            leadData = leadResult.data;
-            leadError = leadResult.error;
-
-            if (leadError) {
-              throw new Error(`Error fetching lead: ${leadError.message}`);
+              contactData = contactResult3.data;
+            } else {
+              contactData = contactResult2.data;
             }
-          } catch (error) {
-            console.error('Error fetching from leads table:', error);
-            throw new Error(`Lead not found with ID: ${leadId}`);
+          } else {
+            contactData = contactResult.data;
           }
+        } catch (error) {
+          console.error('Error fetching contact:', error);
+          contactError = error as Error;
+          throw new Error(`Contact not found with ID: ${leadId}`);
         }
+
+        // Use the contact data as our lead data
+        const leadData = contactData;
 
         if (!leadData) {
           throw new Error('Lead not found');
@@ -260,51 +253,40 @@ export default function LeadProfilePage() {
           // Calculate call statistics from calls data
           console.log('Calculating call statistics from calls data');
 
-          // For Colin Loader (ID: 9893a6b2-bb81-4206-8754-736be6ee790f), use the correct values
-          if (leadId === '9893a6b2-bb81-4206-8754-736be6ee790f') {
-            console.log('Using correct values for Colin Loader');
-            totalCalls = 60; // Correct value from dashboard
-            answeredCalls = 1; // Correct value from dashboard
-            missedCalls = 0; // Correct value from dashboard
-          } else {
-            // For other contacts, calculate normally
-            totalCalls = callsData?.length || 0;
+          // For all contacts, calculate call statistics from real data
+          totalCalls = callsData?.length || 0;
 
-            // Count answered calls - these are calls where the customer engaged with the assistant
-            answeredCalls = callsData?.filter(call => {
-              const status = String(call.status || call.call_status || '').toLowerCase();
-              // Include all statuses that indicate the customer answered and engaged with the call
-              return status === 'completed' ||
-                     status === 'answered' ||
-                     status === 'customer ended call' ||
-                     status.includes('customer ended') ||
-                     status === 'assistant ended call' ||
-                     status.includes('assistant ended') ||
-                     status === 'silence timed out';
-            }).length || 0;
+          // Count answered calls - these are calls where the customer engaged with the assistant
+          answeredCalls = callsData?.filter(call => {
+            const status = String(call.status || call.call_status || '').toLowerCase();
+            // Include all statuses that indicate the customer answered and engaged with the call
+            return status === 'completed' ||
+                   status === 'answered' ||
+                   status === 'customer ended call' ||
+                   status.includes('customer ended') ||
+                   status === 'assistant ended call' ||
+                   status.includes('assistant ended') ||
+                   status === 'silence timed out';
+          }).length || 0;
 
-            // Count missed calls - these are calls where the customer didn't engage
-            missedCalls = callsData?.filter(call => {
-              const status = String(call.status || call.call_status || '').toLowerCase();
-              // Include all statuses that indicate the call was missed or failed
-              return status === 'missed' ||
-                     status === 'no answer' ||
-                     status === 'failed' ||
-                     status === 'customer did not answer' ||
-                     status.includes('did not answer') ||
-                     status === 'customer busy' ||
-                     status.includes('busy') ||
-                     status === 'voicemail' ||
-                     status === 'unknown error' ||
-                     status.includes('error');
-            }).length || 0;
-          }
+          // Count missed calls - these are calls where the customer didn't engage
+          missedCalls = callsData?.filter(call => {
+            const status = String(call.status || call.call_status || '').toLowerCase();
+            // Include all statuses that indicate the call was missed or failed
+            return status === 'missed' ||
+                   status === 'no answer' ||
+                   status === 'failed' ||
+                   status === 'customer did not answer' ||
+                   status.includes('did not answer') ||
+                   status === 'customer busy' ||
+                   status.includes('busy') ||
+                   status === 'voicemail' ||
+                   status === 'unknown error' ||
+                   status.includes('error');
+          }).length || 0;
 
           // Calculate average duration using the same criteria as for answered calls
-          if (leadId === '9893a6b2-bb81-4206-8754-736be6ee790f') {
-            // For Colin Loader, use the correct average duration (5:00 = 300 seconds)
-            avgDuration = 300;
-          } else if (answeredCalls > 0) {
+          if (answeredCalls > 0) {
             const totalDuration = callsData
               ?.filter(call => {
                 const status = String(call.status || call.call_status || '').toLowerCase();
@@ -605,7 +587,7 @@ export default function LeadProfilePage() {
                 Schedule
               </Button>
               <Button variant="outline" size="sm">
-                <MessageSquare className="mr-2 h-4 w-4" />
+                <Mail className="mr-2 h-4 w-4" />
                 Message
               </Button>
             </div>
@@ -627,14 +609,22 @@ export default function LeadProfilePage() {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900">
+        <Card className="bg-gradient-to-br from-indigo-50 to-purple-100 dark:from-indigo-950 dark:to-purple-900">
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-medium">Answered</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-xs font-medium">AI Sentiment</CardTitle>
+              <User className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{profile?.answered_calls || 0}</div>
+            <div className="text-2xl font-bold">
+              {calls.some(call => call.ai_rating)
+                ? `${Math.round((calls.reduce((sum, call) => sum + (call.ai_rating || 0), 0) /
+                   calls.filter(call => call.ai_rating).length) * 10)}%`
+                : 'N/A'}
+            </div>
             <div className="text-xs text-muted-foreground mt-1">
-              <span>{profile?.total_calls ? Math.round((profile.answered_calls / profile.total_calls) * 100) : 0}% answer rate</span>
+              <span>Positive sentiment score</span>
             </div>
           </CardContent>
         </Card>
@@ -780,7 +770,7 @@ export default function LeadProfilePage() {
               <div className="flex justify-between items-center">
                 <CardTitle className="text-base">Call History</CardTitle>
                 <Button variant="outline" size="sm">
-                  <Download className="mr-2 h-4 w-4" />
+                  <Calendar className="mr-2 h-4 w-4" />
                   Export
                 </Button>
               </div>
@@ -875,7 +865,7 @@ export default function LeadProfilePage() {
               <div className="flex justify-between items-center">
                 <CardTitle className="text-base">Contact Notes</CardTitle>
                 <Button variant="outline" size="sm">
-                  <FileText className="mr-2 h-4 w-4" />
+                  <User className="mr-2 h-4 w-4" />
                   Add Note
                 </Button>
               </div>

@@ -2,14 +2,13 @@
 
 import { useState, lazy, Suspense } from 'react'
 import { useCallAnalytics, useLeadAnalytics, useMeetingAnalytics } from '@/lib/hooks/use-data-fetching'
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card'
-import { Heading } from '@/components/ui/heading'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Progress } from '@/components/ui/progress'
-import { ArrowUpRight, ArrowDownRight, Phone, PhoneOff, Clock, Users, Calendar, BarChart3, PieChart, TrendingUp, Award, Download, Brain } from 'lucide-react'
+import { Phone, Clock, Calendar } from 'lucide-react'
+import type { DateRange } from '@/types/analytics'
 
 // Import DateRangeSelector directly as it's used in the initial render
 import { DateRangeSelector } from '@/components/dashboard/DateRangeSelector'
@@ -17,6 +16,7 @@ import { DateRangeSelector } from '@/components/dashboard/DateRangeSelector'
 // Lazy load all other components
 const DashboardHeader = lazy(() => import('@/components/dashboard/DashboardHeader').then(mod => ({ default: mod.DashboardHeader })))
 const RealTimeCallMonitoring = lazy(() => import('@/components/dashboard/RealTimeCallMonitoring').then(mod => ({ default: mod.RealTimeCallMonitoring })))
+const CallLogsViewer = lazy(() => import('@/components/dashboard/CallLogsViewer').then(mod => ({ default: mod.CallLogsViewer })))
 const CallMetrics = lazy(() => import('@/components/dashboard/CallMetrics').then(mod => ({ default: mod.CallMetrics })))
 const CallQualityChart = lazy(() => import('@/components/dashboard/CallQualityChart').then(mod => ({ default: mod.CallQualityChart })))
 const LeadPerformance = lazy(() => import('@/components/dashboard/LeadPerformance').then(mod => ({ default: mod.LeadPerformance })))
@@ -25,6 +25,7 @@ const CallTrends = lazy(() => import('@/components/dashboard/CallTrends').then(m
 const CustomerFeedback = lazy(() => import('@/components/dashboard/CustomerFeedback').then(mod => ({ default: mod.CustomerFeedback })))
 const AlertsNotifications = lazy(() => import('@/components/dashboard/AlertsNotifications').then(mod => ({ default: mod.AlertsNotifications })))
 const TestCallPanel = lazy(() => import('@/components/dashboard/TestCallPanel').then(mod => ({ default: mod.TestCallPanel })))
+const AdvancedTestCallPanel = lazy(() => import('@/components/dashboard/AdvancedTestCallPanel').then(mod => ({ default: mod.AdvancedTestCallPanel })))
 const DebugPanel = lazy(() => import('@/components/debug/DebugPanel').then(mod => ({ default: mod.DebugPanel })))
 const CallManagementMetrics = lazy(() => import('@/components/dashboard/CallManagementMetrics').then(mod => ({ default: mod.CallManagementMetrics })))
 const VapiCallPanel = lazy(() => import('@/components/dashboard/VapiCallPanel').then(mod => ({ default: mod.VapiCallPanel })))
@@ -97,12 +98,23 @@ interface DashboardStats {
 
 export default function DashboardPage() {
   const [dateRange, setDateRange] = useState({
-    start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    end: new Date().toISOString().split('T')[0]
+    start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+    end: new Date()
   })
 
+  // Handler for DateRangeSelector
+  const handleDateRangeChange = (range: DateRange) => {
+    setDateRange(range)
+  }
+
+  // Convert Date objects to strings for API calls
+  const apiDateRange = {
+    start: dateRange.start.toISOString().split('T')[0],
+    end: dateRange.end.toISOString().split('T')[0]
+  }
+
   // Use SWR hooks for data fetching
-  const { data: callAnalytics, error: callError, isLoading: callLoading } = useCallAnalytics(dateRange)
+  const { data: callAnalytics, error: callError, isLoading: callLoading } = useCallAnalytics(apiDateRange)
   const { data: leadAnalytics, error: leadError, isLoading: leadLoading } = useLeadAnalytics()
   const { data: meetingAnalytics, error: meetingError, isLoading: meetingLoading } = useMeetingAnalytics()
 
@@ -281,14 +293,14 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex-1 space-y-4 p-4 pt-4 md:p-6 md:pt-6 lg:p-8 lg:pt-6">
-      <div className="flex items-center justify-between">
+    <div className="page-container animate-fade-in">
+      <div className="page-header">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground mt-1">Real-time analytics for your call center operations</p>
+          <h1 className="page-title">Dashboard</h1>
+          <p className="page-subtitle">Real-time analytics for your call center operations</p>
         </div>
-        <div className="flex items-center gap-2">
-          <DateRangeSelector onChange={setDateRange} />
+        <div className="page-actions">
+          <DateRangeSelector onChange={handleDateRangeChange} />
           <Button variant="outline" size="sm" className="ml-2">
             <Calendar className="mr-2 h-4 w-4" />
             Export
@@ -306,16 +318,16 @@ export default function DashboardPage() {
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
-          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-5 xl:grid-cols-5 2xl:grid-cols-5">
-            <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900">
+          <div className="dashboard-stats-grid">
+            <Card className="kpi-card card-gradient-primary animate-slide-up" style={{animationDelay: '0ms'}}>
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm font-medium">Total Calls</CardTitle>
+                  <CardTitle className="kpi-card-title">Total Calls</CardTitle>
                   <Phone className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{callMetrics.total}</div>
+                <div className="kpi-card-value">{callMetrics.total}</div>
                 {callMetrics.total > 0 ? (
                   <div className="text-xs text-muted-foreground mt-1">
                     <span>Total calls tracked in system</span>
@@ -329,15 +341,15 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900">
+            <Card className="kpi-card card-gradient-success animate-slide-up" style={{animationDelay: '100ms'}}>
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm font-medium">Answered Calls</CardTitle>
+                  <CardTitle className="kpi-card-title">Answered Calls</CardTitle>
                   <Phone className="h-4 w-4 text-green-600 dark:text-green-400" />
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{callMetrics.answered}</div>
+                <div className="kpi-card-value">{callMetrics.answered}</div>
                 {callMetrics.answered > 0 ? (
                   <div className="text-xs text-muted-foreground mt-1">
                     <span>Answer rate: {((callMetrics.answerRate).toFixed(1))}%</span>
@@ -351,15 +363,15 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950 dark:to-red-900">
+            <Card className="kpi-card card-gradient-danger animate-slide-up" style={{animationDelay: '200ms'}}>
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm font-medium">Missed Calls</CardTitle>
-                  <PhoneOff className="h-4 w-4 text-red-600 dark:text-red-400" />
+                  <CardTitle className="kpi-card-title">Missed Calls</CardTitle>
+                  <Phone className="h-4 w-4 text-red-600 dark:text-red-400" />
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{callMetrics.missed}</div>
+                <div className="kpi-card-value">{callMetrics.missed}</div>
                 {callMetrics.missed > 0 ? (
                   <div className="text-xs text-muted-foreground mt-1">
                     <span>Missed call rate: {callMetrics.total > 0 ? ((callMetrics.missed / callMetrics.total) * 100).toFixed(1) : 0}%</span>
@@ -373,15 +385,15 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950 dark:to-purple-900">
+            <Card className="kpi-card card-gradient-secondary animate-slide-up" style={{animationDelay: '300ms'}}>
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm font-medium">Avg Duration</CardTitle>
+                  <CardTitle className="kpi-card-title">Avg Duration</CardTitle>
                   <Clock className="h-4 w-4 text-purple-600 dark:text-purple-400" />
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">
+                <div className="kpi-card-value">
                   {callMetrics.avgDuration ? `${Math.round(callMetrics.avgDuration)}s` : 'N/A'}
                 </div>
                 {callMetrics.avgDuration > 0 ? (
@@ -397,15 +409,15 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-purple-50 to-indigo-100 dark:from-purple-950 dark:to-indigo-900">
+            <Card className="kpi-card card-gradient-primary animate-slide-up" style={{animationDelay: '400ms'}}>
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm font-medium">Meetings Booked</CardTitle>
+                  <CardTitle className="kpi-card-title">Meetings Booked</CardTitle>
                   <Calendar className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{callMetrics.meetingsScheduled}</div>
+                <div className="kpi-card-value">{callMetrics.meetingsScheduled}</div>
                 <div className="text-xs text-muted-foreground mt-1">
                   <span>Total scheduled meetings</span>
                 </div>
@@ -414,7 +426,7 @@ export default function DashboardPage() {
             </Card>
           </div>
 
-          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-2">
+          <div className="dashboard-charts-grid">
             <Suspense fallback={<Card className="p-6"><Skeleton className="h-[300px] w-full" /></Card>}>
               <EnhancedAnalyticsWidget />
             </Suspense>
@@ -423,7 +435,7 @@ export default function DashboardPage() {
             </Suspense>
           </div>
 
-          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-2">
+          <div className="dashboard-charts-grid">
             <Suspense fallback={<Card className="p-6"><Skeleton className="h-[300px] w-full" /></Card>}>
               <EnhancedCallTrendsWidget data={callTrendsData} />
             </Suspense>
@@ -455,6 +467,22 @@ export default function DashboardPage() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <div>
+                  <CardTitle className="text-base font-medium">Call Logs</CardTitle>
+                  <p className="text-xs text-muted-foreground">Real-time call logs and events</p>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <Suspense fallback={<Skeleton className="h-[200px] w-full" />}>
+                  <CallLogsViewer />
+                </Suspense>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid gap-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <div>
                   <CardTitle className="text-base font-medium">Call Management</CardTitle>
                   <p className="text-xs text-muted-foreground">Manage and monitor active calls</p>
                 </div>
@@ -467,7 +495,7 @@ export default function DashboardPage() {
             </Card>
           </div>
 
-          <div className="grid gap-4">
+          <div className="grid gap-4 md:grid-cols-2">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <div>
@@ -478,6 +506,20 @@ export default function DashboardPage() {
               <CardContent>
                 <Suspense fallback={<Skeleton className="h-[200px] w-full" />}>
                   <VapiCallPanel />
+                </Suspense>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <div>
+                  <CardTitle className="text-base font-medium">Advanced Test Call</CardTitle>
+                  <p className="text-xs text-muted-foreground">Test with custom call settings</p>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <Suspense fallback={<Skeleton className="h-[200px] w-full" />}>
+                  <AdvancedTestCallPanel />
                 </Suspense>
               </CardContent>
             </Card>
@@ -511,7 +553,7 @@ export default function DashboardPage() {
                   <CardTitle className="text-base font-medium">Export Options</CardTitle>
                   <p className="text-xs text-muted-foreground">Download meeting data</p>
                 </div>
-                <Download className="h-4 w-4 text-muted-foreground" />
+                <Calendar className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -519,15 +561,15 @@ export default function DashboardPage() {
                     <p className="text-sm font-medium mb-2">Export Format</p>
                     <div className="flex space-x-2">
                       <Button variant="outline" size="sm" className="flex-1">
-                        <Download className="h-3.5 w-3.5 mr-1" />
+                        <Calendar className="h-3.5 w-3.5 mr-1" />
                         CSV
                       </Button>
                       <Button variant="outline" size="sm" className="flex-1">
-                        <Download className="h-3.5 w-3.5 mr-1" />
+                        <Calendar className="h-3.5 w-3.5 mr-1" />
                         PDF
                       </Button>
                       <Button variant="outline" size="sm" className="flex-1">
-                        <Download className="h-3.5 w-3.5 mr-1" />
+                        <Calendar className="h-3.5 w-3.5 mr-1" />
                         Excel
                       </Button>
                     </div>

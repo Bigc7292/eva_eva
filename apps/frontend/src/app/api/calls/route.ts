@@ -14,8 +14,9 @@ export async function GET(request: NextRequest) {
     // Get calls from Supabase
     const { data, error } = await supabase
       .from('calls')
-      .select('*')
+      .select('*, contacts(name, phone_number)')
       .order('start_time', { ascending: false })
+      .limit(100)
 
     if (error) throw error
 
