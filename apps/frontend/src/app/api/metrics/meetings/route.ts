@@ -2,6 +2,16 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { supabase } from '@/lib/services/supabase'
 
+// Define interfaces for better type safety
+interface Meeting {
+  id: string;
+  status: string;
+  location?: string;
+  type?: string;
+  // Allow other properties with unknown type (safer than any)
+  [key: string]: string | number | boolean | null | undefined;
+}
+
 /**
  * GET /api/metrics/meetings
  * Retrieves meeting metrics from Supabase
@@ -27,18 +37,21 @@ export async function GET(request: NextRequest) {
       })
     }
 
+    // Cast the data to our Meeting interface
+    const meetings: Meeting[] = meetingsData || []
+
     // Calculate metrics
-    const totalMeetings = meetingsData.length
-    const completedMeetings = meetingsData.filter(m => m.status === 'completed').length
-    const cancelledMeetings = meetingsData.filter(m => m.status === 'cancelled').length
-    const scheduledMeetings = meetingsData.filter(m => m.status === 'scheduled').length
+    const totalMeetings = meetings.length
+    const completedMeetings = meetings.filter(m => m.status === 'completed').length
+    const cancelledMeetings = meetings.filter(m => m.status === 'cancelled').length
+    const scheduledMeetings = meetings.filter(m => m.status === 'scheduled').length
 
     // Get meeting locations
-    const locationsRawData = meetingsData.filter(m => m.status !== 'cancelled')
-    
+    const locationsRawData = meetings.filter(m => m.status !== 'cancelled')
+
     // Use proper typing for locationCounts
     const locationCounts: Record<string, number> = {}
-    
+
     if (locationsRawData && locationsRawData.length > 0) {
       for (const item of locationsRawData) {
         const loc = item.location || 'Unknown'
@@ -47,11 +60,11 @@ export async function GET(request: NextRequest) {
     }
 
     // Get meeting types
-    const typesRawData = meetingsData.filter(m => m.status !== 'cancelled')
-    
+    const typesRawData = meetings.filter(m => m.status !== 'cancelled')
+
     // Use proper typing for typeCounts
     const typeCounts: Record<string, number> = {}
-    
+
     if (typesRawData && typesRawData.length > 0) {
       for (const item of typesRawData) {
         const type = item.type || 'Other'
