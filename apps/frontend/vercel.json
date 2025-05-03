@@ -1,6 +1,7 @@
 {
   "version": 2,
-  "buildCommand": "npm run build",
+  "buildCommand": "cd ../.. && npm install && cd apps/frontend && npm install && npm run build",
+  "installCommand": "npm install",
   "outputDirectory": ".next",
   "framework": "nextjs",
   "regions": ["fra1"],
@@ -12,6 +13,12 @@
     "NEXT_PUBLIC_WEBHOOK_URL": "https://api.toploaderagentai.com/webhooks/vapi",
     "NEXT_PUBLIC_APP_URL": "https://toploaderagentai.com"
   },
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/next"
+    }
+  ],
   "routes": [
     {
       "src": "/api/(.*)",
