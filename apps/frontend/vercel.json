@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "npm run build",
+  "buildCommand": "rm -rf src/app/calls/route.ts && npm run build",
   "outputDirectory": ".next",
   "framework": "nextjs",
   "regions": ["fra1"],
