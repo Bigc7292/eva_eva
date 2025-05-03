@@ -1,5 +1,5 @@
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
 
 // Files to update
 const filesToUpdate = [
@@ -31,18 +31,18 @@ const filesToUpdate = [
 ];
 
 // Update each file
-filesToUpdate.forEach(file => {
+for (const file of filesToUpdate) {
   const filePath = path.join(process.cwd(), file.path);
-  
+
   // Check if file exists
   if (!fs.existsSync(filePath)) {
     console.log(`File not found: ${filePath}`);
-    return;
+    continue;
   }
-  
+
   // Read file content
   let content = fs.readFileSync(filePath, 'utf8');
-  
+
   // Replace import statement
   if (content.includes(file.search)) {
     content = content.replace(file.search, file.replace);
@@ -51,6 +51,6 @@ filesToUpdate.forEach(file => {
   } else {
     console.log(`Import pattern not found in ${filePath}`);
   }
-});
+}
 
 console.log('Import fixes completed!');
