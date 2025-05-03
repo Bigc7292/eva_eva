@@ -20,7 +20,7 @@ export function useCalls() {
 
   const fetchCalls = async () => {
     try {
-      const response = await fetch('/api/calls')
+      const response = await fetch('/api/calls-api')
       const data = await response.json()
       setCalls(data.calls)
     } catch (error) {
@@ -30,25 +30,25 @@ export function useCalls() {
         variant: "destructive",
       })
     } finally {
-      setIsLoading = false
+      setIsLoading(false)
     }
   }
 
   const makeCall = useCallback(async (number: string) => {
     try {
       setIsLoading(true)
-      const response = await fetch('/api/calls', {
+      const response = await fetch('/api/calls-api', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ number }),
       })
-      
+
       if (!response.ok) {
         throw new Error('Failed to make call')
       }
-      
+
       return await response.json()
     } catch (error) {
       console.error('Error making call:', error)
@@ -64,4 +64,4 @@ export function useCalls() {
     makeCall,
     refreshCalls: fetchCalls,
   }
-} 
+}
