@@ -8,9 +8,10 @@ COPY package.json package-lock.json* ./
 RUN npm ci
 
 # Install additional dependencies needed for the application
-RUN npm install --save date-fns recharts xlsx react-day-picker twilio
+RUN npm install --save date-fns recharts xlsx react-day-picker twilio swr
 RUN npm install --save-dev tailwindcss postcss autoprefixer postcss-import
 RUN npm install --save critters
+RUN npm install --save-dev @types/critters
 
 # Copy the rest of the application
 COPY . .
