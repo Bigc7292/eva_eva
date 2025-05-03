@@ -1,0 +1,25 @@
+{
+  "version": 2,
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "framework": "nextjs",
+  "regions": ["fra1"],
+  "env": {
+    "NEXT_PUBLIC_API_URL": "https://api.toploaderagentai.com",
+    "NEXT_PUBLIC_VAPI_API_URL": "https://api.vapi.ai",
+    "NEXT_PUBLIC_VAPI_ASSISTANT_ID": "cfaa163c-4a47-471b-a39e-95c12d0cb738",
+    "NEXT_PUBLIC_VAPI_PHONE_NUMBER_ID": "53cb46fd-5e37-4860-8668-7594005f872a",
+    "NEXT_PUBLIC_WEBHOOK_URL": "https://api.toploaderagentai.com/webhooks/vapi",
+    "NEXT_PUBLIC_APP_URL": "https://toploaderagentai.com"
+  },
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/$1"
+    }
+  ]
+}
