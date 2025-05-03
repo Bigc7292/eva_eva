@@ -9,5 +9,8 @@ rm -rf src/app/calls/[id]/page.tsx
 chmod +x install-deps.sh
 ./install-deps.sh
 
+# Run the fix-imports script to update import statements
+node fix-imports.js
+
 # Run the Next.js build
 next build
