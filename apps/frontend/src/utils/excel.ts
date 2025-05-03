@@ -1,4 +1,4 @@
-import * as XLSX from 'xlsx'
+import XLSX from 'xlsx'
 import type { CallMetrics } from '@/types/analytics'
 
 export const excelExport = {
@@ -49,8 +49,8 @@ export const excelExport = {
   downloadExcel(metrics: CallMetrics) {
     const wb = this.generateWorkbook(metrics)
     const fileName = `call_metrics_${new Date().toISOString().split('T')[0]}.xlsx`
-    
+
     // Generate buffer and create download
     XLSX.writeFile(wb, fileName)
   }
-} 
+}
