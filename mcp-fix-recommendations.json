@@ -1,0 +1,147 @@
+{
+  "timestamp": "2025-09-04T22:25:24.281Z",
+  "healthStatus": {
+    "status": "error",
+    "issues": [
+      {
+        "severity": "warning",
+        "category": "performance",
+        "message": "Slow load time: 3500ms",
+        "threshold": "3000ms"
+      },
+      {
+        "severity": "error",
+        "category": "api",
+        "message": "Failed to fetch /api/calls: 500 Internal Server Error",
+        "type": "network",
+        "stack": "at fetch (/api/calls) -> server error"
+      },
+      {
+        "severity": "error",
+        "category": "api",
+        "message": "API request failed: /api/calls (500)",
+        "url": "/api/calls",
+        "statusCode": 500
+      },
+      {
+        "severity": "warning",
+        "category": "console",
+        "message": "Console error: Supabase connection failed",
+        "level": "error"
+      }
+    ],
+    "recommendations": []
+  },
+  "recommendedFixes": [
+    {
+      "priority": "MEDIUM",
+      "issue": "Slow load time: 3500ms",
+      "commands": [
+        "npm run build",
+        "npm run optimize",
+        "node --max-old-space-size=4096 start"
+      ],
+      "description": "Performance issues detected. Consider optimizing build and resources."
+    },
+    {
+      "priority": "HIGH",
+      "issue": "Failed to fetch /api/calls: 500 Internal Server Error",
+      "commands": [
+        "node test-supabase-connection.js",
+        "curl -I http://localhost:3004/api/health",
+        "cd apps/backend && npm start"
+      ],
+      "description": "API endpoints are failing. Check backend server and database connection."
+    },
+    {
+      "priority": "HIGH",
+      "issue": "API request failed: /api/calls (500)",
+      "commands": [
+        "node test-supabase-connection.js",
+        "curl -I http://localhost:3004/api/health",
+        "cd apps/backend && npm start"
+      ],
+      "description": "API endpoints are failing. Check backend server and database connection."
+    }
+  ],
+  "report": {
+    "timestamp": "2025-09-04T22:25:24.273Z",
+    "url": "http://localhost:3004",
+    "browser": "chromium",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "timeout": 30000,
+    "results": {
+      "accessible": true,
+      "loadTime": 3500,
+      "status": 200,
+      "title": "EVA AI Calling Centre",
+      "errors": [
+        {
+          "type": "network",
+          "message": "Failed to fetch /api/calls: 500 Internal Server Error",
+          "stack": "at fetch (/api/calls) -> server error"
+        }
+      ],
+      "consoleMessages": [
+        {
+          "level": "error",
+          "text": "Supabase connection failed"
+        },
+        {
+          "level": "warn",
+          "text": "Retrying API call..."
+        }
+      ],
+      "networkRequests": [
+        {
+          "url": "/api/calls",
+          "status": 500,
+          "timing": 5000
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "timing": 50
+        }
+      ],
+      "elements": {
+        "dashboardVisible": true,
+        "navigationWorking": true,
+        "dataLoaded": false
+      }
+    }
+  },
+  "context": {
+    "timestamp": "2025-09-04T22:25:24.281Z",
+    "environment": {
+      "nodeVersion": "v22.16.0",
+      "platform": "win32",
+      "workingDirectory": "C:\\Users\\toplo\\Desktop\\ai_stuff\\Ai_calling_centre\\eva_eva-main"
+    },
+    "fileSystem": {
+      "package.json": {
+        "exists": true,
+        "path": "C:\\Users\\toplo\\Desktop\\ai_stuff\\Ai_calling_centre\\eva_eva-main\\package.json"
+      },
+      "apps/frontend/package.json": {
+        "exists": true,
+        "path": "C:\\Users\\toplo\\Desktop\\ai_stuff\\Ai_calling_centre\\eva_eva-main\\apps\\frontend\\package.json"
+      },
+      "apps/backend/package.json": {
+        "exists": false,
+        "path": "C:\\Users\\toplo\\Desktop\\ai_stuff\\Ai_calling_centre\\eva_eva-main\\apps\\backend\\package.json"
+      },
+      ".env.local": {
+        "exists": true,
+        "path": "C:\\Users\\toplo\\Desktop\\ai_stuff\\Ai_calling_centre\\eva_eva-main\\.env.local"
+      },
+      "apps/frontend/.env.local": {
+        "exists": true,
+        "path": "C:\\Users\\toplo\\Desktop\\ai_stuff\\Ai_calling_centre\\eva_eva-main\\apps\\frontend\\.env.local"
+      }
+    }
+  }
+}

@@ -1,0 +1,56 @@
+# PowerShell script to make a VAPI call with fixed format
+
+Write-Host "Making VAPI call with fixed format..." -ForegroundColor Cyan
+
+# Force TLS 1.2
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
+$timestamp = Get-Date -Format "yyyyMMddHHmmss"
+$callName = "TestCall_$timestamp"
+
+$headers = @{
+    "Content-Type" = "application/json"
+    "Authorization" = "Bearer d1529b85-51d5-47c0-9332-a73d40f7d62b"
+}
+
+# Use snake_case format as per VAPI documentation
+$body = @{
+    assistant_id = "cfaa163c-4a47-471b-a39e-95c12d0cb738"
+    org_id = "8ddf2438-8b84-42c2-973c-4b7a69272a99"
+    to = "+971565401583"
+    phone_number_id = "e65a9e6b-33b7-4711-ad21-90220048e38f"
+    name = $callName
+} | ConvertTo-Json
+
+try {
+    $response = Invoke-RestMethod -Uri "https://api.vapi.ai/call" -Method Post -Headers $headers -Body $body -ContentType "application/json"
+    
+    Write-Host "Call initiated successfully!" -ForegroundColor Green
+    Write-Host "Call ID: $($response.id)" -ForegroundColor Yellow
+    Write-Host "Status: $($response.status)" -ForegroundColor Yellow
+    
+    # Wait 10 seconds
+    Write-Host "Waiting 10 seconds to check status..." -ForegroundColor Cyan
+    Start-Sleep -Seconds 10
+    
+    # Check status
+    $statusResponse = Invoke-RestMethod -Uri "https://api.vapi.ai/call/$($response.id)" -Method Get -Headers @{"Authorization" = "Bearer d1529b85-51d5-47c0-9332-a73d40f7d62b"}
+    
+    Write-Host "Current status: $($statusResponse.status)" -ForegroundColor Magenta
+    Write-Host "Full data:" -ForegroundColor Cyan
+    $statusResponse | ConvertTo-Json -Depth 5
+} catch {
+    Write-Host "Error making call: $_" -ForegroundColor Red
+    Write-Host $_.Exception.Message -ForegroundColor Red
+    
+    # More detailed error information
+    if ($_.Exception.Response) {
+        $responseStream = $_.Exception.Response.GetResponseStream()
+        $reader = New-Object System.IO.StreamReader($responseStream)
+        $responseBody = $reader.ReadToEnd()
+        Write-Host "Response body: $responseBody" -ForegroundColor Red
+    }
+}
+
+Write-Host "Press any key to exit..."
+$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")

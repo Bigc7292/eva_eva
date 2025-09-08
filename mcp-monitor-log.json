@@ -1,0 +1,2112 @@
+[
+  {
+    "timestamp": "2025-09-04T22:13:08.743Z",
+    "url": "http://localhost:3004",
+    "browser": "chromium",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "timeout": 30000,
+    "results": {
+      "accessible": true,
+      "loadTime": 3500,
+      "status": 200,
+      "title": "EVA AI Calling Centre",
+      "errors": [
+        {
+          "type": "network",
+          "message": "Failed to fetch /api/calls: 500 Internal Server Error",
+          "stack": "at fetch (/api/calls) -> server error"
+        }
+      ],
+      "consoleMessages": [
+        {
+          "level": "error",
+          "text": "Supabase connection failed"
+        },
+        {
+          "level": "warn",
+          "text": "Retrying API call..."
+        }
+      ],
+      "networkRequests": [
+        {
+          "url": "/api/calls",
+          "status": 500,
+          "timing": 5000
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "timing": 50
+        }
+      ],
+      "elements": {
+        "dashboardVisible": true,
+        "navigationWorking": true,
+        "dataLoaded": false
+      }
+    }
+  },
+  {
+    "timestamp": "2025-09-04T22:13:23.754Z",
+    "url": "http://localhost:3004",
+    "browser": "chromium",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "timeout": 30000,
+    "results": {
+      "accessible": true,
+      "loadTime": 1200,
+      "status": 200,
+      "title": "EVA AI Calling Centre",
+      "errors": [],
+      "consoleMessages": [
+        {
+          "level": "info",
+          "text": "App initialized successfully"
+        }
+      ],
+      "networkRequests": [
+        {
+          "url": "/api/calls",
+          "status": 200,
+          "timing": 150
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "timing": 50
+        }
+      ],
+      "elements": {
+        "dashboardVisible": true,
+        "navigationWorking": true,
+        "dataLoaded": true
+      }
+    }
+  },
+  {
+    "timestamp": "2025-09-04T22:13:38.762Z",
+    "url": "http://localhost:3004",
+    "browser": "chromium",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "timeout": 30000,
+    "results": {
+      "accessible": true,
+      "loadTime": 3500,
+      "status": 200,
+      "title": "EVA AI Calling Centre",
+      "errors": [
+        {
+          "type": "network",
+          "message": "Failed to fetch /api/calls: 500 Internal Server Error",
+          "stack": "at fetch (/api/calls) -> server error"
+        }
+      ],
+      "consoleMessages": [
+        {
+          "level": "error",
+          "text": "Supabase connection failed"
+        },
+        {
+          "level": "warn",
+          "text": "Retrying API call..."
+        }
+      ],
+      "networkRequests": [
+        {
+          "url": "/api/calls",
+          "status": 500,
+          "timing": 5000
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "timing": 50
+        }
+      ],
+      "elements": {
+        "dashboardVisible": true,
+        "navigationWorking": true,
+        "dataLoaded": false
+      }
+    }
+  },
+  {
+    "timestamp": "2025-09-04T22:13:53.776Z",
+    "url": "http://localhost:3004",
+    "browser": "chromium",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "timeout": 30000,
+    "results": {
+      "accessible": true,
+      "loadTime": 1200,
+      "status": 200,
+      "title": "EVA AI Calling Centre",
+      "errors": [],
+      "consoleMessages": [
+        {
+          "level": "info",
+          "text": "App initialized successfully"
+        }
+      ],
+      "networkRequests": [
+        {
+          "url": "/api/calls",
+          "status": 200,
+          "timing": 150
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "timing": 50
+        }
+      ],
+      "elements": {
+        "dashboardVisible": true,
+        "navigationWorking": true,
+        "dataLoaded": true
+      }
+    }
+  },
+  {
+    "timestamp": "2025-09-04T22:14:08.779Z",
+    "url": "http://localhost:3004",
+    "browser": "chromium",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "timeout": 30000,
+    "results": {
+      "accessible": true,
+      "loadTime": 1200,
+      "status": 200,
+      "title": "EVA AI Calling Centre",
+      "errors": [],
+      "consoleMessages": [
+        {
+          "level": "info",
+          "text": "App initialized successfully"
+        }
+      ],
+      "networkRequests": [
+        {
+          "url": "/api/calls",
+          "status": 200,
+          "timing": 150
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "timing": 50
+        }
+      ],
+      "elements": {
+        "dashboardVisible": true,
+        "navigationWorking": true,
+        "dataLoaded": true
+      }
+    }
+  },
+  {
+    "timestamp": "2025-09-04T22:14:23.783Z",
+    "url": "http://localhost:3004",
+    "browser": "chromium",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "timeout": 30000,
+    "results": {
+      "accessible": true,
+      "loadTime": 1200,
+      "status": 200,
+      "title": "EVA AI Calling Centre",
+      "errors": [],
+      "consoleMessages": [
+        {
+          "level": "info",
+          "text": "App initialized successfully"
+        }
+      ],
+      "networkRequests": [
+        {
+          "url": "/api/calls",
+          "status": 200,
+          "timing": 150
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "timing": 50
+        }
+      ],
+      "elements": {
+        "dashboardVisible": true,
+        "navigationWorking": true,
+        "dataLoaded": true
+      }
+    }
+  },
+  {
+    "timestamp": "2025-09-04T22:14:38.801Z",
+    "url": "http://localhost:3004",
+    "browser": "chromium",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "timeout": 30000,
+    "results": {
+      "accessible": true,
+      "loadTime": 1200,
+      "status": 200,
+      "title": "EVA AI Calling Centre",
+      "errors": [],
+      "consoleMessages": [
+        {
+          "level": "info",
+          "text": "App initialized successfully"
+        }
+      ],
+      "networkRequests": [
+        {
+          "url": "/api/calls",
+          "status": 200,
+          "timing": 150
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "timing": 50
+        }
+      ],
+      "elements": {
+        "dashboardVisible": true,
+        "navigationWorking": true,
+        "dataLoaded": true
+      }
+    }
+  },
+  {
+    "timestamp": "2025-09-04T22:14:53.809Z",
+    "url": "http://localhost:3004",
+    "browser": "chromium",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "timeout": 30000,
+    "results": {
+      "accessible": true,
+      "loadTime": 1200,
+      "status": 200,
+      "title": "EVA AI Calling Centre",
+      "errors": [],
+      "consoleMessages": [
+        {
+          "level": "info",
+          "text": "App initialized successfully"
+        }
+      ],
+      "networkRequests": [
+        {
+          "url": "/api/calls",
+          "status": 200,
+          "timing": 150
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "timing": 50
+        }
+      ],
+      "elements": {
+        "dashboardVisible": true,
+        "navigationWorking": true,
+        "dataLoaded": true
+      }
+    }
+  },
+  {
+    "timestamp": "2025-09-04T22:15:08.814Z",
+    "url": "http://localhost:3004",
+    "browser": "chromium",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "timeout": 30000,
+    "results": {
+      "accessible": true,
+      "loadTime": 3500,
+      "status": 200,
+      "title": "EVA AI Calling Centre",
+      "errors": [
+        {
+          "type": "network",
+          "message": "Failed to fetch /api/calls: 500 Internal Server Error",
+          "stack": "at fetch (/api/calls) -> server error"
+        }
+      ],
+      "consoleMessages": [
+        {
+          "level": "error",
+          "text": "Supabase connection failed"
+        },
+        {
+          "level": "warn",
+          "text": "Retrying API call..."
+        }
+      ],
+      "networkRequests": [
+        {
+          "url": "/api/calls",
+          "status": 500,
+          "timing": 5000
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "timing": 50
+        }
+      ],
+      "elements": {
+        "dashboardVisible": true,
+        "navigationWorking": true,
+        "dataLoaded": false
+      }
+    }
+  },
+  {
+    "timestamp": "2025-09-04T22:15:23.835Z",
+    "url": "http://localhost:3004",
+    "browser": "chromium",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "timeout": 30000,
+    "results": {
+      "accessible": true,
+      "loadTime": 1200,
+      "status": 200,
+      "title": "EVA AI Calling Centre",
+      "errors": [],
+      "consoleMessages": [
+        {
+          "level": "info",
+          "text": "App initialized successfully"
+        }
+      ],
+      "networkRequests": [
+        {
+          "url": "/api/calls",
+          "status": 200,
+          "timing": 150
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "timing": 50
+        }
+      ],
+      "elements": {
+        "dashboardVisible": true,
+        "navigationWorking": true,
+        "dataLoaded": true
+      }
+    }
+  },
+  {
+    "timestamp": "2025-09-04T22:15:38.848Z",
+    "url": "http://localhost:3004",
+    "browser": "chromium",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "timeout": 30000,
+    "results": {
+      "accessible": true,
+      "loadTime": 1200,
+      "status": 200,
+      "title": "EVA AI Calling Centre",
+      "errors": [],
+      "consoleMessages": [
+        {
+          "level": "info",
+          "text": "App initialized successfully"
+        }
+      ],
+      "networkRequests": [
+        {
+          "url": "/api/calls",
+          "status": 200,
+          "timing": 150
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "timing": 50
+        }
+      ],
+      "elements": {
+        "dashboardVisible": true,
+        "navigationWorking": true,
+        "dataLoaded": true
+      }
+    }
+  },
+  {
+    "timestamp": "2025-09-04T22:15:53.863Z",
+    "url": "http://localhost:3004",
+    "browser": "chromium",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "timeout": 30000,
+    "results": {
+      "accessible": true,
+      "loadTime": 1200,
+      "status": 200,
+      "title": "EVA AI Calling Centre",
+      "errors": [],
+      "consoleMessages": [
+        {
+          "level": "info",
+          "text": "App initialized successfully"
+        }
+      ],
+      "networkRequests": [
+        {
+          "url": "/api/calls",
+          "status": 200,
+          "timing": 150
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "timing": 50
+        }
+      ],
+      "elements": {
+        "dashboardVisible": true,
+        "navigationWorking": true,
+        "dataLoaded": true
+      }
+    }
+  },
+  {
+    "timestamp": "2025-09-04T22:16:08.868Z",
+    "url": "http://localhost:3004",
+    "browser": "chromium",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "timeout": 30000,
+    "results": {
+      "accessible": true,
+      "loadTime": 1200,
+      "status": 200,
+      "title": "EVA AI Calling Centre",
+      "errors": [],
+      "consoleMessages": [
+        {
+          "level": "info",
+          "text": "App initialized successfully"
+        }
+      ],
+      "networkRequests": [
+        {
+          "url": "/api/calls",
+          "status": 200,
+          "timing": 150
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "timing": 50
+        }
+      ],
+      "elements": {
+        "dashboardVisible": true,
+        "navigationWorking": true,
+        "dataLoaded": true
+      }
+    }
+  },
+  {
+    "timestamp": "2025-09-04T22:16:23.874Z",
+    "url": "http://localhost:3004",
+    "browser": "chromium",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "timeout": 30000,
+    "results": {
+      "accessible": true,
+      "loadTime": 1200,
+      "status": 200,
+      "title": "EVA AI Calling Centre",
+      "errors": [],
+      "consoleMessages": [
+        {
+          "level": "info",
+          "text": "App initialized successfully"
+        }
+      ],
+      "networkRequests": [
+        {
+          "url": "/api/calls",
+          "status": 200,
+          "timing": 150
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "timing": 50
+        }
+      ],
+      "elements": {
+        "dashboardVisible": true,
+        "navigationWorking": true,
+        "dataLoaded": true
+      }
+    }
+  },
+  {
+    "timestamp": "2025-09-04T22:16:38.878Z",
+    "url": "http://localhost:3004",
+    "browser": "chromium",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "timeout": 30000,
+    "results": {
+      "accessible": true,
+      "loadTime": 1200,
+      "status": 200,
+      "title": "EVA AI Calling Centre",
+      "errors": [],
+      "consoleMessages": [
+        {
+          "level": "info",
+          "text": "App initialized successfully"
+        }
+      ],
+      "networkRequests": [
+        {
+          "url": "/api/calls",
+          "status": 200,
+          "timing": 150
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "timing": 50
+        }
+      ],
+      "elements": {
+        "dashboardVisible": true,
+        "navigationWorking": true,
+        "dataLoaded": true
+      }
+    }
+  },
+  {
+    "timestamp": "2025-09-04T22:16:53.885Z",
+    "url": "http://localhost:3004",
+    "browser": "chromium",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "timeout": 30000,
+    "results": {
+      "accessible": true,
+      "loadTime": 1200,
+      "status": 200,
+      "title": "EVA AI Calling Centre",
+      "errors": [],
+      "consoleMessages": [
+        {
+          "level": "info",
+          "text": "App initialized successfully"
+        }
+      ],
+      "networkRequests": [
+        {
+          "url": "/api/calls",
+          "status": 200,
+          "timing": 150
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "timing": 50
+        }
+      ],
+      "elements": {
+        "dashboardVisible": true,
+        "navigationWorking": true,
+        "dataLoaded": true
+      }
+    }
+  },
+  {
+    "timestamp": "2025-09-04T22:17:08.905Z",
+    "url": "http://localhost:3004",
+    "browser": "chromium",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "timeout": 30000,
+    "results": {
+      "accessible": true,
+      "loadTime": 1200,
+      "status": 200,
+      "title": "EVA AI Calling Centre",
+      "errors": [],
+      "consoleMessages": [
+        {
+          "level": "info",
+          "text": "App initialized successfully"
+        }
+      ],
+      "networkRequests": [
+        {
+          "url": "/api/calls",
+          "status": 200,
+          "timing": 150
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "timing": 50
+        }
+      ],
+      "elements": {
+        "dashboardVisible": true,
+        "navigationWorking": true,
+        "dataLoaded": true
+      }
+    }
+  },
+  {
+    "timestamp": "2025-09-04T22:17:23.911Z",
+    "url": "http://localhost:3004",
+    "browser": "chromium",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "timeout": 30000,
+    "results": {
+      "accessible": true,
+      "loadTime": 3500,
+      "status": 200,
+      "title": "EVA AI Calling Centre",
+      "errors": [
+        {
+          "type": "network",
+          "message": "Failed to fetch /api/calls: 500 Internal Server Error",
+          "stack": "at fetch (/api/calls) -> server error"
+        }
+      ],
+      "consoleMessages": [
+        {
+          "level": "error",
+          "text": "Supabase connection failed"
+        },
+        {
+          "level": "warn",
+          "text": "Retrying API call..."
+        }
+      ],
+      "networkRequests": [
+        {
+          "url": "/api/calls",
+          "status": 500,
+          "timing": 5000
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "timing": 50
+        }
+      ],
+      "elements": {
+        "dashboardVisible": true,
+        "navigationWorking": true,
+        "dataLoaded": false
+      }
+    }
+  },
+  {
+    "timestamp": "2025-09-04T22:17:38.931Z",
+    "url": "http://localhost:3004",
+    "browser": "chromium",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "timeout": 30000,
+    "results": {
+      "accessible": true,
+      "loadTime": 1200,
+      "status": 200,
+      "title": "EVA AI Calling Centre",
+      "errors": [],
+      "consoleMessages": [
+        {
+          "level": "info",
+          "text": "App initialized successfully"
+        }
+      ],
+      "networkRequests": [
+        {
+          "url": "/api/calls",
+          "status": 200,
+          "timing": 150
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "timing": 50
+        }
+      ],
+      "elements": {
+        "dashboardVisible": true,
+        "navigationWorking": true,
+        "dataLoaded": true
+      }
+    }
+  },
+  {
+    "timestamp": "2025-09-04T22:17:53.936Z",
+    "url": "http://localhost:3004",
+    "browser": "chromium",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "timeout": 30000,
+    "results": {
+      "accessible": true,
+      "loadTime": 1200,
+      "status": 200,
+      "title": "EVA AI Calling Centre",
+      "errors": [],
+      "consoleMessages": [
+        {
+          "level": "info",
+          "text": "App initialized successfully"
+        }
+      ],
+      "networkRequests": [
+        {
+          "url": "/api/calls",
+          "status": 200,
+          "timing": 150
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "timing": 50
+        }
+      ],
+      "elements": {
+        "dashboardVisible": true,
+        "navigationWorking": true,
+        "dataLoaded": true
+      }
+    }
+  },
+  {
+    "timestamp": "2025-09-04T22:18:08.943Z",
+    "url": "http://localhost:3004",
+    "browser": "chromium",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "timeout": 30000,
+    "results": {
+      "accessible": true,
+      "loadTime": 1200,
+      "status": 200,
+      "title": "EVA AI Calling Centre",
+      "errors": [],
+      "consoleMessages": [
+        {
+          "level": "info",
+          "text": "App initialized successfully"
+        }
+      ],
+      "networkRequests": [
+        {
+          "url": "/api/calls",
+          "status": 200,
+          "timing": 150
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "timing": 50
+        }
+      ],
+      "elements": {
+        "dashboardVisible": true,
+        "navigationWorking": true,
+        "dataLoaded": true
+      }
+    }
+  },
+  {
+    "timestamp": "2025-09-04T22:18:23.949Z",
+    "url": "http://localhost:3004",
+    "browser": "chromium",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "timeout": 30000,
+    "results": {
+      "accessible": true,
+      "loadTime": 3500,
+      "status": 200,
+      "title": "EVA AI Calling Centre",
+      "errors": [
+        {
+          "type": "network",
+          "message": "Failed to fetch /api/calls: 500 Internal Server Error",
+          "stack": "at fetch (/api/calls) -> server error"
+        }
+      ],
+      "consoleMessages": [
+        {
+          "level": "error",
+          "text": "Supabase connection failed"
+        },
+        {
+          "level": "warn",
+          "text": "Retrying API call..."
+        }
+      ],
+      "networkRequests": [
+        {
+          "url": "/api/calls",
+          "status": 500,
+          "timing": 5000
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "timing": 50
+        }
+      ],
+      "elements": {
+        "dashboardVisible": true,
+        "navigationWorking": true,
+        "dataLoaded": false
+      }
+    }
+  },
+  {
+    "timestamp": "2025-09-04T22:18:38.969Z",
+    "url": "http://localhost:3004",
+    "browser": "chromium",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "timeout": 30000,
+    "results": {
+      "accessible": true,
+      "loadTime": 1200,
+      "status": 200,
+      "title": "EVA AI Calling Centre",
+      "errors": [],
+      "consoleMessages": [
+        {
+          "level": "info",
+          "text": "App initialized successfully"
+        }
+      ],
+      "networkRequests": [
+        {
+          "url": "/api/calls",
+          "status": 200,
+          "timing": 150
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "timing": 50
+        }
+      ],
+      "elements": {
+        "dashboardVisible": true,
+        "navigationWorking": true,
+        "dataLoaded": true
+      }
+    }
+  },
+  {
+    "timestamp": "2025-09-04T22:18:53.974Z",
+    "url": "http://localhost:3004",
+    "browser": "chromium",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "timeout": 30000,
+    "results": {
+      "accessible": true,
+      "loadTime": 1200,
+      "status": 200,
+      "title": "EVA AI Calling Centre",
+      "errors": [],
+      "consoleMessages": [
+        {
+          "level": "info",
+          "text": "App initialized successfully"
+        }
+      ],
+      "networkRequests": [
+        {
+          "url": "/api/calls",
+          "status": 200,
+          "timing": 150
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "timing": 50
+        }
+      ],
+      "elements": {
+        "dashboardVisible": true,
+        "navigationWorking": true,
+        "dataLoaded": true
+      }
+    }
+  },
+  {
+    "timestamp": "2025-09-04T22:19:08.981Z",
+    "url": "http://localhost:3004",
+    "browser": "chromium",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "timeout": 30000,
+    "results": {
+      "accessible": true,
+      "loadTime": 1200,
+      "status": 200,
+      "title": "EVA AI Calling Centre",
+      "errors": [],
+      "consoleMessages": [
+        {
+          "level": "info",
+          "text": "App initialized successfully"
+        }
+      ],
+      "networkRequests": [
+        {
+          "url": "/api/calls",
+          "status": 200,
+          "timing": 150
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "timing": 50
+        }
+      ],
+      "elements": {
+        "dashboardVisible": true,
+        "navigationWorking": true,
+        "dataLoaded": true
+      }
+    }
+  },
+  {
+    "timestamp": "2025-09-04T22:19:23.985Z",
+    "url": "http://localhost:3004",
+    "browser": "chromium",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "timeout": 30000,
+    "results": {
+      "accessible": true,
+      "loadTime": 3500,
+      "status": 200,
+      "title": "EVA AI Calling Centre",
+      "errors": [
+        {
+          "type": "network",
+          "message": "Failed to fetch /api/calls: 500 Internal Server Error",
+          "stack": "at fetch (/api/calls) -> server error"
+        }
+      ],
+      "consoleMessages": [
+        {
+          "level": "error",
+          "text": "Supabase connection failed"
+        },
+        {
+          "level": "warn",
+          "text": "Retrying API call..."
+        }
+      ],
+      "networkRequests": [
+        {
+          "url": "/api/calls",
+          "status": 500,
+          "timing": 5000
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "timing": 50
+        }
+      ],
+      "elements": {
+        "dashboardVisible": true,
+        "navigationWorking": true,
+        "dataLoaded": false
+      }
+    }
+  },
+  {
+    "timestamp": "2025-09-04T22:19:39.006Z",
+    "url": "http://localhost:3004",
+    "browser": "chromium",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "timeout": 30000,
+    "results": {
+      "accessible": true,
+      "loadTime": 1200,
+      "status": 200,
+      "title": "EVA AI Calling Centre",
+      "errors": [],
+      "consoleMessages": [
+        {
+          "level": "info",
+          "text": "App initialized successfully"
+        }
+      ],
+      "networkRequests": [
+        {
+          "url": "/api/calls",
+          "status": 200,
+          "timing": 150
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "timing": 50
+        }
+      ],
+      "elements": {
+        "dashboardVisible": true,
+        "navigationWorking": true,
+        "dataLoaded": true
+      }
+    }
+  },
+  {
+    "timestamp": "2025-09-04T22:19:54.010Z",
+    "url": "http://localhost:3004",
+    "browser": "chromium",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "timeout": 30000,
+    "results": {
+      "accessible": true,
+      "loadTime": 1200,
+      "status": 200,
+      "title": "EVA AI Calling Centre",
+      "errors": [],
+      "consoleMessages": [
+        {
+          "level": "info",
+          "text": "App initialized successfully"
+        }
+      ],
+      "networkRequests": [
+        {
+          "url": "/api/calls",
+          "status": 200,
+          "timing": 150
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "timing": 50
+        }
+      ],
+      "elements": {
+        "dashboardVisible": true,
+        "navigationWorking": true,
+        "dataLoaded": true
+      }
+    }
+  },
+  {
+    "timestamp": "2025-09-04T22:20:09.019Z",
+    "url": "http://localhost:3004",
+    "browser": "chromium",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "timeout": 30000,
+    "results": {
+      "accessible": true,
+      "loadTime": 1200,
+      "status": 200,
+      "title": "EVA AI Calling Centre",
+      "errors": [],
+      "consoleMessages": [
+        {
+          "level": "info",
+          "text": "App initialized successfully"
+        }
+      ],
+      "networkRequests": [
+        {
+          "url": "/api/calls",
+          "status": 200,
+          "timing": 150
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "timing": 50
+        }
+      ],
+      "elements": {
+        "dashboardVisible": true,
+        "navigationWorking": true,
+        "dataLoaded": true
+      }
+    }
+  },
+  {
+    "timestamp": "2025-09-04T22:20:24.022Z",
+    "url": "http://localhost:3004",
+    "browser": "chromium",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "timeout": 30000,
+    "results": {
+      "accessible": true,
+      "loadTime": 1200,
+      "status": 200,
+      "title": "EVA AI Calling Centre",
+      "errors": [],
+      "consoleMessages": [
+        {
+          "level": "info",
+          "text": "App initialized successfully"
+        }
+      ],
+      "networkRequests": [
+        {
+          "url": "/api/calls",
+          "status": 200,
+          "timing": 150
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "timing": 50
+        }
+      ],
+      "elements": {
+        "dashboardVisible": true,
+        "navigationWorking": true,
+        "dataLoaded": true
+      }
+    }
+  },
+  {
+    "timestamp": "2025-09-04T22:20:39.039Z",
+    "url": "http://localhost:3004",
+    "browser": "chromium",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "timeout": 30000,
+    "results": {
+      "accessible": true,
+      "loadTime": 1200,
+      "status": 200,
+      "title": "EVA AI Calling Centre",
+      "errors": [],
+      "consoleMessages": [
+        {
+          "level": "info",
+          "text": "App initialized successfully"
+        }
+      ],
+      "networkRequests": [
+        {
+          "url": "/api/calls",
+          "status": 200,
+          "timing": 150
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "timing": 50
+        }
+      ],
+      "elements": {
+        "dashboardVisible": true,
+        "navigationWorking": true,
+        "dataLoaded": true
+      }
+    }
+  },
+  {
+    "timestamp": "2025-09-04T22:20:54.053Z",
+    "url": "http://localhost:3004",
+    "browser": "chromium",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "timeout": 30000,
+    "results": {
+      "accessible": true,
+      "loadTime": 1200,
+      "status": 200,
+      "title": "EVA AI Calling Centre",
+      "errors": [],
+      "consoleMessages": [
+        {
+          "level": "info",
+          "text": "App initialized successfully"
+        }
+      ],
+      "networkRequests": [
+        {
+          "url": "/api/calls",
+          "status": 200,
+          "timing": 150
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "timing": 50
+        }
+      ],
+      "elements": {
+        "dashboardVisible": true,
+        "navigationWorking": true,
+        "dataLoaded": true
+      }
+    }
+  },
+  {
+    "timestamp": "2025-09-04T22:21:09.073Z",
+    "url": "http://localhost:3004",
+    "browser": "chromium",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "timeout": 30000,
+    "results": {
+      "accessible": true,
+      "loadTime": 1200,
+      "status": 200,
+      "title": "EVA AI Calling Centre",
+      "errors": [],
+      "consoleMessages": [
+        {
+          "level": "info",
+          "text": "App initialized successfully"
+        }
+      ],
+      "networkRequests": [
+        {
+          "url": "/api/calls",
+          "status": 200,
+          "timing": 150
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "timing": 50
+        }
+      ],
+      "elements": {
+        "dashboardVisible": true,
+        "navigationWorking": true,
+        "dataLoaded": true
+      }
+    }
+  },
+  {
+    "timestamp": "2025-09-04T22:21:24.090Z",
+    "url": "http://localhost:3004",
+    "browser": "chromium",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "timeout": 30000,
+    "results": {
+      "accessible": true,
+      "loadTime": 3500,
+      "status": 200,
+      "title": "EVA AI Calling Centre",
+      "errors": [
+        {
+          "type": "network",
+          "message": "Failed to fetch /api/calls: 500 Internal Server Error",
+          "stack": "at fetch (/api/calls) -> server error"
+        }
+      ],
+      "consoleMessages": [
+        {
+          "level": "error",
+          "text": "Supabase connection failed"
+        },
+        {
+          "level": "warn",
+          "text": "Retrying API call..."
+        }
+      ],
+      "networkRequests": [
+        {
+          "url": "/api/calls",
+          "status": 500,
+          "timing": 5000
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "timing": 50
+        }
+      ],
+      "elements": {
+        "dashboardVisible": true,
+        "navigationWorking": true,
+        "dataLoaded": false
+      }
+    }
+  },
+  {
+    "timestamp": "2025-09-04T22:21:39.096Z",
+    "url": "http://localhost:3004",
+    "browser": "chromium",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "timeout": 30000,
+    "results": {
+      "accessible": true,
+      "loadTime": 1200,
+      "status": 200,
+      "title": "EVA AI Calling Centre",
+      "errors": [],
+      "consoleMessages": [
+        {
+          "level": "info",
+          "text": "App initialized successfully"
+        }
+      ],
+      "networkRequests": [
+        {
+          "url": "/api/calls",
+          "status": 200,
+          "timing": 150
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "timing": 50
+        }
+      ],
+      "elements": {
+        "dashboardVisible": true,
+        "navigationWorking": true,
+        "dataLoaded": true
+      }
+    }
+  },
+  {
+    "timestamp": "2025-09-04T22:21:54.108Z",
+    "url": "http://localhost:3004",
+    "browser": "chromium",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "timeout": 30000,
+    "results": {
+      "accessible": true,
+      "loadTime": 1200,
+      "status": 200,
+      "title": "EVA AI Calling Centre",
+      "errors": [],
+      "consoleMessages": [
+        {
+          "level": "info",
+          "text": "App initialized successfully"
+        }
+      ],
+      "networkRequests": [
+        {
+          "url": "/api/calls",
+          "status": 200,
+          "timing": 150
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "timing": 50
+        }
+      ],
+      "elements": {
+        "dashboardVisible": true,
+        "navigationWorking": true,
+        "dataLoaded": true
+      }
+    }
+  },
+  {
+    "timestamp": "2025-09-04T22:22:09.121Z",
+    "url": "http://localhost:3004",
+    "browser": "chromium",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "timeout": 30000,
+    "results": {
+      "accessible": true,
+      "loadTime": 1200,
+      "status": 200,
+      "title": "EVA AI Calling Centre",
+      "errors": [],
+      "consoleMessages": [
+        {
+          "level": "info",
+          "text": "App initialized successfully"
+        }
+      ],
+      "networkRequests": [
+        {
+          "url": "/api/calls",
+          "status": 200,
+          "timing": 150
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "timing": 50
+        }
+      ],
+      "elements": {
+        "dashboardVisible": true,
+        "navigationWorking": true,
+        "dataLoaded": true
+      }
+    }
+  },
+  {
+    "timestamp": "2025-09-04T22:22:24.127Z",
+    "url": "http://localhost:3004",
+    "browser": "chromium",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "timeout": 30000,
+    "results": {
+      "accessible": true,
+      "loadTime": 3500,
+      "status": 200,
+      "title": "EVA AI Calling Centre",
+      "errors": [
+        {
+          "type": "network",
+          "message": "Failed to fetch /api/calls: 500 Internal Server Error",
+          "stack": "at fetch (/api/calls) -> server error"
+        }
+      ],
+      "consoleMessages": [
+        {
+          "level": "error",
+          "text": "Supabase connection failed"
+        },
+        {
+          "level": "warn",
+          "text": "Retrying API call..."
+        }
+      ],
+      "networkRequests": [
+        {
+          "url": "/api/calls",
+          "status": 500,
+          "timing": 5000
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "timing": 50
+        }
+      ],
+      "elements": {
+        "dashboardVisible": true,
+        "navigationWorking": true,
+        "dataLoaded": false
+      }
+    }
+  },
+  {
+    "timestamp": "2025-09-04T22:22:39.137Z",
+    "url": "http://localhost:3004",
+    "browser": "chromium",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "timeout": 30000,
+    "results": {
+      "accessible": true,
+      "loadTime": 3500,
+      "status": 200,
+      "title": "EVA AI Calling Centre",
+      "errors": [
+        {
+          "type": "network",
+          "message": "Failed to fetch /api/calls: 500 Internal Server Error",
+          "stack": "at fetch (/api/calls) -> server error"
+        }
+      ],
+      "consoleMessages": [
+        {
+          "level": "error",
+          "text": "Supabase connection failed"
+        },
+        {
+          "level": "warn",
+          "text": "Retrying API call..."
+        }
+      ],
+      "networkRequests": [
+        {
+          "url": "/api/calls",
+          "status": 500,
+          "timing": 5000
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "timing": 50
+        }
+      ],
+      "elements": {
+        "dashboardVisible": true,
+        "navigationWorking": true,
+        "dataLoaded": false
+      }
+    }
+  },
+  {
+    "timestamp": "2025-09-04T22:22:54.156Z",
+    "url": "http://localhost:3004",
+    "browser": "chromium",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "timeout": 30000,
+    "results": {
+      "accessible": true,
+      "loadTime": 1200,
+      "status": 200,
+      "title": "EVA AI Calling Centre",
+      "errors": [],
+      "consoleMessages": [
+        {
+          "level": "info",
+          "text": "App initialized successfully"
+        }
+      ],
+      "networkRequests": [
+        {
+          "url": "/api/calls",
+          "status": 200,
+          "timing": 150
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "timing": 50
+        }
+      ],
+      "elements": {
+        "dashboardVisible": true,
+        "navigationWorking": true,
+        "dataLoaded": true
+      }
+    }
+  },
+  {
+    "timestamp": "2025-09-04T22:23:09.159Z",
+    "url": "http://localhost:3004",
+    "browser": "chromium",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "timeout": 30000,
+    "results": {
+      "accessible": true,
+      "loadTime": 1200,
+      "status": 200,
+      "title": "EVA AI Calling Centre",
+      "errors": [],
+      "consoleMessages": [
+        {
+          "level": "info",
+          "text": "App initialized successfully"
+        }
+      ],
+      "networkRequests": [
+        {
+          "url": "/api/calls",
+          "status": 200,
+          "timing": 150
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "timing": 50
+        }
+      ],
+      "elements": {
+        "dashboardVisible": true,
+        "navigationWorking": true,
+        "dataLoaded": true
+      }
+    }
+  },
+  {
+    "timestamp": "2025-09-04T22:23:24.176Z",
+    "url": "http://localhost:3004",
+    "browser": "chromium",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "timeout": 30000,
+    "results": {
+      "accessible": true,
+      "loadTime": 1200,
+      "status": 200,
+      "title": "EVA AI Calling Centre",
+      "errors": [],
+      "consoleMessages": [
+        {
+          "level": "info",
+          "text": "App initialized successfully"
+        }
+      ],
+      "networkRequests": [
+        {
+          "url": "/api/calls",
+          "status": 200,
+          "timing": 150
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "timing": 50
+        }
+      ],
+      "elements": {
+        "dashboardVisible": true,
+        "navigationWorking": true,
+        "dataLoaded": true
+      }
+    }
+  },
+  {
+    "timestamp": "2025-09-04T22:23:39.187Z",
+    "url": "http://localhost:3004",
+    "browser": "chromium",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "timeout": 30000,
+    "results": {
+      "accessible": true,
+      "loadTime": 1200,
+      "status": 200,
+      "title": "EVA AI Calling Centre",
+      "errors": [],
+      "consoleMessages": [
+        {
+          "level": "info",
+          "text": "App initialized successfully"
+        }
+      ],
+      "networkRequests": [
+        {
+          "url": "/api/calls",
+          "status": 200,
+          "timing": 150
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "timing": 50
+        }
+      ],
+      "elements": {
+        "dashboardVisible": true,
+        "navigationWorking": true,
+        "dataLoaded": true
+      }
+    }
+  },
+  {
+    "timestamp": "2025-09-04T22:23:54.196Z",
+    "url": "http://localhost:3004",
+    "browser": "chromium",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "timeout": 30000,
+    "results": {
+      "accessible": true,
+      "loadTime": 1200,
+      "status": 200,
+      "title": "EVA AI Calling Centre",
+      "errors": [],
+      "consoleMessages": [
+        {
+          "level": "info",
+          "text": "App initialized successfully"
+        }
+      ],
+      "networkRequests": [
+        {
+          "url": "/api/calls",
+          "status": 200,
+          "timing": 150
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "timing": 50
+        }
+      ],
+      "elements": {
+        "dashboardVisible": true,
+        "navigationWorking": true,
+        "dataLoaded": true
+      }
+    }
+  },
+  {
+    "timestamp": "2025-09-04T22:24:09.213Z",
+    "url": "http://localhost:3004",
+    "browser": "chromium",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "timeout": 30000,
+    "results": {
+      "accessible": true,
+      "loadTime": 1200,
+      "status": 200,
+      "title": "EVA AI Calling Centre",
+      "errors": [],
+      "consoleMessages": [
+        {
+          "level": "info",
+          "text": "App initialized successfully"
+        }
+      ],
+      "networkRequests": [
+        {
+          "url": "/api/calls",
+          "status": 200,
+          "timing": 150
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "timing": 50
+        }
+      ],
+      "elements": {
+        "dashboardVisible": true,
+        "navigationWorking": true,
+        "dataLoaded": true
+      }
+    }
+  },
+  {
+    "timestamp": "2025-09-04T22:24:24.219Z",
+    "url": "http://localhost:3004",
+    "browser": "chromium",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "timeout": 30000,
+    "results": {
+      "accessible": true,
+      "loadTime": 1200,
+      "status": 200,
+      "title": "EVA AI Calling Centre",
+      "errors": [],
+      "consoleMessages": [
+        {
+          "level": "info",
+          "text": "App initialized successfully"
+        }
+      ],
+      "networkRequests": [
+        {
+          "url": "/api/calls",
+          "status": 200,
+          "timing": 150
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "timing": 50
+        }
+      ],
+      "elements": {
+        "dashboardVisible": true,
+        "navigationWorking": true,
+        "dataLoaded": true
+      }
+    }
+  },
+  {
+    "timestamp": "2025-09-04T22:24:39.224Z",
+    "url": "http://localhost:3004",
+    "browser": "chromium",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "timeout": 30000,
+    "results": {
+      "accessible": true,
+      "loadTime": 1200,
+      "status": 200,
+      "title": "EVA AI Calling Centre",
+      "errors": [],
+      "consoleMessages": [
+        {
+          "level": "info",
+          "text": "App initialized successfully"
+        }
+      ],
+      "networkRequests": [
+        {
+          "url": "/api/calls",
+          "status": 200,
+          "timing": 150
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "timing": 50
+        }
+      ],
+      "elements": {
+        "dashboardVisible": true,
+        "navigationWorking": true,
+        "dataLoaded": true
+      }
+    }
+  },
+  {
+    "timestamp": "2025-09-04T22:24:54.232Z",
+    "url": "http://localhost:3004",
+    "browser": "chromium",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "timeout": 30000,
+    "results": {
+      "accessible": true,
+      "loadTime": 3500,
+      "status": 200,
+      "title": "EVA AI Calling Centre",
+      "errors": [
+        {
+          "type": "network",
+          "message": "Failed to fetch /api/calls: 500 Internal Server Error",
+          "stack": "at fetch (/api/calls) -> server error"
+        }
+      ],
+      "consoleMessages": [
+        {
+          "level": "error",
+          "text": "Supabase connection failed"
+        },
+        {
+          "level": "warn",
+          "text": "Retrying API call..."
+        }
+      ],
+      "networkRequests": [
+        {
+          "url": "/api/calls",
+          "status": 500,
+          "timing": 5000
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "timing": 50
+        }
+      ],
+      "elements": {
+        "dashboardVisible": true,
+        "navigationWorking": true,
+        "dataLoaded": false
+      }
+    }
+  },
+  {
+    "timestamp": "2025-09-04T22:25:09.255Z",
+    "url": "http://localhost:3004",
+    "browser": "chromium",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "timeout": 30000,
+    "results": {
+      "accessible": true,
+      "loadTime": 1200,
+      "status": 200,
+      "title": "EVA AI Calling Centre",
+      "errors": [],
+      "consoleMessages": [
+        {
+          "level": "info",
+          "text": "App initialized successfully"
+        }
+      ],
+      "networkRequests": [
+        {
+          "url": "/api/calls",
+          "status": 200,
+          "timing": 150
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "timing": 50
+        }
+      ],
+      "elements": {
+        "dashboardVisible": true,
+        "navigationWorking": true,
+        "dataLoaded": true
+      }
+    }
+  },
+  {
+    "timestamp": "2025-09-04T22:25:24.273Z",
+    "url": "http://localhost:3004",
+    "browser": "chromium",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "timeout": 30000,
+    "results": {
+      "accessible": true,
+      "loadTime": 3500,
+      "status": 200,
+      "title": "EVA AI Calling Centre",
+      "errors": [
+        {
+          "type": "network",
+          "message": "Failed to fetch /api/calls: 500 Internal Server Error",
+          "stack": "at fetch (/api/calls) -> server error"
+        }
+      ],
+      "consoleMessages": [
+        {
+          "level": "error",
+          "text": "Supabase connection failed"
+        },
+        {
+          "level": "warn",
+          "text": "Retrying API call..."
+        }
+      ],
+      "networkRequests": [
+        {
+          "url": "/api/calls",
+          "status": 500,
+          "timing": 5000
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "timing": 50
+        }
+      ],
+      "elements": {
+        "dashboardVisible": true,
+        "navigationWorking": true,
+        "dataLoaded": false
+      }
+    }
+  }
+]

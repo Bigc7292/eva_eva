@@ -1,0 +1,25 @@
+{
+  "name": "@eva-col/ui",
+  "version": "0.1.0",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "dependencies": {
+    "@radix-ui/react-accordion": "^1.2.2",
+    "@radix-ui/react-alert-dialog": "^1.1.4",
+    "@radix-ui/react-avatar": "^1.1.2",
+    "@radix-ui/react-dialog": "^1.1.6",
+    "@radix-ui/react-dropdown-menu": "^2.1.6",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^2.6.0"
+  },
+  "devDependencies": {
+    "@eva-col/tsconfig": "0.1.0",
+    "typescript": "^5.7.3"
+  },
+  "peerDependencies": {
+    "react": "^18.2.0"
+  }
+} 

@@ -1,0 +1,3 @@
+# Ignore npm audit reports
+npm-audit.html
+.npmrc

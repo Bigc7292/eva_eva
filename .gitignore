@@ -1,0 +1,44 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Testing
+coverage
+
+# Next.js
+.next/
+out/
+build
+dist
+
+# Misc
+.DS_Store
+*.pem
+.env*.local
+.env
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local env files
+.env*.local
+
+# Turbo
+.turbo
+
+# Backup files
+**/backup_*/
+**/Queeneva*/
+eva_col_meh/
+
+# Sensitive files
+gcp-oauth.keys.json
+mcp-config-fixed.json
+*.keys.json
+
+# IDE
+.idea
+.vscode 
