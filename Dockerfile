@@ -1,43 +1,54 @@
-FROM node:20-alpine AS deps
+FROM node:18-alpine AS deps
+
+# Install dependencies for building native modules
+RUN apk add --no-cache libc6-compat python3 make g++
+
 WORKDIR /workspace
 
-# Copy package files
+# Copy package files for dependency installation
 COPY package*.json ./
 COPY turbo.json ./
+
+# Copy workspace packages
 COPY packages ./packages
 COPY apps/frontend/package*.json ./apps/frontend/
 
 # Install dependencies
 RUN npm ci --legacy-peer-deps --ignore-scripts
 
-FROM node:20-alpine AS build
+FROM node:18-alpine AS build
+
+# Install build dependencies
+RUN apk add --no-cache libc6-compat python3 make g++
+
 WORKDIR /workspace
 
-# Copy node_modules from deps stage
+# Copy dependencies from previous stage
 COPY --from=deps /workspace/node_modules ./node_modules
-COPY --from=deps /workspace/apps/frontend/node_modules ./apps/frontend/node_modules
+COPY --from=deps /workspace/packages ./packages
 
-# Copy source code
+# Copy all source code
 COPY . .
 
 # Set build environment
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Build the application
+# Build the Next.js application
 RUN npm run build
 
-FROM node:20-alpine AS release
-WORKDIR /workspace
+FROM node:18-alpine AS release
 
-# Install dumb-init and wget for proper signal handling and health checks
-RUN apk add --no-cache dumb-init wget
+# Install runtime dependencies
+RUN apk add --no-cache dumb-init wget curl
 
-# Create a non-root user
+# Create non-root user for security
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Set environment
+WORKDIR /workspace
+
+# Set production environment
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3004
@@ -51,16 +62,16 @@ COPY --from=build --chown=nextjs:nodejs /workspace/node_modules ./node_modules
 # Switch to non-root user
 USER nextjs
 
-# Expose port
+# Expose the port
 EXPOSE 3004
 
-# Set working directory for startup
-WORKDIR /workspace/apps/frontend
-
-# Health check
+# Health check for Cloud Run
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:3004/api/health || exit 1
 
-# Start the application with dumb-init
+# Set working directory to frontend app
+WORKDIR /workspace/apps/frontend
+
+# Start the Next.js application
 ENTRYPOINT ["dumb-init", "--"]
 CMD ["npm", "run", "start"]
