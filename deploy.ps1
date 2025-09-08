@@ -2,7 +2,7 @@
 # This script deploys the EVA calling center to Google Cloud Platform
 
 param(
-    [string]$ProjectId = "",
+    [string]$ProjectId = "call-centre-471522",
     [string]$Region = "us-central1",
     [string]$ServiceName = "eva-calling-center"
 )
